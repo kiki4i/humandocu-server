@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>부고 · 이영희 (어드밴스드)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1714;--ink2:#3d3a30;--ink3:#78716c;
+  --bg:#f5f3ef;--bg2:#ede9e2;--bg3:#e3ddd4;
+  --gold:#9a7d4a;--gold2:#c4a96e;
+  --sage:#7a9e7e;--sage2:#a8c5ab;
+  --white:#ffffff;
+  --serif:'Noto Serif KR',Georgia,serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto;padding-bottom:40px;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+
+/* 헤더 - 사진 있는 버전 */
+.header{background:#1a1714;padding:0 0 28px;text-align:center}
+.photo-wrap{position:relative;width:100%;height:320px;overflow:hidden}
+.photo-main{width:100%;height:100%;background:linear-gradient(160deg,#c9a87c 0%,#e8d5b0 30%,#d4c4a0 60%,#b8a88c 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.photo-img{width:100%;height:100%;object-fit:cover}
+.photo-gradient{position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#1a1714)}
+.badge{font-size:10px;letter-spacing:.16em;color:rgba(200,169,110,.5);text-transform:uppercase;padding-top:18px;margin-bottom:10px}
+.symbol{display:flex;justify-content:center;margin-bottom:8px}
+.name-row{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:4px}
+.go{font-size:13px;color:rgba(200,169,110,.55);letter-spacing:.12em}
+.dname{font-size:34px;font-weight:400;color:#f5f3ef;font-family:var(--serif);letter-spacing:.04em}
+.dsub{font-size:12px;color:rgba(249,246,240,.42);margin-bottom:3px}
+.dbirth{font-size:11px;color:rgba(249,246,240,.28);letter-spacing:.04em;margin-bottom:3px}
+.ddate{font-size:11px;color:rgba(249,246,240,.3);letter-spacing:.06em}
+.ddate span{color:rgba(200,169,110,.6)}
+.bible{font-size:10px;color:rgba(200,169,110,.38);font-style:italic;font-family:var(--serif);margin-top:8px;letter-spacing:.04em;padding:0 20px}
+.divider{border:none;border-top:0.5px solid rgba(200,169,110,.18);margin:14px 24px}
+.oneline{font-size:15px;font-style:italic;color:rgba(249,246,240,.85);line-height:1.9;text-align:center;font-family:var(--serif);margin-bottom:14px;padding:0 20px}
+.tribute{border-left:2px solid rgba(200,169,110,.35);padding-left:14px;margin:0 24px}
+.tribute-text{font-size:13px;color:rgba(249,246,240,.55);line-height:1.9;font-family:var(--serif)}
+
+/* 추모관 입장 버튼 - 핵심 차별화 */
+.memorial-entry{margin:6px 0;background:linear-gradient(135deg,#2d4a3e 0%,#1a2e26 100%);padding:24px 20px;text-align:center;position:relative;overflow:hidden}
+.memorial-entry::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(168,197,171,.06);border-radius:50%}
+.memorial-entry::after{content:'';position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;background:rgba(168,197,171,.04);border-radius:50%}
+.memorial-tag{font-size:9px;letter-spacing:.2em;color:rgba(168,197,171,.6);text-transform:uppercase;margin-bottom:8px}
+.memorial-title{font-size:18px;font-weight:400;color:#e8f0e9;font-family:var(--serif);margin-bottom:6px}
+.memorial-desc{font-size:12px;color:rgba(168,197,171,.7);line-height:1.7;margin-bottom:18px}
+.memorial-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(168,197,171,.15);border:1px solid rgba(168,197,171,.35);color:#a8c5ab;font-size:13px;font-weight:500;padding:12px 24px;border-radius:3px;font-family:var(--sans);cursor:pointer;transition:all .2s}
+.memorial-btn:hover{background:rgba(168,197,171,.25)}
+.memorial-btn-arrow{font-size:16px}
+
+.section{background:var(--white);margin:6px 0;padding:18px 20px}
+.sec-title{font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bg3);display:flex;align-items:center;gap:6px}
+.sec-title::before{content:'';width:3px;height:13px;background:var(--gold2);border-radius:2px;flex-shrink:0}
+
+.family-row{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--bg2)}
+.family-row:last-child{border-bottom:none}
+.family-rel{font-size:12px;color:var(--gold);font-weight:500;min-width:48px}
+.family-name{font-size:14px;color:var(--ink)}
+.family-sub{font-size:11px;color:var(--ink3);margin-left:4px}
+
+.info-row{display:flex;padding:8px 0;border-bottom:1px solid var(--bg2)}
+.info-row:last-child{border-bottom:none}
+.info-key{font-size:11px;color:var(--ink3);width:44px;flex-shrink:0;padding-top:2px}
+.info-val{font-size:13px;color:var(--ink);line-height:1.5;flex:1;font-weight:400}
+
+.place-name{font-size:15px;font-weight:500;color:var(--ink);margin-bottom:4px}
+.place-addr{font-size:12px;color:var(--ink3);margin-bottom:12px}
+.map-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:#FEE500;border-radius:4px;font-size:13px;font-weight:700;color:#1a1714}
+
+.notice-text{font-size:13px;color:var(--ink);line-height:1.7;padding:4px 0}
+
+.acct-box{background:var(--bg);border:1px solid var(--bg3);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.acct-box:last-child{margin-bottom:0}
+.acct-icon{width:32px;height:32px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.acct-info{flex:1}
+.acct-bank{font-size:11px;color:var(--ink3);margin-bottom:2px}
+.acct-num{font-size:14px;font-weight:500;color:var(--ink)}
+.copy-btn{font-size:11px;font-weight:500;color:var(--gold);padding:5px 10px;border:1px solid rgba(154,125,74,.3);border-radius:3px;background:none;cursor:pointer;font-family:var(--sans)}
+
+.share-btn{display:flex;align-items:center;justify-content:center;gap:7px;background:#FEE500;border-radius:4px;padding:14px;font-size:14px;font-weight:700;color:#1a1714;width:100%;border:none;cursor:pointer;font-family:var(--sans)}
+
+.page-footer{background:#1a1714;padding:24px 20px;text-align:center;margin-top:6px;border-top:1px solid rgba(200,169,110,.12)}
+.footer-main-text{font-family:var(--serif);font-size:14px;color:rgba(249,246,240,.5);line-height:1.9;margin-bottom:6px}
+.footer-main-text span{color:var(--gold2)}
+.footer-sub-text{font-size:11px;color:rgba(200,169,110,.38);line-height:1.8;margin-bottom:16px}
+.footer-divider{border:none;border-top:0.5px solid rgba(200,169,110,.12);margin:14px 40px}
+.footer-btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.footer-btn{font-size:11px;font-weight:500;color:rgba(200,169,110,.7);padding:7px 14px;border:1px solid rgba(200,169,110,.25);border-radius:3px;background:none;font-family:var(--sans);text-decoration:none;display:inline-block}
+.footer-btn-primary{font-size:11px;font-weight:500;color:#1a1714;padding:7px 14px;border:none;border-radius:3px;background:rgba(200,169,110,.7);font-family:var(--sans);text-decoration:none;display:inline-block}
+.footer-info{font-size:10px;color:rgba(249,246,240,.2);margin-top:14px;line-height:1.7}
+
+.label{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#7a9e7e;color:white;font-size:11px;font-weight:600;padding:5px 14px;border-radius:20px;font-family:var(--sans);z-index:999;letter-spacing:.04em;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="label">✨ 어드밴스드 (₩29,000) — 메인 부고</div>
+
+<div class="header">
+  <div class="photo-wrap">
+    <div class="photo-main">
+      <div style="font-size:64px;opacity:0.3">👤</div>
+      <div style="font-size:10px;letter-spacing:.14em;color:rgba(255,255,255,.5);background:rgba(0,0,0,.2);padding:4px 14px;border-radius:20px">영정 사진</div>
+    </div>
+    <div class="photo-gradient"></div>
+  </div>
+  <div class="badge">부 고 訃 告</div>
+  <div class="symbol">
+    <svg width="22" height="26" viewBox="0 0 22 26" fill="none">
+      <rect x="9" y="0" width="4" height="26" rx="1" fill="rgba(200,169,110,0.45)"/>
+      <rect x="0" y="7" width="22" height="4" rx="1" fill="rgba(200,169,110,0.45)"/>
+    </svg>
+  </div>
+  <div class="name-row"><span class="go">故</span><span class="dname">이영희</span></div>
+  <div class="dsub">권사 · 여 · 78세</div>
+  <div class="dbirth">1947년 5월 12일 生</div>
+  <div class="ddate"><span>2026년 4월 3일</span> 소천</div>
+  <div class="bible">"나는 부활이요 생명이니" — 요한복음 11:25</div>
+  <div class="divider"></div>
+  <div class="oneline">"꽃 같던 나의 어머니,<br>늘 웃음으로 우리 곁을 지켜주셨던 분"</div>
+  <div class="tribute">
+    <div class="tribute-text">평생 가족을 위해 헌신하시며 단 한 번도 당신 자신을 앞세우지 않으셨습니다. 그 따뜻한 손길과 넉넉한 웃음이 이제 그리움으로 남습니다. 어머니께서 심어주신 사랑의 씨앗은 우리 마음 속에 영원히 살아있을 것입니다.</div>
+  </div>
+</div>
+
+<!-- 핵심 차별화: 추모관 입장 버튼 -->
+<div class="memorial-entry">
+  <div class="memorial-tag">Advanced · 故 이영희 님의</div>
+  <div class="memorial-title">온라인 추모관</div>
+  <div class="memorial-desc">생애 타임라인, 사진 갤러리,<br>디지털 방명록을 만나보세요</div>
+  <button class="memorial-btn" onclick="window.open('memorial_mockup.html')">
+    추모관 입장하기 <span class="memorial-btn-arrow">→</span>
+  </button>
+</div>
+
+<div class="section">
+  <div class="sec-title">유가족</div>
+  <div class="family-row"><span class="family-rel">배우자</span><span class="family-name">홍길동</span></div>
+  <div class="family-row"><span class="family-rel">장남</span><span class="family-name">홍○○</span><span class="family-sub">자부 김○○</span></div>
+  <div class="family-row"><span class="family-rel">장녀</span><span class="family-name">홍○○</span><span class="family-sub">사위 박○○</span></div>
+</div>
+
+<div class="section">
+  <div class="sec-title">상가 정보</div>
+  <div class="info-row"><span class="info-key">입관</span><div class="info-val">4월 3일 (금) 오후 7시</div></div>
+  <div class="info-row"><span class="info-key">발인</span><div class="info-val">4월 4일 (토) 오전 9시</div></div>
+  <div class="info-row"><span class="info-key">장지</span><div class="info-val">하늘공원 추모관</div></div>
+</div>
+
+<div class="section">
+  <div class="sec-title">장례식장</div>
+  <div class="place-name">서울성모병원 장례식장 3호실</div>
+  <div class="place-addr">서울 서초구 반포대로 222</div>
+  <a href="https://map.kakao.com/link/search/서울성모병원장례식장" target="_blank" class="map-btn">🗺 카카오맵으로 길찾기</a>
+</div>
+
+<div class="section">
+  <div class="sec-title">공지사항</div>
+  <div class="notice-text">고인의 뜻에 따라 화환은 정중히 사양하오니 너른 양해 부탁드립니다.</div>
+</div>
+
+<div class="section">
+  <div class="sec-title">조의금 보내실 곳</div>
+  <div class="acct-box">
+    <div class="acct-icon">🏦</div>
+    <div class="acct-info"><div class="acct-bank">신한은행</div><div class="acct-num">110-123-456789 · 홍○○</div></div>
+    <button class="copy-btn" onclick="alert('복사되었습니다')">복사</button>
+  </div>
+</div>
+
+<div class="section">
+  <button class="share-btn">💬 카카오톡으로 부고 전달하기</button>
+</div>
+
+<div class="page-footer">
+  <div class="footer-main-text">한 사람의 삶은 기억되어야 합니다.<br><span>휴먼다큐</span>가 그 곁에 있겠습니다.</div>
+  <div class="footer-sub-text">고인의 이야기를 소중히 담아<br>오래도록 기억될 수 있도록 함께합니다.</div>
+  <div class="footer-divider"></div>
+  <div class="footer-btn-row">
+    <a href="https://www.humandocu.com" target="_blank" class="footer-btn">휴먼다큐 둘러보기</a>
+    <a href="#" class="footer-btn-primary">故 이영희 추모관 →</a>
+  </div>
+  <div class="footer-info">www.humandocu.com · 010-5305-6804</div>
+</div>
+
+</body>
+</html>
