@@ -18,9 +18,40 @@ GITHUB_REPO = os.environ.get('GITHUB_REPO', 'kiki4i/humandocu')
 GMAIL_USER = os.environ.get('GMAIL_USER')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
 
-# 베이직 HTML 템플릿
+# 템플릿 로드
 BASIC_TEMPLATE = open('templates/basic.html', 'r', encoding='utf-8').read()
 ADVANCED_TEMPLATE = open('templates/advanced.html', 'r', encoding='utf-8').read()
+
+def parse_tally_fields(data):
+    """Tally 웹훅 데이터에서 필드 파싱 (MULTIPLE_CHOICE UUID → 텍스트 변환)"""
+    fields = {}
+    for field in data.get('data', {}).get('fields', []):
+        label = field.get('label', '')
+        value = field.get('value', '')
+        field_type = field.get('type', '')
+        options = field.get('options', [])
+
+        if field_type == 'MULTIPLE_CHOICE':
+            if isinstance(value, list) and value:
+                selected_id = value[0]
+                matched = next((o['text'] for o in options if o['id'] == selected_id), '')
+                value = matched
+            else:
+                value = ''
+
+        elif field_type == 'CHECKBOXES':
+            if isinstance(value, list):
+                selected_texts = [o['text'] for o in options if o['id'] in value]
+                value = ', '.join(selected_texts) if selected_texts else ''
+            else:
+                value = ''
+
+        elif isinstance(value, list) and value:
+            value = value[0] if isinstance(value[0], str) else value[0].get('text', '')
+
+        fields[label] = value or ''
+
+    return fields
 
 def call_claude(prompt, system, max_tokens=8000):
     """Claude API 호출"""
@@ -45,27 +76,26 @@ def upload_to_github(filename, html_content, folder='bugo/basic'):
     """GitHub에 HTML 파일 업로드"""
     path = f"{folder}/{filename}"
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-    
-    # 기존 파일 sha 확인
+
     sha = None
     check = requests.get(url, headers={'Authorization': f'Bearer {GITHUB_TOKEN}'})
     if check.status_code == 200:
         sha = check.json()['sha']
-    
+
     content_b64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
-    
+
     payload = {
         'message': '부고 업로드',
         'content': content_b64
     }
     if sha:
         payload['sha'] = sha
-    
+
     response = requests.put(url, headers={
         'Authorization': f'Bearer {GITHUB_TOKEN}',
         'Content-Type': 'application/json'
     }, json=payload)
-    
+
     return response.status_code in [200, 201]
 
 def send_email(to_email, subject, html_body):
@@ -75,43 +105,37 @@ def send_email(to_email, subject, html_body):
     msg['From'] = GMAIL_USER
     msg['To'] = to_email
     msg.attach(MIMEText(html_body, 'html'))
-    
+
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
         server.sendmail(GMAIL_USER, to_email, msg.as_string())
 
 def build_basic_prompt(fields, revision_request=None):
     """베이직 추모글 프롬프트 생성"""
-    
-    religion = fields.get('종교', '')
-    name = fields.get('고인 성함', '')
-    intro = fields.get('고인 소개', '') or fields.get('고인 한줄 소개', '')
-    episode = fields.get('기억에 남는 에피소드나 말씀', '')
-    personality = fields.get('고인의 성격이나 특징', '')
-    
     revision_note = ""
     if revision_request:
         revision_note = f"\n\n[추모글 수정 요청사항]\n{revision_request}\n위 요청사항을 반드시 반영하여 추모글을 다시 작성해주세요.\n"
-    
+
     prompt = f"""당신은 20년 경력의 장례 전문 추모문 작가입니다. 아래 고인 정보를 바탕으로 HTML 템플릿을 완성해주세요.
 
 === 고인 정보 ===
-이름: {name}
+이름: {fields.get('고인 성함', '')}
 직함: {fields.get('직함', '')}
-종교: {religion}
+종교: {fields.get('종교', '')}
 성별: {fields.get('성별', '')}
 나이: {fields.get('나이', '')}
 생년월일: {fields.get('생년월일', '')}
 별세일: {fields.get('별세일', '')}
-고인 소개: {intro}
-성격·특징: {personality}
-에피소드·말씀: {episode}
+고인을 한마디로 표현: {fields.get('고인을 한마디로 표현한다면?', '')}
+고인이 가장 소중히 여긴 것: {fields.get('고인이 평생 가장 소중히 여기신 것은?', '')}
+가장 떠오르는 기억/말씀: {fields.get('고인과의 기억 중 가장 떠오르는 장면이나 말씀은?', '')}
+가족 대표 한마디: {fields.get('가족을 대표해서 고인께 하고 싶은 말 한마디', '')}
 유가족: {fields.get('유가족 명단', '')}
-입관: {fields.get('입관 일시', '')}
-발인: {fields.get('발인 일시', '')}
-장지: {fields.get('장지 이름, 주소', '') or fields.get('장지이름 또는 주소', '')}
+입관: {fields.get('입관일시', '')}
+발인: {fields.get('발인일시', '')}
+장지: {fields.get('장지이름 또는 주소', '')}
 장례식장: {fields.get('장례식장 이름', '')}
-공지사항: {fields.get('공지사항', '') or fields.get('공지 사항', '')}
+공지사항: {fields.get('공지 사항', '')}
 조의금계좌: {fields.get('조의금 계좌', '')}
 {revision_note}
 === 추모글 작성 지침 ===
@@ -119,12 +143,11 @@ def build_basic_prompt(fields, revision_request=None):
 [한줄 추모문구 작성법]
 - 고인이 살아온 삶의 핵심 가치나 사람됨을 단 하나의 문장으로 응축
 - 단순한 정보 나열이 아닌, 읽는 이의 가슴에 닿는 문장
-- 고인 소개·에피소드에서 가장 인상적인 요소를 살려낼 것
-- 예시 방향: "평생 남 먼저였던 분", "웃음으로 주변을 밝히셨던 분"처럼 구체적인 삶의 모습이 보이도록
+- "고인을 한마디로 표현"과 "가장 소중히 여긴 것"에서 핵심을 살려낼 것
 
 [추모글 작성법 - 3~4문장]
 - 첫 문장: 고인의 가장 두드러진 성품이나 삶의 자세를 따뜻하게 표현
-- 둘째 문장: 에피소드나 구체적 기억을 녹여 생생하게 그려낼 것 (있는 경우)
+- 둘째 문장: "가장 떠오르는 기억/말씀"을 녹여 생생하게 그려낼 것
 - 셋째 문장: 남겨진 가족들의 마음과 고인에 대한 그리움
 - 넷째 문장(선택): 고인이 남긴 것들이 계속 살아있음을 암시하는 희망적 마무리
 - 문체: 격조 있되 과하지 않게, 진심이 느껴지는 따뜻한 문어체
@@ -150,22 +173,22 @@ HTML 코드만 출력. 마크다운 코드블록 절대 금지.
 
 [HTML 템플릿]
 {BASIC_TEMPLATE}"""
-    
+
     return prompt
 
 def process_basic(fields, submission_id):
     """베이직 부고 처리"""
     fields['_submission_id'] = submission_id
-    
+
     prompt = build_basic_prompt(fields)
     html = call_claude(prompt, '당신은 20년 경력의 장례 전문 추모문 작가입니다. HTML만 출력. <!DOCTYPE html>로 시작 </html>로 끝. 마크다운 코드블록 절대 사용 금지.')
-    
+
     filename = f"{submission_id}.html"
     success = upload_to_github(filename, html, 'bugo/basic')
-    
+
     if success:
         url = f"https://humandocu.com/bugo/basic/{submission_id}.html"
-        to_email = fields.get('이메일', '')
+        to_email = fields.get('신청자 이메일', '')
         if to_email:
             send_email(
                 to_email,
@@ -179,9 +202,7 @@ def process_basic(fields, submission_id):
             )
 
 def process_advanced(fields, submission_id):
-    """어드밴스드 부고 처리 - GitHub 업로드 후 5분 대기 후 이메일"""
-    name = fields.get('고인 성함', '')
-    
+    """어드밴스드 부고 처리"""
     prompt = f"""아래 정보로 HTML 템플릿을 완성해주세요.
 
 고인이름:{fields.get('고인 성함','')}
@@ -201,12 +222,12 @@ def process_advanced(fields, submission_id):
 생애사건5:{fields.get('생애 주요 사건5','')}
 생애사건6:{fields.get('생애 주요 사건6','')}
 유가족:{fields.get('유가족 명단','')}
-입관일시:{fields.get('입관 일시','')}
-발인일시:{fields.get('발인 일시','')}
-장지:{fields.get('장지 이름, 주소','')}
+입관일시:{fields.get('입관일시','')}
+발인일시:{fields.get('발인일시','')}
+장지:{fields.get('장지이름 또는 주소','')}
 장례식장명:{fields.get('장례식장 이름','')}
 장례식장주소:{fields.get('장례식장 주소','')}
-공지사항:{fields.get('공지사항','')}
+공지사항:{fields.get('공지 사항','')}
 조의금계좌:{fields.get('조의금 계좌','')}
 고인사진URL:{fields.get('고인 사진(1장)','')}
 
@@ -228,22 +249,20 @@ HTML 코드만 출력. 마크다운 없음.
 {ADVANCED_TEMPLATE}"""
 
     html = call_claude(prompt, '부고 HTML 생성 전문가. HTML만 출력. <!DOCTYPE html>로 시작 </html>로 끝.')
-    
+
     filename = f"{submission_id}.html"
     success = upload_to_github(filename, html, 'bugo/advanced')
-    
+
     if success:
-        # 5분 대기 후 이메일 발송
         time.sleep(300)
         url = f"https://humandocu.com/bugo/advanced/{submission_id}.html"
-        to_email = fields.get('이메일', '')
+        to_email = fields.get('신청자 이메일', '')
         if to_email:
             send_email(
                 to_email,
                 '[휴먼다큐 부고] 어드밴스드 부고 링크가 완성되었습니다',
                 f'''안녕하세요.<br>
 휴먼다큐 어드밴스드 부고 링크가 완성되었습니다.<br><br>
-아래 링크를 클릭하시면 부고 페이지를 확인하실 수 있습니다.<br><br>
 <a href="{url}">👉 부고 페이지 바로가기</a>'''
             )
 
@@ -251,39 +270,20 @@ HTML 코드만 출력. 마크다운 없음.
 def webhook_basic():
     """베이직 Tally 웹훅"""
     data = request.json
-    fields = {}
-    for field in data.get('data', {}).get('fields', []):
-        label = field.get('label', '')
-        value = field.get('value', '')
-        if isinstance(value, list) and value:
-            value = value[0] if isinstance(value[0], str) else value[0].get('text', '')
-        fields[label] = value or ''
-    
+    fields = parse_tally_fields(data)
     submission_id = data.get('data', {}).get('responseId', 'unknown')
-    
-    # 백그라운드에서 처리 (웹훅 즉시 응답)
     thread = threading.Thread(target=process_basic, args=(fields, submission_id))
     thread.start()
-    
     return jsonify({'status': 'ok'}), 200
 
 @app.route('/webhook/advanced', methods=['POST'])
 def webhook_advanced():
     """어드밴스드 Tally 웹훅"""
     data = request.json
-    fields = {}
-    for field in data.get('data', {}).get('fields', []):
-        label = field.get('label', '')
-        value = field.get('value', '')
-        if isinstance(value, list) and value:
-            value = value[0] if isinstance(value[0], str) else value[0].get('text', '')
-        fields[label] = value or ''
-    
+    fields = parse_tally_fields(data)
     submission_id = data.get('data', {}).get('responseId', 'unknown')
-    
     thread = threading.Thread(target=process_advanced, args=(fields, submission_id))
     thread.start()
-    
     return jsonify({'status': 'ok'}), 200
 
 @app.route('/revise', methods=['GET', 'POST'])
