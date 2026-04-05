@@ -19,8 +19,13 @@ GMAIL_USER = os.environ.get('GMAIL_USER')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
 
 # 템플릿 로드
-BASIC_TEMPLATE = open('templates/basic.html', 'r', encoding='utf-8').read()
-ADVANCED_TEMPLATE = open('templates/advanced.html', 'r', encoding='utf-8').read()
+try:
+    BASIC_TEMPLATE = open('templates/basic.html', 'r', encoding='utf-8').read()
+    ADVANCED_TEMPLATE = open('templates/advanced.html', 'r', encoding='utf-8').read()
+except Exception as e:
+    print(f"템플릿 로드 실패: {e}")
+    BASIC_TEMPLATE = ""
+    ADVANCED_TEMPLATE = ""
 
 def parse_tally_fields(data):
     """Tally 웹훅 데이터에서 필드 파싱 (MULTIPLE_CHOICE UUID → 텍스트 변환)"""
