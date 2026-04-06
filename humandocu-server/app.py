@@ -10,14 +10,12 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# 환경변수
 CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 GITHUB_REPO = os.environ.get('GITHUB_REPO', 'kiki4i/humandocu')
 GMAIL_USER = os.environ.get('GMAIL_USER')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
 
-# 템플릿 로드
 try:
     BASIC_TEMPLATE = open('templates/basic.html', 'r', encoding='utf-8').read()
     ADVANCED_TEMPLATE = open('templates/advanced.html', 'r', encoding='utf-8').read()
@@ -33,7 +31,6 @@ def parse_tally_fields(data):
         value = field.get('value', '')
         field_type = field.get('type', '')
         options = field.get('options', [])
-
         if field_type == 'MULTIPLE_CHOICE':
             if isinstance(value, list) and value:
                 selected_id = value[0]
@@ -49,7 +46,6 @@ def parse_tally_fields(data):
                 value = ''
         elif isinstance(value, list) and value:
             value = value[0] if isinstance(value[0], str) else value[0].get('text', '')
-
         fields[label] = value or ''
     return fields
 
@@ -74,22 +70,18 @@ def call_claude(prompt, system, max_tokens=8000):
 def upload_to_github(filename, html_content, folder='bugo/basic'):
     path = f"{folder}/{filename}"
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-
     sha = None
     check = requests.get(url, headers={'Authorization': f'Bearer {GITHUB_TOKEN}'})
     if check.status_code == 200:
         sha = check.json()['sha']
-
     content_b64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
     payload = {'message': '부고 업로드', 'content': content_b64}
     if sha:
         payload['sha'] = sha
-
     response = requests.put(url, headers={
         'Authorization': f'Bearer {GITHUB_TOKEN}',
         'Content-Type': 'application/json'
     }, json=payload)
-
     return response.status_code in [200, 201]
 
 def send_email(to_email, subject, html_body):
@@ -98,7 +90,6 @@ def send_email(to_email, subject, html_body):
     msg['From'] = GMAIL_USER
     msg['To'] = to_email
     msg.attach(MIMEText(html_body, 'html'))
-
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
         server.starttls()
@@ -109,7 +100,6 @@ def build_basic_prompt(fields, revision_request=None):
     revision_note = ""
     if revision_request:
         revision_note = f"\n\n[추모글 수정 요청사항]\n{revision_request}\n위 요청사항을 반드시 반영하여 추모글을 다시 작성해주세요.\n"
-
     prompt = f"""당신은 20년 경력의 장례 전문 추모문 작가입니다. 아래 고인 정보를 바탕으로 HTML 템플릿을 완성해주세요.
 
 === 고인 정보 ===
@@ -137,161 +127,5 @@ def build_basic_prompt(fields, revision_request=None):
 [추모글 3~4문장] 따뜻하고 격조있게, 상투적 표현 금지
 
 === HTML 작성 규칙 ===
-1. 종교 기독교/천주교: 십자가 SVG + "소천" + 성경구절
-2. 종교 불교: ☸ + "입적" + 불경 구절
-3. 무교/기타/없음: symbol div 완전 제거 + "별세"
-4. 직함 없으면 dsub에서 직함 부분 생략
-5. 장지 없으면 장지 info-row 제거
-6. 공지사항 없거나 해당없음이면 공지사항 section 전체 제거
-7. 카카오맵: https://map.kakao.com/link/search/{{장례식장명}}
-8. 조의금 copy-btn onclick: navigator.clipboard.writeText('실제계좌')
-9. label div (파란 뱃지) 제거
-10. 모든 샘플 데이터를 실제 데이터로 교체
-
-HTML 코드만 출력. 마크다운 코드블록 절대 금지.
-
-[HTML 템플릿]
-{BASIC_TEMPLATE}"""
-    return prompt
-
-def process_basic(fields, submission_id):
-    fields['_submission_id'] = submission_id
-    prompt = build_basic_prompt(fields)
-    html = call_claude(prompt, 'HTML만 출력. <!DOCTYPE html>로 시작 </html>로 끝. 마크다운 코드블록 절대 금지.')
-    filename = f"{submission_id}.html"
-    success = upload_to_github(filename, html, 'bugo/basic')
-
-    if success:
-        url = f"https://humandocu.com/bugo/basic/{filename}"
-        to_email = fields.get('신청자 이메일', '')
-        if to_email:
-            send_email(
-                to_email,
-                '[휴먼다큐 부고] 부고 링크가 완성되었습니다',
-                f'''안녕하세요.<br><br>
-휴먼다큐 베이직 부고 페이지가 완성되었습니다.<br><br>
-<a href="{url}" style="display:inline-block;padding:12px 24px;background:#1a1714;color:#c4a96e;text-decoration:none;border-radius:4px">👉 부고 페이지 바로가기</a><br><br>
-추모글이 마음에 들지 않으시면 페이지 하단의 <b>"추모글 수정 요청"</b> 버튼을 눌러주세요.<br><br>
-<span style="font-size:12px;color:#666">본 페이지는 영구적으로 보존됩니다. | 휴먼다큐 www.humandocu.com</span>'''
-            )
-
-def process_advanced(fields, submission_id):
-    prompt = f"""아래 정보로 HTML 템플릿을 완성해주세요.
-
-고인이름:{fields.get('고인 성함','')}
-직함:{fields.get('직함','')}
-종교:{fields.get('종교','')}
-성별:{fields.get('성별','')}
-나이:{fields.get('나이','')}
-생년월일:{fields.get('생년월일','')}
-별세일:{fields.get('별세일','')}
-고인한줄소개:{fields.get('고인 한줄 소개','')}
-고인성격특징:{fields.get('고인의 성격이나 특징','')}
-기억에남는에피소드:{fields.get('기억에 남는 에피소드나 말씀','')}
-유가족:{fields.get('유가족 명단','')}
-입관일시:{fields.get('입관일시','')}
-발인일시:{fields.get('발인일시','')}
-장지:{fields.get('장지이름 또는 주소','')}
-장례식장명:{fields.get('장례식장 이름','')}
-공지사항:{fields.get('공지 사항','')}
-조의금계좌:{fields.get('조의금 계좌','')}
-
-규칙:
-1. 한줄추모문구: 고인의 삶을 함축하는 감동적인 한 문장
-2. 추모글: 따뜻하고 격조있는 3~4문장
-3. 종교 기독교/천주교: 십자가SVG + 소천 + 성경구절
-4. 종교 불교: ☸ + 입적 + 법구경
-5. 무교/기타: 심볼없음 + 별세
-6. 직함 없으면 생략, 장지 없으면 생략
-7. 공지사항 없거나 해당없음이면 섹션 제거
-8. 모든 샘플데이터를 실제 데이터로 교체
-
-HTML 코드만 출력. 마크다운 없음.
-
-[HTML 템플릿]
-{ADVANCED_TEMPLATE}"""
-
-    html = call_claude(prompt, 'HTML만 출력. <!DOCTYPE html>로 시작 </html>로 끝.')
-    filename = f"{submission_id}.html"
-    success = upload_to_github(filename, html, 'bugo/advanced')
-
-    if success:
-        time.sleep(300)
-        url = f"https://humandocu.com/bugo/advanced/{filename}"
-        to_email = fields.get('신청자 이메일', '')
-        if to_email:
-            send_email(
-                to_email,
-                '[휴먼다큐 부고] 어드밴스드 부고 링크가 완성되었습니다',
-                f'안녕하세요.<br>부고 페이지가 완성되었습니다.<br><br><a href="{url}">👉 부고 페이지 바로가기</a>'
-            )
-
-@app.route('/webhook/basic', methods=['POST'])
-def webhook_basic():
-    data = request.json
-    fields = parse_tally_fields(data)
-    submission_id = data.get('data', {}).get('responseId', 'unknown')
-    thread = threading.Thread(target=process_basic, args=(fields, submission_id))
-    thread.start()
-    return jsonify({'status': 'ok'}), 200
-
-@app.route('/webhook/advanced', methods=['POST'])
-def webhook_advanced():
-    data = request.json
-    fields = parse_tally_fields(data)
-    submission_id = data.get('data', {}).get('responseId', 'unknown')
-    thread = threading.Thread(target=process_advanced, args=(fields, submission_id))
-    thread.start()
-    return jsonify({'status': 'ok'}), 200
-
-@app.route('/revise', methods=['GET', 'POST'])
-def revise_page():
-    submission_id = request.args.get('id', '')
-    if request.method == 'GET':
-        return f'''<!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>추모글 수정 요청 - 휴먼다큐</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
-<style>body{{font-family:"Noto Sans KR",sans-serif;background:#f5f3ef;max-width:480px;margin:0 auto;padding:40px 20px}}
-h2{{font-size:18px;color:#1a1714;margin-bottom:8px}}p{{font-size:13px;color:#78716c;margin-bottom:24px;line-height:1.7}}
-textarea{{width:100%;height:120px;padding:12px;border:1px solid #e3ddd4;border-radius:4px;font-size:13px;font-family:"Noto Sans KR",sans-serif;resize:none;box-sizing:border-box}}
-button{{width:100%;padding:14px;background:#1a1714;color:#c4a96e;border:none;border-radius:4px;font-size:14px;font-weight:500;cursor:pointer;margin-top:12px;font-family:"Noto Sans KR",sans-serif}}
-.hint{{font-size:11px;color:#9a7d4a;margin-top:8px}}</style></head>
-<body><h2>✏️ 추모글 수정 요청</h2>
-<p>원하시는 방향을 입력해주시면 추모글을 다시 작성해드립니다.<br>수정된 페이지는 10분 내로 업데이트됩니다.</p>
-<form method="POST" action="/revise?id={submission_id}">
-<textarea name="revision" placeholder="예: 좀 더 따뜻하게 써주세요 / 불교 느낌으로 바꿔주세요" required></textarea>
-<div class="hint">구체적으로 적어주실수록 더 잘 반영됩니다</div>
-<button type="submit">수정 요청하기</button></form></body></html>'''
-
-    revision_request = request.form.get('revision', '')
-    if not revision_request or not submission_id:
-        return '요청 정보가 없습니다.', 400
-
-    def do_revision():
-        github_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/bugo/basic/{submission_id}.html"
-        r = requests.get(github_url, headers={'Authorization': f'Bearer {GITHUB_TOKEN}'})
-        if r.status_code != 200:
-            return
-        existing_content = base64.b64decode(r.json()['content']).decode('utf-8')
-        revision_prompt = f"""아래 부고 HTML의 추모글(oneline, tribute-text) 부분만 수정해주세요.
-
-[수정 요청사항]
-{revision_request}
-
-[기존 HTML]
-{existing_content}
-
-HTML 코드만 출력. 마크다운 코드블록 절대 금지."""
-        revised_html = call_claude(revision_prompt, 'HTML만 출력. 마크다운 코드블록 절대 금지.')
-        upload_to_github(f"{submission_id}.html", revised_html, 'bugo/basic')
-
-    threading.Thread(target=do_revision).start()
-    return '''<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
-<title>수정 요청 완료</title>
-<style>body{font-family:"Noto Sans KR",sans-serif;background:#f5f3ef;max-width:480px;margin:0 auto;padding:60px 20px;text-align:center}
-h2{font-size:20px;color:#1a1714;margin-bottom:12px}p{font-size:13px;color:#78716c;line-height:1.8}</style></head>
-<body><h2>✅ 수정 요청이 접수되었습니다</h2>
-<p>10분 내로 추모글이 업데이트됩니다.<br>페이지를 새로고침하여 확인해주세요.</p></body></html>'''
-
-@app.route('/health', metho
+1. 종교 기독교/천주교: 십자가 SVG + 소천 + 성경구절
+2.
