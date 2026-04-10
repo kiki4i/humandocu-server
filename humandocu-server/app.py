@@ -276,11 +276,6 @@ def upload_to_github(filename: str, html_content: str) -> str:
 
 
 def send_email(to_email: str, deceased_name: str, pages_url: str):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[휴먼다큐] 故 {deceased_name} 님의 디지털 부고가 완성되었습니다"
-    msg["From"]    = GMAIL_USER
-    msg["To"]      = to_email
-
     html_body = f"""
     <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #2c2c2c;">
       <div style="background: #1a1a2e; color: #e8e0d0; padding: 32px; text-align: center;">
@@ -306,11 +301,23 @@ def send_email(to_email: str, deceased_name: str, pages_url: str):
       </div>
     </div>"""
 
-    msg.attach(MIMEText(html_body, "html"))
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(GMAIL_USER, GMAIL_APP_PW)
-        server.sendmail(GMAIL_USER, to_email, msg.as_string())
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {resend_api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "from": "휴먼다큐 <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": f"[휴먼다큐] 故 {deceased_name} 님의 디지털 부고가 완성되었습니다",
+            "html": html_body
+        },
+        timeout=30
+    )
+    resp.raise_for_status()
+    print(f"[BASIC] 이메일 발송 완료: {resp.status_code}")
 
 
 @app.route("/webhook/basic", methods=["POST"])
