@@ -307,7 +307,8 @@ def send_email(to_email: str, deceased_name: str, pages_url: str):
     </div>"""
 
     msg.attach(MIMEText(html_body, "html"))
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
         server.login(GMAIL_USER, GMAIL_APP_PW)
         server.sendmail(GMAIL_USER, to_email, msg.as_string())
 
