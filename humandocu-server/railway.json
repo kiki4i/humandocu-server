@@ -1,9 +1,7 @@
 {
-  "build": {
-    "builder": "NIXPACKS"
-  },
+  "$schema": "https://railway.app/railway-schema.json",
   "deploy": {
-    "startCommand": "gunicorn app:app",
-    "healthcheckPath": "/health"
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 300
   }
 }
