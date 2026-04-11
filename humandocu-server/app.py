@@ -44,9 +44,13 @@ def fmt_time(val: str) -> str:
 # ─── Tally 파싱 ───────────────────────────────────────────────
 def parse_tally(payload: dict) -> dict:
     fields = {}
+    time_keys = {}  # INPUT_TIME 필드를 앞 날짜 필드와 연결
     try:
+        prev_label = None
         for field in payload["data"]["fields"]:
-            label = field.get("label", "").strip()
+            label = field.get("label")
+            if label is not None:
+                label = label.strip()
             value = field.get("value", "")
             field_type = field.get("type", "")
             options = field.get("options", [])
@@ -61,7 +65,12 @@ def parse_tally(payload: dict) -> dict:
                 if isinstance(value, list):
                     value = value[0] if value else ""
 
-            fields[label] = str(value).strip() if value else ""
+            if field_type == "INPUT_TIME" and label is None and prev_label:
+                # 시간 필드는 앞 날짜 필드명 + " 시간" 으로 저장
+                fields[prev_label + " 시간"] = str(value).strip() if value else ""
+            elif label:
+                fields[label] = str(value).strip() if value else ""
+                prev_label = label
     except Exception as e:
         print(f"[parse_tally] 오류: {e}")
     return fields
