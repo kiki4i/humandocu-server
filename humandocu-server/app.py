@@ -380,6 +380,24 @@ def build_html(fields, one_liner, tribute_para):
 <script>
 """ + share_js + """
 </script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=74b5968f881ac8fe3e8488e194d3b6ef&libraries=services"></script>
+<script>
+var mapContainer = document.getElementById("kakao-map");
+if (mapContainer) {
+  var mapOption = { center: new kakao.maps.LatLng(37.5665, 126.9780), level: 4 };
+  var map = new kakao.maps.Map(mapContainer, mapOption);
+  var ps = new kakao.maps.services.Places();
+  var placeName = mapContainer.getAttribute("data-place");
+  ps.keywordSearch(placeName, function(data, status) {
+    if (status === kakao.maps.services.Status.OK && data.length > 0) {
+      var coords = new kakao.maps.LatLng(data[0].y, data[0].x);
+      new kakao.maps.Marker({ map: map, position: coords });
+      map.setCenter(coords);
+      map.setLevel(3);
+    }
+  });
+}
+</script>
 </body>
 </html>"""
     return html
