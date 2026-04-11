@@ -183,43 +183,50 @@ def build_html(fields, one_liner, tribute_para):
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep = urllib.parse.quote(funeral_place)
-        kakao_url = f"https://map.kakao.com/link/search/{ep}"
-        navi_url  = f"https://map.kakao.com/link/to/{ep}"
-        naver_url = f"https://map.naver.com/v5/search/{ep}"
+        kakao_url = "https://map.kakao.com/?q=" + ep
+        naver_url = "https://map.naver.com/v5/search/" + ep
         map_section = (
             '<div class="map-section">'
             '<div class="section-title">오 시 는 길</div>'
-            f'<div class="map-place">{funeral_place}</div>'
+            '<div class="map-place">' + funeral_place + '</div>'
             '<div class="map-action-row">'
-            '<button class="action-btn" onclick="copyPlace()">📋 주소 복사</button>'
-            f'<a href="{kakao_url}" target="_blank" class="action-btn">🗺 지도 보기</a>'
+            '<button class="action-btn" onclick="copyPlace()">📋 이름 복사</button>'
+            '<a href="' + kakao_url + '" target="_blank" class="action-btn">🗺 지도 보기</a>'
             '</div>'
             '<div class="map-visual">'
-            f'<a href="{kakao_url}" target="_blank" class="map-link-wrap">'
+            '<a href="' + kakao_url + '" target="_blank" class="map-link-wrap">'
             '<div class="map-placeholder">'
             '<div class="map-ph-icon">🗺</div>'
-            f'<div class="map-ph-name">{funeral_place}</div>'
+            '<div class="map-ph-name">' + funeral_place + '</div>'
             '<div class="map-ph-sub">탭하여 카카오맵에서 보기</div>'
             '</div>'
             '</a>'
             '</div>'
             '<div class="map-nav-row">'
-            f'<a href="{kakao_url}" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
-            f'<a href="{navi_url}" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
-            f'<a href="{naver_url}" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
+            '<a href="' + kakao_url + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
+            '<a href="' + kakao_url + '" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
+            '<a href="' + naver_url + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
             '</div>'
+            '</div>'
+        )
+
+    # 유가족 섹션 (조의금 위에)
+    mourner_section = ""
+    if chief_mourner:
+        mourner_section = (
+            '<div class="info-section">'
+            '<div class="section-title">유 가 족</div>'
+            f'<div class="mourner-names">{chief_mourner}</div>'
             '</div>'
         )
 
     # 조의금
     donation_section = ""
     if bank_info and bank_info not in ("0",""):
-        mourner = f'<div class="mourner-line">예금주 · {chief_mourner}</div>' if chief_mourner else ""
         donation_section = (
             '<div class="info-section">'
             '<div class="section-title">조 의 금</div>'
             f'<div class="bank-info">{bank_info}</div>'
-            f'{mourner}'
             '</div>'
         )
 
@@ -296,6 +303,7 @@ def build_html(fields, one_liner, tribute_para):
     .info-val{flex:1;color:#2c2c2c;font-size:14px;line-height:1.7}
     .bank-info{font-size:17px;color:#2c2c2c;letter-spacing:1px;margin-bottom:6px}
     .mourner-line{font-size:13px;color:#6a6a6a}
+    .mourner-names{font-size:14px;color:#2c2c2c;line-height:2;word-break:keep-all}
     .map-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}
     .map-place{font-size:16px;color:#2c2c2c;font-weight:400;margin-bottom:12px}
     .map-action-row{display:flex;gap:8px;margin-bottom:12px}
@@ -348,6 +356,7 @@ def build_html(fields, one_liner, tribute_para):
     <p class="tribute-para">""" + tribute_para + """</p>
   </div>
   """ + funeral_section + """
+  """ + mourner_section + """
   """ + map_section + """
   """ + donation_section + """
   """ + notice_section + """
