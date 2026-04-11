@@ -183,7 +183,11 @@ def build_html(fields, one_liner, tribute_para):
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep = urllib.parse.quote(funeral_place)
-        kakao_url = "https://map.kakao.com/?q=" + ep
+        # 모바일/PC 모두 작동하는 카카오맵 검색 URL
+        kakao_url = "https://map.kakao.com/link/search/" + ep
+        # 카카오내비 앱 딥링크 (앱 없으면 카카오맵으로 fallback)
+        kakao_navi_url = "kakaomap://search?q=" + ep
+        # 네이버 지도
         naver_url = "https://map.naver.com/v5/search/" + ep
         map_section = (
             '<div class="map-section">'
@@ -204,7 +208,7 @@ def build_html(fields, one_liner, tribute_para):
             '</div>'
             '<div class="map-nav-row">'
             '<a href="' + kakao_url + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
-            '<a href="' + kakao_url + '" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
+            '<a href="' + kakao_navi_url + '" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
             '<a href="' + naver_url + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
             '</div>'
             '</div>'
