@@ -308,7 +308,7 @@ def build_html(fields: dict, one_liner: str, tribute_para: str) -> str:
 
   <!-- 히어로 이미지 -->
   <div class="hero">
-    <img src="https://kiki4i.github.io/humandocu/chrysanthemum.jpg"
+    <img src="https://humandocu.com/chrysanthemum.jpg"
          onerror="this.style.display='none'"
          alt="국화">
     <div class="hero-overlay"></div>
