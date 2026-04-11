@@ -182,7 +182,7 @@ def build_html(fields, one_liner, tribute_para):
     # 오시는 길
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
-        ep = urllib.parse.quote(funeral_place)
+        ep = urllib.parse.quote(funeral_place, safe='')
         # 모바일/PC 모두 작동하는 카카오맵 검색 URL
         kakao_url = "https://map.kakao.com/link/search/" + ep
         # 카카오내비 앱 딥링크 (앱 없으면 카카오맵으로 fallback)
