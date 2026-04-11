@@ -183,10 +183,13 @@ def build_html(fields, one_liner, tribute_para):
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep = urllib.parse.quote(funeral_place, safe='')
-        # 모바일/PC 모두 작동하는 카카오맵 검색 URL
+        ep_plain = urllib.parse.quote(funeral_place)
+        # PC용 카카오맵 (브라우저)
         kakao_url = "https://map.kakao.com/link/search/" + ep
-        # 카카오내비 앱 딥링크 (앱 없으면 카카오맵으로 fallback)
-        kakao_navi_url = "kakaomap://search?q=" + ep
+        # 모바일 카카오맵 앱 딥링크
+        kakao_app_url = "kakaomap://search?q=" + ep_plain
+        # 카카오내비 앱 딥링크
+        kakao_navi_url = "kakaomap://route?ep=" + ep_plain + "&by=CAR"
         # 네이버 지도
         naver_url = "https://map.naver.com/v5/search/" + ep
         map_section = (
@@ -195,10 +198,10 @@ def build_html(fields, one_liner, tribute_para):
             '<div class="map-place">' + funeral_place + '</div>'
             '<div class="map-action-row">'
             '<button class="action-btn" onclick="copyPlace()">📋 이름 복사</button>'
-            '<a href="' + kakao_url + '" target="_blank" class="action-btn">🗺 지도 보기</a>'
+            '<a href="' + kakao_app_url + '" ''onclick="if(!/iPhone|iPad|Android/i.test(navigator.userAgent)){this.href=\'' + kakao_url + '\';this.target=\'_blank\';}" ''class="action-btn">🗺 지도 보기</a>'
             '</div>'
             '<div class="map-visual">'
-            '<a href="' + kakao_url + '" target="_blank" class="map-link-wrap">'
+            '<a href="' + kakao_app_url + '" ''onclick="if(!/iPhone|iPad|Android/i.test(navigator.userAgent)){this.href=\'' + kakao_url + '\';this.target=\'_blank\';}" ''class="map-link-wrap">'
             '<div class="map-placeholder">'
             '<div class="map-ph-icon">🗺</div>'
             '<div class="map-ph-name">' + funeral_place + '</div>'
@@ -207,8 +210,8 @@ def build_html(fields, one_liner, tribute_para):
             '</a>'
             '</div>'
             '<div class="map-nav-row">'
-            '<a href="' + kakao_url + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
-            '<a href="' + kakao_navi_url + '" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
+            '<a href="' + kakao_app_url + '" ''onclick="if(!/iPhone|iPad|Android/i.test(navigator.userAgent)){this.href=\'' + kakao_url + '\';this.target=\'_blank\';}" ''class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
+            '<a href="' + kakao_navi_url + '" ''onclick="if(!/iPhone|iPad|Android/i.test(navigator.userAgent)){alert(\'카카오내비는 모바일에서 이용해주세요\');return false;}" ''class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
             '<a href="' + naver_url + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
             '</div>'
             '</div>'
