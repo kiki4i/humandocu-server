@@ -228,27 +228,39 @@ def build_html(fields, one_liner, tribute_para):
     if notice and "해당 없음" not in notice:
         notice_section = f'<div class="notice-section">{notice}</div>'
 
-    # 카카오 공유 JS (f-string 충돌 방지)
-    share_js = """
-function shareKakao() {
-  var url = encodeURIComponent(window.location.href);
-  var text = encodeURIComponent('""" + f"故 {deceased_name}" + """ 님의 부고를 전합니다.');
-  window.open('https://story.kakao.com/share?url=' + url + '&text=' + text, '_blank', 'width=600,height=500');
-}
-function copyPlace() {
-  var addr = '""" + funeral_place + """';
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(addr).then(function(){ alert('주소가 복사되었습니다'); });
-  } else {
-    var el = document.createElement('textarea');
-    el.value = addr;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('주소가 복사되었습니다');
-  }
-}"""
+    # JS (f-string 충돌 방지)
+    share_js = (
+        "function shareKakao() {"
+        "  var url = window.location.href;"
+        "  if (navigator.clipboard) {"
+        "    navigator.clipboard.writeText(url).then(function(){"
+        "      alert('부고 링크가 복사되었습니다.\\n카카오톡을 열어 붙여넣기 해주세요.');"
+        "    });"
+        "  } else {"
+        "    var el = document.createElement('textarea');"
+        "    el.value = url;"
+        "    document.body.appendChild(el);"
+        "    el.select();"
+        "    document.execCommand('copy');"
+        "    document.body.removeChild(el);"
+        "    alert('부고 링크가 복사되었습니다.\\n카카오톡을 열어 붙여넣기 해주세요.');"
+        "  }"
+        "}"
+        "function copyPlace() {"
+        "  var addr = '" + funeral_place + "';"
+        "  if (navigator.clipboard) {"
+        "    navigator.clipboard.writeText(addr).then(function(){ alert('주소가 복사되었습니다'); });"
+        "  } else {"
+        "    var el = document.createElement('textarea');"
+        "    el.value = addr;"
+        "    document.body.appendChild(el);"
+        "    el.select();"
+        "    document.execCommand('copy');"
+        "    document.body.removeChild(el);"
+        "    alert('주소가 복사되었습니다');"
+        "  }"
+        "}"
+    )
 
     html = """<!DOCTYPE html>
 <html lang="ko">
@@ -340,7 +352,7 @@ function copyPlace() {
   """ + donation_section + """
   """ + notice_section + """
   <div class="share-section">
-    <button class="kakao-btn" onclick="shareKakao()">🔗 카카오톡으로 공유하기</button>
+    <button class="kakao-btn" onclick="shareKakao()">🔗 부고 링크 복사 (카카오톡 공유용)</button>
   </div>
   <div class="adv-banner">
     <div class="adv-eyebrow">HUMANDOCU</div>
@@ -410,11 +422,10 @@ def send_email(to_email, deceased_name, pages_url):
         '</p>'
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;margin-bottom:10px;width:100%;text-align:center">📄 부고 페이지 열기</a>'
-        f'<a href="{kakao_share_url}" style="display:inline-block;background:#FEE500;color:#3A1D1D;padding:14px 28px;text-decoration:none;letter-spacing:1px;font-size:14px;font-weight:700;border-radius:4px;width:100%;text-align:center">🔗 카카오톡으로 바로 공유하기</a>'
         '</div>'
         '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355;margin-top:8px">'
-        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">부고 페이지 주소 (복사용)</p>'
-        f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:12px">{pages_url}</a>'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크 (길게 눌러 복사)</p>'
+        f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div>'
         '</div>'
         '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
