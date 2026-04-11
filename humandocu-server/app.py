@@ -420,7 +420,7 @@ def send_email(to_email, deceased_name, pages_url):
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
         '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
-        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">디지털 부고가 발행되었습니다</p>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고가 발행되었습니다</p>'
         '</div>'
         '<div style="background:#f5f0e8;height:4px"></div>'
         '<div style="padding:32px;background:#fff">'
@@ -452,7 +452,7 @@ def send_email(to_email, deceased_name, pages_url):
         json={
             "from": "휴먼다큐 <noreply@humandocu.com>",
             "to": [to_email],
-            "subject": f"[휴먼다큐] 故 {deceased_name} 님의 디지털 부고가 완성되었습니다",
+            "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고 알림이 완성되었습니다",
             "html": html_body
         },
         timeout=30
