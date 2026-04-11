@@ -250,14 +250,14 @@ def build_html(fields: dict, one_liner: str, tribute_para: str) -> str:
 
     /* 히어로 */
     .hero{{width:100%;height:200px;background:#1a1a2e;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}}
-    .hero img{{width:100%;height:100%;object-fit:cover;opacity:0.75}}
-    .hero-overlay{{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,#1a1a2e)}}
+    .hero img{{width:100%;height:100%;object-fit:cover;opacity:1}}
+    .hero-overlay{{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,#1a1a2e)}}
 
     /* 헤더 */
     .header{{background:#1a1a2e;color:#e8e0d0;text-align:center;padding:12px 20px 28px}}
     .symbol-wrap{{margin-bottom:10px;height:44px;display:flex;align-items:center;justify-content:center}}
     .badge{{font-size:10px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:10px}}
-    .deceased-name{{font-size:30px;font-weight:300;letter-spacing:10px;color:#f5f0e8;margin-bottom:6px}}
+    .deceased-name{{font-size:30px;font-weight:300;letter-spacing:4px;color:#f5f0e8;margin-bottom:6px}}
     .rip-text{{font-size:12px;letter-spacing:3px;color:rgba(200,169,110,0.5)}}
 
     /* 날짜바 */
@@ -308,7 +308,7 @@ def build_html(fields: dict, one_liner: str, tribute_para: str) -> str:
 
   <!-- 히어로 이미지 -->
   <div class="hero">
-    <img src="https://humandocu.com/chrysanthemum.jpg"
+    <img src="https://kiki4i.github.io/humandocu/assets/chrysanthemum.jpg"
          onerror="this.style.display='none'"
          alt="국화">
     <div class="hero-overlay"></div>
