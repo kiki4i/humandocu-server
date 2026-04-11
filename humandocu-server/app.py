@@ -309,7 +309,7 @@ def send_email(to_email: str, deceased_name: str, pages_url: str):
             "Content-Type": "application/json"
         },
         json={
-            "from": "휴먼다큐 <onboarding@resend.dev>",
+            "from": "휴먼다큐 <noreply@humandocu.com>",
             "to": [to_email],
             "subject": f"[휴먼다큐] 故 {deceased_name} 님의 디지털 부고가 완성되었습니다",
             "html": html_body
