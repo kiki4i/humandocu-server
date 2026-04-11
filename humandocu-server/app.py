@@ -197,9 +197,9 @@ def build_html(fields, one_liner, tribute_para):
             '<div class="section-title">오 시 는 길</div>'
             '<div class="map-place">' + funeral_place + '</div>'
             '<div class="map-nav-row">'
-            '<a href="https://map.kakao.com/link/search/' + ep + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
-            '<a href="https://map.kakao.com/link/to/' + ep + '" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
-            '<a href="https://map.naver.com/v5/search/' + ep + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
+            '<a href="https://map.kakao.com/link/search/' + urllib.parse.quote(funeral_place) + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
+            '<a href="https://map.kakao.com/link/to/' + urllib.parse.quote(funeral_place) + '" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
+            '<a href="https://map.naver.com/v5/search/' + urllib.parse.quote(funeral_place) + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
             '</div></div>'
         )
 
