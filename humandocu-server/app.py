@@ -228,9 +228,9 @@ def build_html(fields, one_liner, tribute_para):
             '<div id="nav-modal" class="nav-modal" onclick="hideNavModal()">'
             '<div class="nav-modal-box" onclick="event.stopPropagation()">'
             '<div class="nav-modal-title">내비게이션 선택</div>'
-            + (f'<a href="kakaomap://route?ep={urllib.parse.quote(funeral_place)}&epx={lng}&epy={lat}&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
+            + (f'<button onclick="startKakaoNavi()" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</button>'
                if lat and lng else
-               f'<a href="kakaomap://route?ep={urllib.parse.quote(funeral_place)}&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>') +
+               f'<a href="https://map.kakao.com/link/to/{urllib.parse.quote(funeral_place)}," class="nav-modal-btn kakao-navi">🚗 카카오맵으로 안내</a>') +
             (f'<a href="tmap://route?goalname={urllib.parse.quote(funeral_place)}&goalx={lng}&goaly={lat}" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
                if lat and lng else
                f'<a href="tmap://search?name={urllib.parse.quote(funeral_place)}" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>') +
@@ -255,6 +255,14 @@ def build_html(fields, one_liner, tribute_para):
     notice_section = ""
     if notice and "해당 없음" not in notice:
         notice_section = f'<div class="notice-section">{notice}</div>'
+
+    # 카카오내비 JS 함수 (좌표 있을 때만)
+    if lat and lng:
+        kakao_navi_js = (
+            f"function startKakaoNavi(){{Kakao.Navi.start({{name:'{funeral_place}',x:{lng},y:{lat},coordType:'wgs84'}});}}"
+        )
+    else:
+        kakao_navi_js = ""
 
     share_js = (
         "function shareKakao(){"
@@ -281,6 +289,8 @@ def build_html(fields, one_liner, tribute_para):
         '<meta property="og:title" content="' + og_title + '">'
         '<meta property="og:description" content="' + og_desc + '">'
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
+        '<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>'
+        '<script>Kakao.init("70217441773f0738c2efc5084c010e9f");</script>'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
         '<style>'
@@ -393,7 +403,7 @@ def build_html(fields, one_liner, tribute_para):
         '</div>'
         '<div class="footer"><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a> &nbsp;·&nbsp; ' + today + ' 발행</div>'
         '</div>'
-        '<script>' + share_js + '</script>'
+        '<script>' + kakao_navi_js + share_js + '</script>'
         '</body></html>'
     )
     return html
