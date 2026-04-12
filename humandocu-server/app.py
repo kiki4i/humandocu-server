@@ -286,8 +286,9 @@ def build_html(fields, one_liner, tribute_para):
     if lat and lng:
         kakao_navi_js = (
             # 카카오맵 URL 스킴으로 좌표 기반 내비 (인증 불필요)
+            # kakaomap://route?ep=위도,경도&by=CAR 형식
             f"function startKakaoNavi(){{"
-            f"  var url='kakaomap://route?ep={urllib.parse.quote(funeral_place)}&epx={lng}&epy={lat}&by=CAR';"
+            f"  var url='kakaomap://route?ep={lat},{lng}&by=CAR';"
             f"  var fallback='https://map.kakao.com/link/to/{urllib.parse.quote(funeral_place)},{lat},{lng}';"
             f"  var t=setTimeout(function(){{window.location.href=fallback;}},1500);"
             f"  window.location.href=url;"
