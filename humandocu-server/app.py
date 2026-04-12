@@ -175,8 +175,14 @@ def build_html(fields, one_liner, tribute_para):
         ep_q = urllib.parse.quote(funeral_place)
         addr_text = funeral_addr if funeral_addr else funeral_place
         addr_copy = funeral_addr if funeral_addr else funeral_place
-        tel_clean = re.sub(r'[^0-9]', '', funeral_tel) if funeral_tel else ""
-        tel_btn = f'<a href="tel:{tel_clean}" class="map-action-btn tel-btn">📞 전화하기</a>' if tel_clean else ""
+        # 전화번호 정규화: +82-31-xxx → 031-xxx
+        tel_normalized = ""
+        if funeral_tel:
+            t = funeral_tel.strip()
+            if t.startswith("+82"):
+                t = "0" + t[3:].lstrip("-").lstrip(" ")
+            tel_normalized = re.sub(r'[^\d-]', '', t)
+        tel_btn = f'<a href="tel:{tel_normalized}" class="map-action-btn tel-btn">📞 전화하기</a>' if tel_normalized else ""
         addr_esc = addr_copy.replace("'", "\\'")
         map_section = (
             '<div class="map-section">'
@@ -200,8 +206,8 @@ def build_html(fields, one_liner, tribute_para):
             '<div id="nav-modal" class="nav-modal" onclick="hideNavModal()">'
             '<div class="nav-modal-box" onclick="event.stopPropagation()">'
             '<div class="nav-modal-title">내비게이션 선택</div>'
-            '<a href="https://map.kakao.com/link/to/' + ep_q + '" target="_blank" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
-            '<a href="https://tmap.life/search?name=' + ep_q + '" target="_blank" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
+            '<a href="kakaomap://route?ep=' + ep_q + '&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
+            '<a href="tmap://search?name=' + ep_q + '" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
             '<button onclick="hideNavModal()" class="nav-modal-cancel">취소</button>'
             '</div></div>'
             '</div>'
