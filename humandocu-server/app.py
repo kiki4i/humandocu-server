@@ -20,18 +20,21 @@ KAKAO_REST_KEY = os.environ.get("KAKAO_REST_KEY")
 def get_kakao_coords(place_name):
     """장소명 -> (위도, 경도) 반환. 실패 시 None, None"""
     try:
+        print(f"[KAKAO] API 호출 시도: {place_name}, KEY={KAKAO_REST_KEY[:8] if KAKAO_REST_KEY else 'None'}...")
         resp = requests.get(
             "https://dapi.kakao.com/v2/local/search/keyword.json",
             headers={"Authorization": f"KakaoAK {KAKAO_REST_KEY}"},
             params={"query": place_name, "size": 1},
             timeout=5
         )
+        print(f"[KAKAO] 응답 status: {resp.status_code}")
         data = resp.json()
+        print(f"[KAKAO] 응답 data: {str(data)[:200]}")
         if data.get("documents"):
             doc = data["documents"][0]
             return doc["y"], doc["x"]  # 위도, 경도
     except Exception as e:
-        print(f"[KAKAO] 좌표 변환 실패: {e}")
+        print(f"[KAKAO] 좌표 변환 실패: {type(e).__name__}: {e}")
     return None, None
 
 
