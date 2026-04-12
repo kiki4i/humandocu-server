@@ -14,6 +14,26 @@ GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO    = "kiki4i/humandocu"
 GITHUB_FOLDER  = "bugo"
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+KAKAO_REST_KEY = os.environ.get("KAKAO_REST_KEY")
+
+
+def get_kakao_coords(place_name):
+    """장소명 -> (위도, 경도) 반환. 실패 시 None, None"""
+    try:
+        resp = requests.get(
+            "https://dapi.kakao.com/v2/local/search/keyword.json",
+            headers={"Authorization": f"KakaoAK {KAKAO_REST_KEY}"},
+            params={"query": place_name, "size": 1},
+            timeout=5
+        )
+        data = resp.json()
+        if data.get("documents"):
+            doc = data["documents"][0]
+            return doc["y"], doc["x"]  # 위도, 경도
+    except Exception as e:
+        print(f"[KAKAO] 좌표 변환 실패: {e}")
+    return None, None
+
 
 def fmt_date(val):
     if not val: return ""
@@ -173,6 +193,8 @@ def build_html(fields, one_liner, tribute_para):
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep_q = urllib.parse.quote(funeral_place)
+        # 카카오 로컬 API로 좌표 변환 (카카오내비/티맵 목적지 자동입력용)
+        lat, lng = get_kakao_coords(funeral_place)
         addr_text = funeral_addr if funeral_addr else funeral_place
         addr_copy = funeral_addr if funeral_addr else funeral_place
         # 전화번호 정규화: +82-31-xxx → 031-xxx
@@ -206,8 +228,12 @@ def build_html(fields, one_liner, tribute_para):
             '<div id="nav-modal" class="nav-modal" onclick="hideNavModal()">'
             '<div class="nav-modal-box" onclick="event.stopPropagation()">'
             '<div class="nav-modal-title">내비게이션 선택</div>'
-            '<a href="kakaomap://route?ep=' + ep_q + '&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
-            '<a href="tmap://search?name=' + ep_q + '" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
+            + (f'<a href="kakaomap://route?ep={urllib.parse.quote(funeral_place)}&epx={lng}&epy={lat}&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
+               if lat and lng else
+               f'<a href="kakaomap://route?ep={urllib.parse.quote(funeral_place)}&by=CAR" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>') +
+            (f'<a href="tmap://route?goalname={urllib.parse.quote(funeral_place)}&goalx={lng}&goaly={lat}" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
+               if lat and lng else
+               f'<a href="tmap://search?name={urllib.parse.quote(funeral_place)}" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>') +
             '<button onclick="hideNavModal()" class="nav-modal-cancel">취소</button>'
             '</div></div>'
             '</div>'
