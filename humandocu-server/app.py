@@ -209,6 +209,7 @@ def build_html(fields, one_liner, tribute_para):
     funeral_section = f'<div class="info-section"><div class="section-title">장 례 안 내</div>{funeral_rows}</div>' if funeral_rows else ""
 
     # 오시는 길
+    lat, lng = None, None  # 기본값
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep_q = urllib.parse.quote(funeral_place)
