@@ -112,10 +112,26 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
         timeout=60
     )
     text = response.json()["content"][0]["text"]
+    print(f"[CLAUDE] 원문 응답:\n{text[:500]}")
     one_liner = tribute_para = ""
-    for line in text.split("\n"):
-        if line.startswith("한_줄_추모_문구:"): one_liner = line.replace("한_줄_추모_문구:", "").strip()
-        elif line.startswith("헌정_단락:"): tribute_para = line.replace("헌정_단락:", "").strip()
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if "한_줄_추모_문구" in line and ":" in line:
+            one_liner = line.split(":", 1)[1].strip()
+        elif "헌정_단락" in line and ":" in line:
+            # 같은 줄에 내용이 있으면 사용, 없으면 다음 줄들 합치기
+            after_colon = line.split(":", 1)[1].strip()
+            if after_colon:
+                tribute_para = after_colon
+            else:
+                # 다음 줄부터 빈 줄 전까지 합치기
+                rest = []
+                for j in range(i+1, len(lines)):
+                    if lines[j].strip() == "":
+                        break
+                    rest.append(lines[j].strip())
+                tribute_para = " ".join(rest)
+    print(f"[CLAUDE] 파싱결과 - one_liner: {one_liner}, tribute_para: {tribute_para[:50] if tribute_para else '비어있음'}")
     return one_liner, tribute_para
 
 def build_html(fields, one_liner, tribute_para):
@@ -220,11 +236,10 @@ def build_html(fields, one_liner, tribute_para):
             '<button onclick="copyAddr(\'' + addr_esc + '\')" class="map-action-btn copy-btn">📋 주소복사</button>'
             '</div>'
             '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="map-preview-link">'
-            '<div class="map-preview"><div class="map-preview-inner">'
-            '<span class="map-preview-icon">🗺</span>'
-            '<span class="map-preview-name">' + funeral_place + '</span>'
-            '<span class="map-preview-sub">탭하여 지도 보기</span>'
-            '</div></div></a>'
+            + (f'<img src="https://smap.kakao.com/staticmap?apikey=5b7821698a09c74f1d72c0b52165d557&center={lng},{lat}&level=3&markers=s,red,{lng},{lat}&w=480&h=150" style="width:100%;height:150px;object-fit:cover;border-radius:8px;border:0.5px solid #d4c9b5;display:block" alt="지도">'
+               if lat and lng else
+               '<div class="map-preview"><div class="map-preview-inner"><span class="map-preview-icon">🗺</span><span class="map-preview-name">' + funeral_place + '</span><span class="map-preview-sub">탭하여 지도 보기</span></div></div>') +
+            '</a>'
             '<div class="map-nav-row">'
             '<button onclick="showNavModal()" class="nav-btn navi-btn">🚗 내비게이션</button>'
             '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
