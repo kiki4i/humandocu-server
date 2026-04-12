@@ -15,28 +15,22 @@ GITHUB_REPO    = "kiki4i/humandocu"
 GITHUB_FOLDER  = "bugo"
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 
-
 def fmt_date(val):
-    if not val:
-        return ""
+    if not val: return ""
     try:
         d = datetime.strptime(val[:10], "%Y-%m-%d")
         return f"{d.year}년 {d.month}월 {d.day}일"
-    except Exception:
-        return val
+    except: return val
 
 def fmt_time(val):
-    if not val:
-        return ""
+    if not val: return ""
     try:
         t = datetime.strptime(val[:5], "%H:%M")
         ampm = "오전" if t.hour < 12 else "오후"
         h = t.hour if t.hour <= 12 else t.hour - 12
         if h == 0: h = 12
         return f"{ampm} {h}시 {t.minute:02d}분"
-    except Exception:
-        return val
-
+    except: return val
 
 def parse_tally(payload):
     fields = {}
@@ -44,22 +38,16 @@ def parse_tally(payload):
         prev_label = None
         for field in payload["data"]["fields"]:
             label = field.get("label")
-            if label is not None:
-                label = label.strip()
+            if label is not None: label = label.strip()
             value = field.get("value", "")
             field_type = field.get("type", "")
             options = field.get("options", [])
-
             if field_type in ("MULTIPLE_CHOICE", "MULTI_SELECT") and options:
                 option_map = {o["id"]: o["text"] for o in options}
-                if isinstance(value, list):
-                    value = ", ".join([option_map.get(v, v) for v in value])
-                else:
-                    value = option_map.get(value, value)
+                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
+                else: value = option_map.get(value, value)
             else:
-                if isinstance(value, list):
-                    value = value[0] if value else ""
-
+                if isinstance(value, list): value = value[0] if value else ""
             if field_type == "INPUT_TIME" and label is None and prev_label:
                 fields[prev_label + " 시간"] = str(value).strip() if value else ""
             elif label:
@@ -69,10 +57,8 @@ def parse_tally(payload):
         print(f"[parse_tally] 오류: {e}")
     return fields
 
-
 def safe_filename(name):
     return re.sub(r'\s+', '', name)
-
 
 def generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words):
     gender_hint = "남성" if "남" in gender else "여성"
@@ -96,31 +82,18 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
 [출력 형식]
 한_줄_추모_문구: (18자 이내)
 헌정_단락: (3~4문장)"""
-
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": CLAUDE_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json"
-        },
-        json={
-            "model": "claude-opus-4-5",
-            "max_tokens": 600,
-            "messages": [{"role": "user", "content": prompt}]
-        },
+        headers={"x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+        json={"model": "claude-opus-4-5", "max_tokens": 600, "messages": [{"role": "user", "content": prompt}]},
         timeout=60
     )
     text = response.json()["content"][0]["text"]
-    one_liner = ""
-    tribute_para = ""
+    one_liner = tribute_para = ""
     for line in text.split("\n"):
-        if line.startswith("한_줄_추모_문구:"):
-            one_liner = line.replace("한_줄_추모_문구:", "").strip()
-        elif line.startswith("헌정_단락:"):
-            tribute_para = line.replace("헌정_단락:", "").strip()
+        if line.startswith("한_줄_추모_문구:"): one_liner = line.replace("한_줄_추모_문구:", "").strip()
+        elif line.startswith("헌정_단락:"): tribute_para = line.replace("헌정_단락:", "").strip()
     return one_liner, tribute_para
-
 
 def build_html(fields, one_liner, tribute_para):
     deceased_name = fields.get("고인 성함", "")
@@ -131,15 +104,19 @@ def build_html(fields, one_liner, tribute_para):
     chief_mourner = fields.get("유가족 명단", "")
     funeral_place = fields.get("장례식장 이름", "")
     funeral_addr  = fields.get("장례식장 주소", "")
+    funeral_tel   = fields.get("장례식장 전화번호", "")
     burial_place  = fields.get("장지이름 또는 주소", "")
     notice        = fields.get("공지사항", "")
 
-    # 카카오톡 공유용: 첫 번째 상주 이름 추출
     first_mourner = ""
     if chief_mourner:
         first_line = chief_mourner.replace('<br>', '\n').split('\n')[0].strip()
         parts = first_line.split()
         first_mourner = parts[-1] if parts else first_line
+
+    checkin_datetime = fmt_date(fields.get("입실일시", ""))
+    ct = fields.get("입실일시 시간", "")
+    if ct: checkin_datetime += " " + fmt_time(ct)
 
     funeral_datetime = fmt_date(fields.get("입관일시", ""))
     ft = fields.get("입관일시 시간", "")
@@ -182,6 +159,8 @@ def build_html(fields, one_liner, tribute_para):
     funeral_rows = ""
     if funeral_place and funeral_place not in ("0",""):
         funeral_rows += f'<div class="info-row"><span class="info-lbl">장례식장</span><span class="info-val">{funeral_place}</span></div>'
+    if checkin_datetime:
+        funeral_rows += f'<div class="info-row"><span class="info-lbl">입　　실</span><span class="info-val">{checkin_datetime}</span></div>'
     if funeral_datetime:
         funeral_rows += f'<div class="info-row"><span class="info-lbl">입　　관</span><span class="info-val">{funeral_datetime}</span></div>'
     if burial_datetime:
@@ -190,271 +169,214 @@ def build_html(fields, one_liner, tribute_para):
         funeral_rows += f'<div class="info-row"><span class="info-lbl">장　　지</span><span class="info-val">{burial_place}</span></div>'
     funeral_section = f'<div class="info-section"><div class="section-title">장 례 안 내</div>{funeral_rows}</div>' if funeral_rows else ""
 
-    # 오시는 길: 지도 플레이스홀더 + 주소 + 버튼 3개 + 주소복사
+    # 오시는 길
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep_q = urllib.parse.quote(funeral_place)
-        addr_display = funeral_addr if funeral_addr else funeral_place
+        addr_text = funeral_addr if funeral_addr else funeral_place
         addr_copy = funeral_addr if funeral_addr else funeral_place
+        tel_clean = re.sub(r'[^0-9]', '', funeral_tel) if funeral_tel else ""
+        tel_btn = f'<a href="tel:{tel_clean}" class="map-action-btn tel-btn">📞 전화하기</a>' if tel_clean else ""
+        addr_esc = addr_copy.replace("'", "\\'")
         map_section = (
             '<div class="map-section">'
             '<div class="section-title">오 시 는 길</div>'
-            '<div class="map-place">' + funeral_place + '</div>'
-            '<div class="map-addr">' + addr_display + '</div>'
-            '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="map-link-wrap">'
-            '<div class="map-visual">'
-            '<div class="map-placeholder">'
-            '<span class="map-ph-icon">🗺</span>'
-            '<span class="map-ph-name">' + funeral_place + '</span>'
-            '<span class="map-ph-sub">탭하여 지도 보기</span>'
+            '<div class="map-place-name">' + funeral_place + '</div>'
+            '<div class="map-addr-text">' + addr_text + '</div>'
+            '<div class="map-action-row">'
+            + tel_btn +
+            '<button onclick="copyAddr(\'' + addr_esc + '\')" class="map-action-btn copy-btn">📋 주소복사</button>'
             '</div>'
-            '</div>'
-            '</a>'
+            '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="map-preview-link">'
+            '<div class="map-preview"><div class="map-preview-inner">'
+            '<span class="map-preview-icon">🗺</span>'
+            '<span class="map-preview-name">' + funeral_place + '</span>'
+            '<span class="map-preview-sub">탭하여 지도 보기</span>'
+            '</div></div></a>'
             '<div class="map-nav-row">'
+            '<button onclick="showNavModal()" class="nav-btn navi-btn">🚗 내비게이션</button>'
             '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="nav-btn kakao-map-btn">🗺 카카오맵</a>'
-            '<a href="https://map.kakao.com/link/to/' + ep_q + '" target="_blank" class="nav-btn kakao-navi-btn">🚗 카카오내비</a>'
-            '<a href="https://map.naver.com/v5/search/' + ep_q + '" target="_blank" class="nav-btn naver-btn">🗺 네이버지도</a>'
             '</div>'
-            '<button onclick="copyAddr(\'' + addr_copy.replace("'", "\\'") + '\')" class="addr-copy-btn">📋 주소 복사</button>'
+            '<div id="nav-modal" class="nav-modal" onclick="hideNavModal()">'
+            '<div class="nav-modal-box" onclick="event.stopPropagation()">'
+            '<div class="nav-modal-title">내비게이션 선택</div>'
+            '<a href="https://map.kakao.com/link/to/' + ep_q + '" target="_blank" class="nav-modal-btn kakao-navi">🚗 카카오내비로 안내</a>'
+            '<a href="https://tmap.life/search?name=' + ep_q + '" target="_blank" class="nav-modal-btn tmap-navi">🗺 티맵으로 안내</a>'
+            '<button onclick="hideNavModal()" class="nav-modal-cancel">취소</button>'
+            '</div></div>'
             '</div>'
         )
 
-    # 유가족: 줄바꿈 기준 한 줄씩
+    # 유가족
     mourner_section = ""
     if chief_mourner:
         lines = [l.strip() for l in chief_mourner.replace('<br>', '\n').split('\n') if l.strip()]
-        rows = ""
-        for line in lines:
-            rows += f'<div class="mourner-row">{line}</div>'
-        mourner_section = (
-            '<div class="info-section">'
-            '<div class="section-title">유 가 족</div>'
-            f'<div class="mourner-names">{rows}</div>'
-            '</div>'
-        )
+        rows = "".join([f'<div class="mourner-row">{line}</div>' for line in lines])
+        mourner_section = f'<div class="info-section"><div class="section-title">유 가 족</div><div class="mourner-names">{rows}</div></div>'
 
     # 조의금
     donation_section = ""
     if bank_info and bank_info not in ("0",""):
-        donation_section = (
-            '<div class="info-section">'
-            '<div class="section-title">조 의 금</div>'
-            f'<div class="bank-info">{bank_info}</div>'
-            '</div>'
-        )
+        donation_section = f'<div class="info-section"><div class="section-title">조 의 금</div><div class="bank-info">{bank_info}</div></div>'
 
     # 공지
     notice_section = ""
     if notice and "해당 없음" not in notice:
         notice_section = f'<div class="notice-section">{notice}</div>'
 
-    # JS
     share_js = (
-        "function shareKakao() {"
-        "  var url = window.location.href;"
-        "  if (navigator.share) {"
-        "    navigator.share({ title: '" + first_mourner + "의 부친 故 " + deceased_name + "님 부고', url: url }).catch(function(){});"
-        "  } else if (navigator.clipboard) {"
-        "    navigator.clipboard.writeText(url).then(function(){"
-        "      showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');"
-        "    });"
-        "  } else {"
-        "    var el = document.createElement('textarea');"
-        "    el.value = url;"
-        "    document.body.appendChild(el);"
-        "    el.select();"
-        "    document.execCommand('copy');"
-        "    document.body.removeChild(el);"
-        "    showToast('부고 링크가 복사되었습니다.');"
-        "  }"
-        "}"
-        "function copyAddr(addr) {"
-        "  if (navigator.clipboard) {"
-        "    navigator.clipboard.writeText(addr).then(function(){ showToast('주소가 복사되었습니다'); });"
-        "  } else {"
-        "    var el = document.createElement('textarea');"
-        "    el.value = addr;"
-        "    document.body.appendChild(el);"
-        "    el.select();"
-        "    document.execCommand('copy');"
-        "    document.body.removeChild(el);"
-        "    showToast('주소가 복사되었습니다');"
-        "  }"
-        "}"
-        "function showToast(msg) {"
-        "  var t = document.getElementById('hd-toast');"
-        "  t.textContent = msg; t.style.opacity = '1';"
-        "  setTimeout(function(){ t.style.opacity = '0'; }, 2500);"
-        "}"
+        "function shareKakao(){"
+        "var url=window.location.href;"
+        "if(navigator.share){navigator.share({title:'" + first_mourner + "의 부친 故 " + deceased_name + "님 부고',url:url}).catch(function(){});}"
+        "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
+        "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('부고 링크가 복사되었습니다.');}}"
+        "function copyAddr(addr){"
+        "if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){showToast('주소가 복사되었습니다');});}"
+        "else{var el=document.createElement('textarea');el.value=addr;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('주소가 복사되었습니다');}}"
+        "function showNavModal(){document.getElementById('nav-modal').style.display='flex';}"
+        "function hideNavModal(){document.getElementById('nav-modal').style.display='none';}"
+        "function showToast(msg){var t=document.getElementById('hd-toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}"
     )
 
-    # OG 태그
     og_mourner = first_mourner + "의 부친 " if first_mourner else ""
     og_title = og_mourner + "故 " + deceased_name + "님 부고"
-    og_desc = "삼가 고인의 명복을 빕니다."
-    if burial_datetime:
-        og_desc += " 발인 " + burial_datetime
+    og_desc = "삼가 고인의 명복을 빕니다." + (" 발인 " + burial_datetime if burial_datetime else "")
 
-    html = """<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>부고 - 故 """ + deceased_name + """</title>
-  <meta property="og:title" content=\"""" + og_title + """\">
-  <meta property="og:description" content=\"""" + og_desc + """\">
-  <meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Noto Serif KR',Georgia,serif;background:#f5f0e8;color:#2c2c2c;min-height:100vh}
-    .wrapper{max-width:480px;margin:0 auto}
-    .hero{width:100%;height:200px;background:#1a1a2e;position:relative;overflow:hidden}
-    .hero img{width:100%;height:100%;object-fit:cover;opacity:1}
-    .hero-overlay{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,#1a1a2e)}
-    .header{background:#1a1a2e;color:#e8e0d0;text-align:center;padding:12px 20px 28px}
-    .symbol-wrap{margin-bottom:10px;height:40px;display:flex;align-items:center;justify-content:center}
-    .badge{font-size:10px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:10px}
-    .deceased-name{font-size:26px;font-weight:300;letter-spacing:3px;color:#f5f0e8;margin-bottom:6px;word-break:keep-all}
-    .rip-text{font-size:12px;letter-spacing:3px;color:rgba(200,169,110,0.5)}
-    .dates-bar{background:#2c2c2c;color:#c8b89a;display:flex;justify-content:center;gap:20px;padding:12px 16px;font-size:13px;letter-spacing:1px}
-    .verse-section{background:#ede8de;border-left:3px solid #8b7355;padding:16px 20px;font-style:italic;color:#5a4a3a;font-size:14px;line-height:1.8}
-    .tribute-section{background:#fff;padding:28px 20px}
-    .tribute-label{font-size:9px;letter-spacing:4px;color:#8b7355;margin-bottom:14px;text-align:center}
-    .one-liner{font-size:17px;color:#1a1a2e;text-align:center;margin-bottom:18px;line-height:1.7;font-style:italic;word-break:keep-all}
-    .one-liner::before,.one-liner::after{content:'— ';opacity:0.25}
-    .tribute-para{font-size:14px;line-height:2.1;color:#3a3a3a;text-align:justify;word-break:keep-all}
-    .info-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}
-    .section-title{font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px}
-    .info-row{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
-    .info-lbl{color:#8b7355;min-width:52px;font-size:13px;padding-top:1px;letter-spacing:1px}
-    .info-val{flex:1;color:#2c2c2c;font-size:14px;line-height:1.7}
-    .bank-info{font-size:17px;color:#2c2c2c;letter-spacing:1px;margin-bottom:6px}
-    .mourner-names{display:flex;flex-direction:column;gap:0}
-    .mourner-row{font-size:14px;color:#2c2c2c;line-height:1;padding:9px 0;border-bottom:0.5px solid #e8e0d0;word-break:keep-all}
-    .mourner-row:last-child{border-bottom:none}
-    .map-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}
-    .map-place{font-size:16px;color:#2c2c2c;font-weight:400;margin-bottom:4px}
-    .map-addr{font-size:12px;color:#8b7355;margin-bottom:12px;line-height:1.5}
-    .map-link-wrap{display:block;text-decoration:none;margin-bottom:12px}
-    .map-visual{border-radius:8px;overflow:hidden;border:0.5px solid #d4c9b5}
-    .map-placeholder{height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#e8e4da}
-    .map-ph-icon{font-size:36px;opacity:0.5}
-    .map-ph-name{font-size:15px;color:#5a4a3a;font-weight:400}
-    .map-ph-sub{font-size:11px;color:#8b7355;opacity:0.7}
-    .map-nav-row{display:flex;gap:8px;margin-bottom:10px}
-    .nav-btn{flex:1;text-align:center;padding:12px 4px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.3px}
-    .kakao-map-btn{background:#FEE500;color:#3A1D1D}
-    .kakao-navi-btn{background:#3A1D1D;color:#FEE500}
-    .naver-btn{background:#03C75A;color:#fff}
-    .addr-copy-btn{width:100%;padding:10px;background:#fff;border:0.5px solid #d4c9b5;border-radius:6px;font-size:13px;color:#8b7355;cursor:pointer;font-family:'Noto Serif KR',serif;letter-spacing:1px}
-    .condolence-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px;text-align:center}
-    .condolence-icon{font-size:28px;margin-bottom:10px}
-    .condolence-title{font-size:14px;color:#2c2c2c;margin-bottom:6px;letter-spacing:1px}
-    .condolence-desc{font-size:12px;color:#8b7355;line-height:1.9;margin-bottom:16px}
-    .upgrade-btn{display:inline-block;background:#1a1a2e;color:#c8b89a;font-size:12px;padding:11px 22px;border-radius:4px;text-decoration:none;letter-spacing:1px}
-    .notice-section{background:#f9f5ef;border-left:3px solid #c8b89a;padding:14px 20px;margin-top:1px;font-size:13px;color:#6a6a6a;line-height:1.9}
-    .share-section{background:#fff;padding:20px;text-align:center;margin-top:1px;border-top:0.5px solid #e8e0d0}
-    .kakao-btn{background:#FEE500;color:#3A1D1D;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px}
-    .adv-banner{background:#0f0f1e;padding:28px 20px;text-align:center;margin-top:1px}
-    .adv-eyebrow{font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.35);margin-bottom:12px}
-    .adv-title{color:#c8b89a;font-size:14px;letter-spacing:2px;margin-bottom:10px;font-weight:300}
-    .adv-desc{color:#8888aa;font-size:12px;line-height:1.9;margin-bottom:18px}
-    .adv-tags{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-    .adv-tag{background:rgba(200,169,110,0.07);border:0.5px solid rgba(200,169,110,0.2);color:#a09070;font-size:11px;padding:6px 14px;border-radius:20px}
-    .footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:2px}
-    .footer a{color:#8888aa;text-decoration:none}
-    #hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}
-  </style>
-</head>
-<body>
-<div id="hd-toast"></div>
-<div class="wrapper">
-  <div class="hero">
-    <img src="https://humandocu.com/chrysanthemum.jpg" onerror="this.style.display='none'" alt="국화">
-    <div class="hero-overlay"></div>
-  </div>
-  <div class="header">
-    <div class="symbol-wrap">""" + symbol_svg + """</div>
-    <div class="badge">부 고</div>
-    <div class="deceased-name">故 """ + deceased_name + """</div>
-    <div class="rip-text">""" + rip + """</div>
-  </div>
-  <div class="dates-bar">
-    <div>생 """ + birth_date + """</div>
-    <span style="opacity:0.3">|</span>
-    <div>졸 """ + death_date + """</div>
-  </div>
-  <div class="verse-section">""" + verse + """</div>
-  <div class="tribute-section">
-    <div class="tribute-label">✦ 추 모 의 글 ✦</div>
-    <div class="one-liner">""" + one_liner + """</div>
-    <p class="tribute-para">""" + tribute_para + """</p>
-  </div>
-  """ + funeral_section + """
-  """ + mourner_section + """
-  """ + map_section + """
-  """ + donation_section + """
-  """ + notice_section + """
-  <div class="share-section">
-    <button class="kakao-btn" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>
-  </div>
-  <div class="condolence-section">
-    <div class="condolence-icon">✉️</div>
-    <div class="condolence-title">조문 메시지</div>
-    <div class="condolence-desc">온라인으로 조문 메시지를 남기고<br>유가족에게 위로의 마음을 전하세요.<br><br>어드밴스드 서비스에서 이용 가능합니다.</div>
-    <a href="https://www.humandocu.com/#pricing" class="upgrade-btn">어드밴스드로 업그레이드 →</a>
-  </div>
-  <div class="adv-banner">
-    <div class="adv-eyebrow">HUMANDOCU</div>
-    <div class="adv-title">어드밴스드 · 프리미엄 부고</div>
-    <div class="adv-desc">고인의 사진, 동영상과 함께<br>더 깊고 따뜻한 추모의 공간을 마련합니다</div>
-    <div class="adv-tags">
-      <span class="adv-tag">온라인 추모관</span>
-      <span class="adv-tag">디지털 방명록</span>
-      <span class="adv-tag">휴먼 아카이브</span>
-    </div>
-  </div>
-  <div class="footer">
-    <a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a> &nbsp;·&nbsp; """ + today + """ 발행
-  </div>
-</div>
-<script>
-""" + share_js + """
-</script>
-</body>
-</html>"""
+    html = (
+        '<!DOCTYPE html><html lang="ko"><head>'
+        '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        '<title>부고 - 故 ' + deceased_name + '</title>'
+        '<meta property="og:title" content="' + og_title + '">'
+        '<meta property="og:description" content="' + og_desc + '">'
+        '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
+        '<style>'
+        '*{margin:0;padding:0;box-sizing:border-box}'
+        'body{font-family:\'Noto Serif KR\',Georgia,serif;background:#f5f0e8;color:#2c2c2c;min-height:100vh}'
+        '.wrapper{max-width:480px;margin:0 auto}'
+        '.hero{width:100%;height:200px;background:#1a1a2e;position:relative;overflow:hidden}'
+        '.hero img{width:100%;height:100%;object-fit:cover}'
+        '.hero-overlay{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,#1a1a2e)}'
+        '.header{background:#1a1a2e;color:#e8e0d0;text-align:center;padding:12px 20px 28px}'
+        '.symbol-wrap{margin-bottom:10px;height:40px;display:flex;align-items:center;justify-content:center}'
+        '.badge{font-size:10px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:10px}'
+        '.deceased-name{font-size:26px;font-weight:300;letter-spacing:3px;color:#f5f0e8;margin-bottom:6px;word-break:keep-all}'
+        '.rip-text{font-size:12px;letter-spacing:3px;color:rgba(200,169,110,0.5);margin-bottom:0}'
+        '.dates-verse{background:#2c2c2c;padding:13px 16px;text-align:center}'
+        '.dates-row{color:#c8b89a;font-size:13px;letter-spacing:1px;margin-bottom:5px;display:flex;justify-content:center;gap:20px}'
+        '.verse-line{font-size:11px;font-style:italic;color:rgba(200,169,110,0.55);letter-spacing:0.5px}'
+        '.tribute-section{background:#fff;padding:28px 20px}'
+        '.tribute-label{font-size:9px;letter-spacing:4px;color:#8b7355;margin-bottom:14px;text-align:center}'
+        '.one-liner{font-size:17px;color:#1a1a2e;text-align:center;margin-bottom:18px;line-height:1.7;font-style:italic;word-break:keep-all}'
+        '.one-liner::before,.one-liner::after{content:"— ";opacity:0.25}'
+        '.tribute-para{font-size:14px;line-height:2.1;color:#3a3a3a;text-align:justify;word-break:keep-all}'
+        '.info-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}'
+        '.section-title{font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px}'
+        '.info-row{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}'
+        '.info-row:last-child{margin-bottom:0}'
+        '.info-lbl{color:#8b7355;min-width:52px;font-size:13px;padding-top:1px;letter-spacing:1px}'
+        '.info-val{flex:1;color:#2c2c2c;font-size:14px;line-height:1.7}'
+        '.bank-info{font-size:17px;color:#2c2c2c;letter-spacing:1px}'
+        '.mourner-names{display:flex;flex-direction:column}'
+        '.mourner-row{font-size:14px;color:#2c2c2c;padding:9px 0;border-bottom:0.5px solid #e8e0d0;word-break:keep-all}'
+        '.mourner-row:last-child{border-bottom:none}'
+        '.map-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}'
+        '.map-place-name{font-size:16px;color:#2c2c2c;font-weight:400;margin-bottom:3px}'
+        '.map-addr-text{font-size:12px;color:#8b7355;margin-bottom:12px;line-height:1.5;word-break:keep-all}'
+        '.map-action-row{display:flex;gap:8px;margin-bottom:12px}'
+        '.map-action-btn{flex:1;text-align:center;padding:11px 8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:0.5px solid #d4c9b5;background:#fff;color:#2c2c2c;font-family:\'Noto Serif KR\',serif;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px}'
+        '.tel-btn{background:#1a1a2e;color:#e8e0d0;border-color:#1a1a2e}'
+        '.map-preview-link{display:block;text-decoration:none;margin-bottom:12px}'
+        '.map-preview{border-radius:8px;overflow:hidden;border:0.5px solid #d4c9b5}'
+        '.map-preview-inner{height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#e8e4da}'
+        '.map-preview-icon{font-size:32px;opacity:0.5}'
+        '.map-preview-name{font-size:14px;color:#5a4a3a}'
+        '.map-preview-sub{font-size:11px;color:#8b7355;opacity:0.7}'
+        '.map-nav-row{display:flex;gap:8px}'
+        '.nav-btn{flex:1;text-align:center;padding:12px 4px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;border:none;font-family:\'Noto Serif KR\',serif}'
+        '.navi-btn{background:#3A1D1D;color:#FEE500}'
+        '.kakao-map-btn{background:#FEE500;color:#3A1D1D}'
+        '.nav-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:flex-end;justify-content:center}'
+        '.nav-modal-box{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:24px 20px 32px;display:flex;flex-direction:column;gap:10px}'
+        '.nav-modal-title{font-size:13px;color:#8b7355;letter-spacing:2px;text-align:center;margin-bottom:4px}'
+        '.nav-modal-btn{display:block;padding:16px;border-radius:8px;font-size:15px;font-weight:600;text-align:center;text-decoration:none;font-family:\'Noto Serif KR\',serif}'
+        '.kakao-navi{background:#FEE500;color:#3A1D1D}'
+        '.tmap-navi{background:#1a6cff;color:#fff}'
+        '.nav-modal-cancel{padding:14px;border-radius:8px;font-size:14px;color:#8b7355;background:#f5f0e8;border:none;cursor:pointer;font-family:\'Noto Serif KR\',serif}'
+        '.notice-section{background:#f9f5ef;border-left:3px solid #c8b89a;padding:14px 20px;margin-top:1px;font-size:13px;color:#6a6a6a;line-height:1.9}'
+        '.share-section{background:#fff;padding:20px;margin-top:1px}'
+        '.kakao-btn-share{background:#FEE500;color:#3A1D1D;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
+        '.condolence-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px;text-align:center}'
+        '.condolence-icon{font-size:28px;margin-bottom:10px}'
+        '.condolence-title{font-size:14px;color:#2c2c2c;margin-bottom:6px;letter-spacing:1px}'
+        '.condolence-desc{font-size:12px;color:#8b7355;line-height:1.9;margin-bottom:16px}'
+        '.upgrade-btn{display:inline-block;background:#1a1a2e;color:#c8b89a;font-size:12px;padding:11px 22px;border-radius:4px;text-decoration:none;letter-spacing:1px}'
+        '.adv-banner{background:#0f0f1e;padding:28px 20px;text-align:center;margin-top:1px}'
+        '.adv-eyebrow{font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.35);margin-bottom:12px}'
+        '.adv-title{color:#c8b89a;font-size:14px;letter-spacing:2px;margin-bottom:10px;font-weight:300}'
+        '.adv-desc{color:#8888aa;font-size:12px;line-height:1.9;margin-bottom:18px}'
+        '.adv-tags{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}'
+        '.adv-tag{background:rgba(200,169,110,0.07);border:0.5px solid rgba(200,169,110,0.2);color:#a09070;font-size:11px;padding:6px 14px;border-radius:20px}'
+        '.footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:2px}'
+        '.footer a{color:#8888aa;text-decoration:none}'
+        '#hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}'
+        '</style></head><body>'
+        '<div id="hd-toast"></div>'
+        '<div class="wrapper">'
+        '<div class="hero"><img src="https://humandocu.com/chrysanthemum.jpg" onerror="this.style.display=\'none\'" alt="국화"><div class="hero-overlay"></div></div>'
+        '<div class="header">'
+        '<div class="symbol-wrap">' + symbol_svg + '</div>'
+        '<div class="badge">부 고</div>'
+        '<div class="deceased-name">故 ' + deceased_name + '</div>'
+        '<div class="rip-text">' + rip + '</div>'
+        '</div>'
+        '<div class="dates-verse">'
+        '<div class="dates-row"><span>생 ' + birth_date + '</span><span style="opacity:0.3">|</span><span>졸 ' + death_date + '</span></div>'
+        '<div class="verse-line">' + verse + '</div>'
+        '</div>'
+        '<div class="tribute-section">'
+        '<div class="tribute-label">✦ 추 모 의 글 ✦</div>'
+        '<div class="one-liner">' + one_liner + '</div>'
+        '<p class="tribute-para">' + tribute_para + '</p>'
+        '</div>'
+        + funeral_section
+        + mourner_section
+        + map_section
+        + donation_section
+        + notice_section +
+        '<div class="share-section"><button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button></div>'
+        '<div class="condolence-section">'
+        '<div class="condolence-icon">✉️</div>'
+        '<div class="condolence-title">조문 메시지</div>'
+        '<div class="condolence-desc">온라인으로 조문 메시지를 남기고<br>유가족에게 위로의 마음을 전하세요.<br><br>어드밴스드 서비스에서 이용 가능합니다.</div>'
+        '<a href="https://www.humandocu.com/#pricing" class="upgrade-btn">어드밴스드로 업그레이드 →</a>'
+        '</div>'
+        '<div class="adv-banner">'
+        '<div class="adv-eyebrow">HUMANDOCU</div>'
+        '<div class="adv-title">어드밴스드 · 프리미엄 부고</div>'
+        '<div class="adv-desc">고인의 사진, 동영상과 함께<br>더 깊고 따뜻한 추모의 공간을 마련합니다</div>'
+        '<div class="adv-tags"><span class="adv-tag">온라인 추모관</span><span class="adv-tag">디지털 방명록</span><span class="adv-tag">휴먼 아카이브</span></div>'
+        '</div>'
+        '<div class="footer"><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a> &nbsp;·&nbsp; ' + today + ' 발행</div>'
+        '</div>'
+        '<script>' + share_js + '</script>'
+        '</body></html>'
+    )
     return html
-
 
 def upload_to_github(filename, html_content):
     path = f"{GITHUB_FOLDER}/{filename}.html"
     api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-
     sha = None
-    r = requests.get(api_url, headers={
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    })
-    if r.status_code == 200:
-        sha = r.json().get("sha")
-
+    r = requests.get(api_url, headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"})
+    if r.status_code == 200: sha = r.json().get("sha")
     encoded = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")
     body = {"message": f"부고 생성: {filename}", "content": encoded, "branch": "main"}
-    if sha:
-        body["sha"] = sha
-
-    resp = requests.put(api_url, headers={
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json",
-        "Content-Type": "application/json"
-    }, json=body)
+    if sha: body["sha"] = sha
+    resp = requests.put(api_url, headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json", "Content-Type": "application/json"}, json=body)
     resp.raise_for_status()
-
-    encoded_filename = urllib.parse.quote(filename)
-    return f"https://kiki4i.github.io/humandocu/{GITHUB_FOLDER}/{encoded_filename}.html"
-
+    return f"https://kiki4i.github.io/humandocu/{GITHUB_FOLDER}/{urllib.parse.quote(filename)}.html"
 
 def send_email(to_email, deceased_name, pages_url):
     html_body = (
@@ -464,44 +386,25 @@ def send_email(to_email, deceased_name, pages_url):
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
         '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고가 발행되었습니다</p>'
         '</div>'
-        '<div style="background:#f5f0e8;height:4px"></div>'
         '<div style="padding:32px;background:#fff">'
-        '<p style="line-height:2;color:#3a3a3a;font-size:14px">'
-        '삼가 고인의 명복을 빕니다.<br><br>'
-        f'<strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지가 완성되었습니다.<br>'
-        '아래 버튼으로 바로 공유하거나, 링크를 복사해 지인들께 전달해 주세요.'
-        '</p>'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">삼가 고인의 명복을 빕니다.<br><br><strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지가 완성되었습니다.</p>'
         '<div style="margin:24px 0;text-align:center">'
-        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;margin-bottom:10px;width:100%;text-align:center">📄 부고 페이지 열기</a>'
+        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 페이지 열기</a>'
         '</div>'
-        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355;margin-top:8px">'
-        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크 (길게 눌러 복사)</p>'
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
-        '</div>'
-        '</div>'
+        '</div></div>'
         '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
-        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a>'
-        '</div>'
-        '</div>'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
     )
-
-    resp = requests.post(
-        "https://api.resend.com/emails",
-        headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "from": "휴먼다큐 <noreply@humandocu.com>",
-            "to": [to_email],
-            "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고 알림이 완성되었습니다",
-            "html": html_body
-        },
-        timeout=30
-    )
+    resp = requests.post("https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+              "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고 알림이 완성되었습니다", "html": html_body},
+        timeout=30)
     resp.raise_for_status()
     print(f"[BASIC] 이메일 발송 완료: {resp.status_code}")
-
 
 @app.route("/webhook/basic", methods=["POST"])
 def webhook_basic():
@@ -510,41 +413,29 @@ def webhook_basic():
         print("[BASIC] 웹훅 수신")
         fields = parse_tally(payload)
         print("[BASIC] 파싱:", json.dumps(fields, ensure_ascii=False))
-
         deceased_name = fields.get("고인 성함", "").strip()
         if not deceased_name:
             return jsonify({"error": "고인 성함 없음"}), 400
-
         gender        = fields.get("성별", "")
         memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
         personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
         bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
         last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
         contact_email = fields.get("신청자 이메일", "")
-
         print("[BASIC] Claude API 호출...")
-        one_liner, tribute_para = generate_tribute(
-            deceased_name, gender, memory, personality, bright_moment, last_words
-        )
+        one_liner, tribute_para = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words)
         print(f"[BASIC] 추모글: {one_liner}")
-
         html = build_html(fields, one_liner, tribute_para)
         filename = safe_filename(deceased_name)
         pages_url = upload_to_github(filename, html)
         print(f"[BASIC] Pages URL: {pages_url}")
-
         if contact_email:
             send_email(contact_email, deceased_name, pages_url)
-            print("[BASIC] 이메일 발송 완료")
-
         return jsonify({"status": "success", "deceased": deceased_name, "url": pages_url}), 200
-
     except Exception as e:
         print(f"[BASIC] 오류: {e}")
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/", methods=["GET"])
 def health():
