@@ -74,7 +74,7 @@ def safe_filename(name):
     return re.sub(r'\s+', '', name)
 
 
-def generate_tribute(deceased_name, gender, memory, personality):
+def generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words):
     gender_hint = "남성" if "남" in gender else "여성"
     prompt = f"""당신은 20년 경력의 한국 전문 추모 작가입니다. 아래 정보를 바탕으로 디지털 부고에 들어갈 추모 글을 작성해주세요.
 
@@ -83,11 +83,14 @@ def generate_tribute(deceased_name, gender, memory, personality):
 - 성별: {gender_hint}
 - 함께한 소중한 기억: {memory}
 - 고인의 성격/특징: {personality}
+- 가장 빛나 보이셨던 순간: {bright_moment}
+- 끝내 전하지 못한 말: {last_words}
 
 [작성 원칙]
 - 성별에 맞는 표현 사용
 - 한 줄 추모 문구는 반드시 18자 이내
 - 헌정 단락은 3~4문장, 진심 어리고 시적으로
+- 위 네 가지 정보를 고루 녹여내어 고인만의 개성이 드러나게
 - 성 고정관념적 표현 금지
 
 [출력 형식]
@@ -127,15 +130,14 @@ def build_html(fields, one_liner, tribute_para):
     bank_info     = fields.get("조의금 계좌", "")
     chief_mourner = fields.get("유가족 명단", "")
     funeral_place = fields.get("장례식장 이름", "")
-    funeral_addr  = fields.get("장례식장 주소", "")   # ★ 주소 필드 추가
+    funeral_addr  = fields.get("장례식장 주소", "")
     burial_place  = fields.get("장지이름 또는 주소", "")
     notice        = fields.get("공지사항", "")
 
-    # ★ 카카오톡 공유용: 첫 번째 상주 이름 추출
+    # 카카오톡 공유용: 첫 번째 상주 이름 추출
     first_mourner = ""
     if chief_mourner:
         first_line = chief_mourner.replace('<br>', '\n').split('\n')[0].strip()
-        # "장남 홍길동" 형태면 이름만, 아니면 그대로
         parts = first_line.split()
         first_mourner = parts[-1] if parts else first_line
 
@@ -188,7 +190,7 @@ def build_html(fields, one_liner, tribute_para):
         funeral_rows += f'<div class="info-row"><span class="info-lbl">장　　지</span><span class="info-val">{burial_place}</span></div>'
     funeral_section = f'<div class="info-section"><div class="section-title">장 례 안 내</div>{funeral_rows}</div>' if funeral_rows else ""
 
-    # ★ 오시는 길: 지도 미리보기 + 주소 + 버튼 3개
+    # 오시는 길: 지도 플레이스홀더 + 주소 + 버튼 3개 + 주소복사
     map_section = ""
     if funeral_place and funeral_place not in ("0",""):
         ep_q = urllib.parse.quote(funeral_place)
@@ -217,7 +219,7 @@ def build_html(fields, one_liner, tribute_para):
             '</div>'
         )
 
-    # ★ 유가족 섹션: 줄바꿈 기준 한 줄씩
+    # 유가족: 줄바꿈 기준 한 줄씩
     mourner_section = ""
     if chief_mourner:
         lines = [l.strip() for l in chief_mourner.replace('<br>', '\n').split('\n') if l.strip()]
@@ -286,7 +288,7 @@ def build_html(fields, one_liner, tribute_para):
         "}"
     )
 
-    # ★ OG 태그용 변수
+    # OG 태그
     og_mourner = first_mourner + "의 부친 " if first_mourner else ""
     og_title = og_mourner + "故 " + deceased_name + "님 부고"
     og_desc = "삼가 고인의 명복을 빕니다."
@@ -299,7 +301,6 @@ def build_html(fields, one_liner, tribute_para):
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>부고 - 故 """ + deceased_name + """</title>
-  <!-- ★ 카카오톡 공유 OG 태그 -->
   <meta property="og:title" content=\"""" + og_title + """\">
   <meta property="og:description" content=\"""" + og_desc + """\">
   <meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">
@@ -330,11 +331,9 @@ def build_html(fields, one_liner, tribute_para):
     .info-lbl{color:#8b7355;min-width:52px;font-size:13px;padding-top:1px;letter-spacing:1px}
     .info-val{flex:1;color:#2c2c2c;font-size:14px;line-height:1.7}
     .bank-info{font-size:17px;color:#2c2c2c;letter-spacing:1px;margin-bottom:6px}
-    /* ★ 유가족 한 줄씩 */
     .mourner-names{display:flex;flex-direction:column;gap:0}
     .mourner-row{font-size:14px;color:#2c2c2c;line-height:1;padding:9px 0;border-bottom:0.5px solid #e8e0d0;word-break:keep-all}
     .mourner-row:last-child{border-bottom:none}
-    /* ★ 오시는 길 */
     .map-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}
     .map-place{font-size:16px;color:#2c2c2c;font-weight:400;margin-bottom:4px}
     .map-addr{font-size:12px;color:#8b7355;margin-bottom:12px;line-height:1.5}
@@ -350,7 +349,6 @@ def build_html(fields, one_liner, tribute_para):
     .kakao-navi-btn{background:#3A1D1D;color:#FEE500}
     .naver-btn{background:#03C75A;color:#fff}
     .addr-copy-btn{width:100%;padding:10px;background:#fff;border:0.5px solid #d4c9b5;border-radius:6px;font-size:13px;color:#8b7355;cursor:pointer;font-family:'Noto Serif KR',serif;letter-spacing:1px}
-    /* ★ 조문 메시지 업그레이드 유도 */
     .condolence-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px;text-align:center}
     .condolence-icon{font-size:28px;margin-bottom:10px}
     .condolence-title{font-size:14px;color:#2c2c2c;margin-bottom:6px;letter-spacing:1px}
@@ -367,7 +365,6 @@ def build_html(fields, one_liner, tribute_para):
     .adv-tag{background:rgba(200,169,110,0.07);border:0.5px solid rgba(200,169,110,0.2);color:#a09070;font-size:11px;padding:6px 14px;border-radius:20px}
     .footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:2px}
     .footer a{color:#8888aa;text-decoration:none}
-    /* ★ 토스트 */
     #hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}
   </style>
 </head>
@@ -403,7 +400,6 @@ def build_html(fields, one_liner, tribute_para):
   <div class="share-section">
     <button class="kakao-btn" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>
   </div>
-  <!-- ★ 조문 메시지: 베이직은 업그레이드 유도 -->
   <div class="condolence-section">
     <div class="condolence-icon">✉️</div>
     <div class="condolence-title">조문 메시지</div>
@@ -461,7 +457,6 @@ def upload_to_github(filename, html_content):
 
 
 def send_email(to_email, deceased_name, pages_url):
-    kakao_share_url = 'https://story.kakao.com/share?url=' + urllib.parse.quote(pages_url) + '&text=' + urllib.parse.quote(f'故 {deceased_name} 님의 부고를 전합니다.')
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -523,10 +518,14 @@ def webhook_basic():
         gender        = fields.get("성별", "")
         memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
         personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
+        bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
+        last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
         contact_email = fields.get("신청자 이메일", "")
 
         print("[BASIC] Claude API 호출...")
-        one_liner, tribute_para = generate_tribute(deceased_name, gender, memory, personality)
+        one_liner, tribute_para = generate_tribute(
+            deceased_name, gender, memory, personality, bright_moment, last_words
+        )
         print(f"[BASIC] 추모글: {one_liner}")
 
         html = build_html(fields, one_liner, tribute_para)
