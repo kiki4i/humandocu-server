@@ -236,7 +236,7 @@ def build_html(fields, one_liner, tribute_para):
             '<button onclick="copyAddr(\'' + addr_esc + '\')" class="map-action-btn copy-btn">📋 주소복사</button>'
             '</div>'
             '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="map-preview-link">'
-            + (f'<img src="https://smap.kakao.com/staticmap?apikey=5b7821698a09c74f1d72c0b52165d557&center={lng},{lat}&level=3&markers=s,red,{lng},{lat}&w=480&h=150" style="width:100%;height:150px;object-fit:cover;border-radius:8px;border:0.5px solid #d4c9b5;display:block" alt="지도">'
+            + (f'<div id="staticMap" style="width:100%;height:150px;border-radius:8px;border:0.5px solid #d4c9b5;overflow:hidden"></div>'
                if lat and lng else
                '<div class="map-preview"><div class="map-preview-inner"><span class="map-preview-icon">🗺</span><span class="map-preview-name">' + funeral_place + '</span><span class="map-preview-sub">탭하여 지도 보기</span></div></div>') +
             '</a>'
@@ -279,6 +279,12 @@ def build_html(fields, one_liner, tribute_para):
     if lat and lng:
         kakao_navi_js = (
             f"function startKakaoNavi(){{Kakao.Navi.start({{name:'{funeral_place}',x:{lng},y:{lat},coordType:'wgs84'}});}}"
+            f"window.addEventListener('load',function(){{"
+            f"  if(document.getElementById('staticMap')){{  "
+            f"    var el=document.getElementById('staticMap');"
+            f"    new kakao.maps.StaticMap(el,{{center:new kakao.maps.LatLng({lat},{lng}),level:4}});"
+            f"  }}"
+            f"}});"
         )
     else:
         kakao_navi_js = ""
@@ -308,8 +314,9 @@ def build_html(fields, one_liner, tribute_para):
         '<meta property="og:title" content="' + og_title + '">'
         '<meta property="og:description" content="' + og_desc + '">'
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
+        '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
         '<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>'
-        '<script>Kakao.init("70217441773f0738c2efc5084c010e9f");</script>'
+        '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
         '<style>'
