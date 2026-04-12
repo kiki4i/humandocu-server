@@ -195,6 +195,7 @@ def build_html(fields, one_liner, tribute_para):
         ep_q = urllib.parse.quote(funeral_place)
         # 카카오 로컬 API로 좌표 변환 (카카오내비/티맵 목적지 자동입력용)
         lat, lng = get_kakao_coords(funeral_place)
+        print(f"[KAKAO] {funeral_place} 좌표: lat={lat}, lng={lng}")
         addr_text = funeral_addr if funeral_addr else funeral_place
         addr_copy = funeral_addr if funeral_addr else funeral_place
         # 전화번호 정규화: +82-31-xxx → 031-xxx
