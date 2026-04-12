@@ -228,6 +228,13 @@ def build_html(fields, one_liner, tribute_para):
             tel_normalized = re.sub(r'[^\d-]', '', t)
         tel_btn = f'<a href="tel:{tel_normalized}" class="map-action-btn tel-btn">📞 전화하기</a>' if tel_normalized else ""
         addr_esc = addr_copy.replace("'", "\\'")
+        # 지도 미리보기 HTML 결정
+        if lat and lng:
+            map_preview_html = f'<div id="staticMap" style="width:100%;height:150px;border-radius:8px;border:0.5px solid #d4c9b5;overflow:hidden"></div>'
+        else:
+            map_preview_html = '<div class="map-preview"><div class="map-preview-inner"><span class="map-preview-icon">🗺</span><span class="map-preview-name">' + funeral_place + '</span><span class="map-preview-sub">탭하여 지도 보기</span></div></div>'
+        print(f'[KAKAO] map_preview_html 선택: {"staticMap div" if lat and lng else "placeholder"}')
+
         map_section = (
             '<div class="map-section">'
             '<div class="section-title">오 시 는 길</div>'
@@ -238,9 +245,7 @@ def build_html(fields, one_liner, tribute_para):
             '<button onclick="copyAddr(\'' + addr_esc + '\')" class="map-action-btn copy-btn">📋 주소복사</button>'
             '</div>'
             '<a href="https://map.kakao.com/link/search/' + ep_q + '" target="_blank" class="map-preview-link">'
-            + (f'<div id="staticMap" style="width:100%;height:150px;border-radius:8px;border:0.5px solid #d4c9b5;overflow:hidden"></div>'
-               if lat and lng else
-               '<div class="map-preview"><div class="map-preview-inner"><span class="map-preview-icon">🗺</span><span class="map-preview-name">' + funeral_place + '</span><span class="map-preview-sub">탭하여 지도 보기</span></div></div>') +
+            + map_preview_html +
             '</a>'
             '<div class="map-nav-row">'
             '<button onclick="showNavModal()" class="nav-btn navi-btn">🚗 내비게이션</button>'
