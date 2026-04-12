@@ -153,7 +153,7 @@ def build_html(fields, one_liner, tribute_para):
     symbol_svg = symbols[religion]
     verse = verses[religion]
     rip = rips[religion]
-    today = datetime.now().strftime("%Y년 %m월 %d일")
+    today = datetime.now().strftime("%Y.%m.%d")
 
     # 장례 안내
     funeral_rows = ""
@@ -324,7 +324,7 @@ def build_html(fields, one_liner, tribute_para):
         '.adv-desc{color:#8888aa;font-size:11px;line-height:1.7;margin-bottom:12px}'
         '.adv-tags{display:flex;justify-content:center;gap:6px;flex-wrap:nowrap}'
         '.adv-tag{background:rgba(200,169,110,0.07);border:0.5px solid rgba(200,169,110,0.2);color:#a09070;font-size:10px;padding:5px 10px;border-radius:20px;white-space:nowrap}'
-        '.footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:2px}'
+        '.footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:1px}'
         '.footer a{color:#8888aa;text-decoration:none}'
         '#hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}'
         '</style></head><body>'
