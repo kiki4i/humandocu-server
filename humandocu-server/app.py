@@ -104,7 +104,7 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
 
 [출력 형식]
 한_줄_추모_문구: (18자 이내)
-헌정_단락: (3~4문장)"""
+헌정_단락: (3~4문장, 각 문장 사이 줄바꿈으로 구분)"""
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
@@ -130,7 +130,7 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
                     if lines[j].strip() == "":
                         break
                     rest.append(lines[j].strip())
-                tribute_para = " ".join(rest)
+                tribute_para = "\n".join(rest)  # 줄바꿈 유지
     print(f"[CLAUDE] 파싱결과 - one_liner: {one_liner}, tribute_para: {tribute_para[:50] if tribute_para else '비어있음'}")
     return one_liner, tribute_para
 
@@ -335,7 +335,7 @@ def build_html(fields, one_liner, tribute_para):
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
         '<style>'
-        '*{margin:0;padding:0;box-sizing:border-box}'
+        '*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}'
         'body{font-family:\'Noto Serif KR\',Georgia,serif;background:#f5f0e8;color:#2c2c2c;min-height:100vh}'
         '.wrapper{max-width:480px;margin:0 auto}'
         '.hero{width:100%;height:200px;background:#1a1a2e;position:relative;overflow:hidden}'
@@ -421,7 +421,7 @@ def build_html(fields, one_liner, tribute_para):
         '<div class="tribute-section">'
         '<div class="tribute-label">✦ 추 모 의 글 ✦</div>'
         '<div class="one-liner">' + one_liner + '</div>'
-        '<p class="tribute-para">' + tribute_para + '</p>'
+        '<p class="tribute-para">' + tribute_para.replace('\n', '<br><br>') + '</p>'
         '</div>'
         + funeral_section
         + mourner_section
