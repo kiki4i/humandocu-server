@@ -429,13 +429,7 @@ def build_html(fields, one_liner, tribute_para):
         + donation_section
         + notice_section +
         '<div class="share-section"><button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button></div>'
-        '<div class="condolence-section">'
-        '<div class="condolence-left">'
-        '<div class="condolence-title">✉️ 조문 메시지</div>'
-        '<div class="condolence-desc">글쓰기는 어드밴스드에서 이용 가능합니다</div>'
-        '</div>'
-        '<a href="https://www.humandocu.com/#pricing" class="upgrade-btn">업그레이드 →</a>'
-        '</div>'
+        ''  # 조문 메시지 섹션 제거
         '<div class="adv-banner">'
         '<div class="adv-eyebrow">HUMANDOCU</div>'
         '<div class="adv-title">어드밴스드 · 프리미엄 부고</div>'
