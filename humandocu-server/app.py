@@ -349,7 +349,7 @@ def build_html(fields, one_liner, tribute_para):
         '.tribute-label{font-size:9px;letter-spacing:4px;color:#8b7355;margin-bottom:14px;text-align:center}'
         '.one-liner{font-size:17px;color:#1a1a2e;text-align:center;margin-bottom:18px;line-height:1.7;font-style:italic;word-break:keep-all}'
         '.one-liner::before,.one-liner::after{content:"— ";opacity:0.25}'
-        '.tribute-para{font-size:14px;line-height:2.1;color:#3a3a3a;text-align:left;word-break:keep-all}'
+        '.tribute-para{font-size:14px;line-height:2.1;color:#3a3a3a;text-align:center;word-break:keep-all}'
         '.info-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px}'
         '.section-title{font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px}'
         '.info-row{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}'
