@@ -119,18 +119,14 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
         if "한_줄_추모_문구" in line and ":" in line:
             one_liner = line.split(":", 1)[1].strip()
         elif "헌정_단락" in line and ":" in line:
-            # 같은 줄에 내용이 있으면 사용, 없으면 다음 줄들 합치기
+            # 같은 줄 내용 + 이후 줄까지 모두 수집
             after_colon = line.split(":", 1)[1].strip()
-            if after_colon:
-                tribute_para = after_colon
-            else:
-                # 다음 줄부터 빈 줄 전까지 합치기
-                rest = []
-                for j in range(i+1, len(lines)):
-                    if lines[j].strip() == "":
-                        break
-                    rest.append(lines[j].strip())
-                tribute_para = "\n".join(rest)  # 줄바꿈 유지
+            rest = [after_colon] if after_colon else []
+            for j in range(i+1, len(lines)):
+                if lines[j].strip() == "":
+                    break
+                rest.append(lines[j].strip())
+            tribute_para = " ".join(rest)  # 한 단락으로 합치기
     print(f"[CLAUDE] 파싱결과 - one_liner: {one_liner}, tribute_para: {tribute_para[:50] if tribute_para else '비어있음'}")
     return one_liner, tribute_para
 
