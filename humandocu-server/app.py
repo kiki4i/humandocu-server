@@ -80,6 +80,139 @@ def parse_tally(payload):
         print(f"[parse_tally] 오류: {e}")
     return fields
 
+def parse_tally_advanced(payload):
+    """어드밴스드 전용 파서 - CHECKBOXES, MULTI_SELECT, FILE_UPLOAD 처리"""
+    fields = {}
+    try:
+        prev_label = None
+        for field in payload["data"]["fields"]:
+            label = field.get("label")
+            if label is not None: label = label.strip()
+            value = field.get("value", "")
+            field_type = field.get("type", "")
+            options = field.get("options", [])
+
+            # MULTIPLE_CHOICE (종교, 성별)
+            if field_type == "MULTIPLE_CHOICE" and options:
+                option_map = {o["id"]: o["text"] for o in options}
+                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
+                else: value = option_map.get(value, value)
+
+            # CHECKBOXES (고인과 상주의 관계) - 선택된 항목만 추출
+            elif field_type == "CHECKBOXES" and options and isinstance(value, list):
+                option_map = {o["id"]: o["text"] for o in options}
+                value = ", ".join([option_map.get(v, v) for v in value])
+
+            # MULTI_SELECT (공지사항)
+            elif field_type == "MULTI_SELECT" and options:
+                option_map = {o["id"]: o["text"] for o in options}
+                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
+
+            # FILE_UPLOAD (고인 사진) - URL만 추출
+            elif field_type == "FILE_UPLOAD":
+                if isinstance(value, list) and value:
+                    value = value[0].get("url", "")
+                else:
+                    value = ""
+
+            else:
+                if isinstance(value, list): value = value[0] if value else ""
+
+            # INPUT_TIME (label=null) 처리
+            if field_type == "INPUT_TIME" and label is None and prev_label:
+                fields[prev_label + " 시간"] = str(value).strip() if value else ""
+            elif label:
+                # 개별 CHECKBOXES 항목 (label에 괄호 포함) 스킵
+                if field_type == "CHECKBOXES" and "(" in label and ")" in label and options == []:
+                    pass
+                else:
+                    fields[label] = str(value).strip() if value else ""
+                    prev_label = label
+    except Exception as e:
+        print(f"[parse_tally_advanced] 오류: {e}")
+    return fields
+
+
+def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words):
+    """어드밴스드용 추모글 생성 - 직함/한줄소개 추가 반영"""
+    gender_hint = "남성" if "남" in gender else "여성"
+    title_hint = f" ({title})" if title else ""
+    prompt = f"""당신은 20년 경력의 한국 전문 추모 작가입니다. 아래 정보를 바탕으로 디지털 부고에 들어갈 추모 글을 작성해주세요.
+
+[고인 정보]
+- 고인 성함: {deceased_name}{title_hint}
+- 성별: {gender_hint}
+- 한줄 소개: {intro}
+- 함께한 소중한 기억: {memory}
+- 고인의 성격/특징: {personality}
+- 가장 빛나 보이셨던 순간: {bright_moment}
+- 끝내 전하지 못한 말: {last_words}
+
+[작성 원칙]
+- 성별에 맞는 표현 사용
+- 한 줄 추모 문구는 반드시 18자 이내
+- 헌정 단락은 3~4문장, 진심 어리고 시적으로
+- 직함과 한줄 소개를 녹여 고인만의 개성이 드러나게
+- 성 고정관념적 표현 금지
+
+[출력 형식]
+한_줄_추모_문구: (18자 이내)
+헌정_단락: (3~4문장)"""
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={"x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+        json={"model": "claude-opus-4-5", "max_tokens": 600, "messages": [{"role": "user", "content": prompt}]},
+        timeout=60
+    )
+    text = response.json()["content"][0]["text"]
+    print(f"[CLAUDE ADV] 원문 응답:\n{text[:500]}")
+    one_liner = tribute_para = ""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if "한_줄_추모_문구" in line and ":" in line:
+            one_liner = line.split(":", 1)[1].strip()
+        elif "헌정_단락" in line and ":" in line:
+            after_colon = line.split(":", 1)[1].strip()
+            rest = [after_colon] if after_colon else []
+            for j in range(i+1, len(lines)):
+                if lines[j].strip() == "": break
+                rest.append(lines[j].strip())
+            tribute_para = " ".join(rest)
+    return one_liner, tribute_para
+
+
+def send_email_advanced(to_email, deceased_name, pages_url):
+    """어드밴스드 초안 발송 이메일"""
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
+        f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고 초안이 발행되었습니다</p>'
+        '</div>'
+        '<div style="padding:32px;background:#fff">'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">삼가 고인의 명복을 빕니다.<br><br>'
+        f'<strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지(초안)가 완성되었습니다.<br><br>'
+        f'<span style="color:#8b7355;font-size:13px">✦ 영정사진·추모관이 포함된 완성본은 6시간 내 재발송됩니다.</span></p>'
+        '<div style="margin:24px 0;text-align:center">'
+        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 초안 열기</a>'
+        '</div>'
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
+        f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
+        '</div></div>'
+        '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
+    )
+    resp = requests.post("https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+              "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고 초안이 완성되었습니다", "html": html_body},
+        timeout=30)
+    resp.raise_for_status()
+    print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
+
+
 def safe_filename(name):
     return re.sub(r'\s+', '', name)
 
@@ -510,6 +643,66 @@ def webhook_basic():
         print(f"[BASIC] 오류: {e}")
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+@app.route("/webhook/advanced", methods=["POST"])
+def webhook_advanced():
+    try:
+        payload = request.get_json(force=True)
+        print("[ADVANCED] 웹훅 수신")
+        fields = parse_tally_advanced(payload)
+        print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
+
+        deceased_name = fields.get("고인 성함", "").strip()
+        if not deceased_name:
+            return jsonify({"error": "고인 성함 없음"}), 400
+
+        # 어드밴스드 전용 필드
+        title         = fields.get("직함/직책", "")
+        intro         = fields.get("고인 한줄 소개", "")
+        relationship  = fields.get("고인과 상주의 관계", "")
+        chief_name    = fields.get("상주 성함", "")
+        life_events   = fields.get("생애 주요 사건", "")
+        photo_url     = fields.get("고인 사진(영정)", "")
+
+        # 베이직과 공통 필드
+        gender        = fields.get("성별", "")
+        memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
+        personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
+        bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
+                        fields.get(" 고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
+        last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
+        contact_email = fields.get("신청자 이메일", "")
+
+        print("[ADVANCED] Claude API 호출...")
+        one_liner, tribute_para = generate_tribute_advanced(
+            deceased_name, gender, title, intro, memory, personality, bright_moment, last_words
+        )
+        print(f"[ADVANCED] 추모글: {one_liner}")
+
+        # 베이직과 동일한 build_html로 초안 생성 (즉시 발송용)
+        html = build_html(fields, one_liner, tribute_para)
+        filename = "adv-" + safe_filename(deceased_name)
+        pages_url = upload_to_github(filename, html)
+        print(f"[ADVANCED] Pages URL: {pages_url}")
+
+        if contact_email:
+            send_email_advanced(contact_email, deceased_name, pages_url)
+
+        return jsonify({
+            "status": "success",
+            "deceased": deceased_name,
+            "url": pages_url,
+            "photo_url": photo_url,
+            "life_events": life_events,
+            "relationship": relationship,
+            "chief_name": chief_name
+        }), 200
+
+    except Exception as e:
+        print(f"[ADVANCED] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/", methods=["GET"])
 def health():
