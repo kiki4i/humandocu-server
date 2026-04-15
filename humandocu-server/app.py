@@ -572,6 +572,328 @@ def build_html(fields, one_liner, tribute_para):
     )
     return html
 
+def calc_age(birth_str, death_str):
+    """생년월일 ~ 별세일 기준 나이 계산"""
+    try:
+        b = datetime.strptime(birth_str[:10], "%Y-%m-%d")
+        d = datetime.strptime(death_str[:10], "%Y-%m-%d")
+        age = d.year - b.year - ((d.month, d.day) < (b.month, b.day))
+        return age
+    except:
+        return None
+
+def build_life_timeline(life_events_str):
+    """생애 주요 사건 텍스트 → HTML 타임라인"""
+    if not life_events_str: return ""
+    lines = [l.strip() for l in life_events_str.replace('\r','').split('\n') if l.strip()]
+    if not lines: return ""
+    items = ""
+    for line in lines:
+        # "연도 - 내용" 또는 "연도년 내용" 형태 파싱
+        parts = line.split('-', 1) if '-' in line else [None, line]
+        if parts[0] and parts[0].strip():
+            year = parts[0].strip()
+            content = parts[1].strip() if parts[1] else ""
+        else:
+            year = ""
+            content = line
+        items += (
+            f'<div class="tl-item">'
+            f'<div class="tl-year">{year}</div>'
+            f'<div class="tl-dot"></div>'
+            f'<div class="tl-content">{content}</div>'
+            f'</div>'
+        )
+    return (
+        '<div class="section">'
+        '<div class="sec-title">생 애</div>'
+        '<div class="tl-wrap">' + items + '</div>'
+        '</div>'
+    )
+
+def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro, life_events, relationship, chief_name):
+    deceased_name  = fields.get("고인 성함", "")
+    birth_raw      = fields.get("생년월일", "")
+    death_raw      = fields.get("별세일", "")
+    birth_date     = fmt_date(birth_raw)
+    death_date     = fmt_date(death_raw)
+    religion_raw   = fields.get("종교", "무교")
+    gender         = fields.get("성별", "")
+    bank_info      = fields.get("조의금 계좌", "")
+    chief_mourner  = fields.get("유가족 명단", "")
+    funeral_place  = fields.get("장례식장 이름", "")
+    funeral_addr   = fields.get("장례식장 주소", "")
+    funeral_tel    = fields.get("장례식장 전화번호", "")
+    burial_place   = fields.get("장지이름 또는 주소", "")
+    notice         = fields.get("공지사항", "")
+
+    # 나이 계산
+    age = calc_age(birth_raw, death_raw)
+    gender_txt = "남" if "남" in gender else "여"
+
+    # dsub: 직함 · 성별 · 나이
+    dsub_parts = []
+    if title: dsub_parts.append(title)
+    dsub_parts.append(gender_txt)
+    if age: dsub_parts.append(f"{age}세")
+    dsub = " · ".join(dsub_parts)
+
+    # 종교별 설정
+    if "기독교" in religion_raw: religion = "기독교"
+    elif "천주교" in religion_raw: religion = "천주교"
+    elif "불교" in religion_raw: religion = "불교"
+    else: religion = "무교"
+
+    symbols = {
+        "기독교": '<svg width="22" height="26" viewBox="0 0 22 26" fill="none"><rect x="9" y="0" width="4" height="26" rx="1" fill="rgba(200,169,110,0.45)"/><rect x="0" y="7" width="22" height="4" rx="1" fill="rgba(200,169,110,0.45)"/></svg>',
+        "천주교": '<svg width="22" height="26" viewBox="0 0 22 26" fill="none"><rect x="9" y="0" width="4" height="26" rx="1" fill="rgba(200,169,110,0.45)"/><rect x="0" y="7" width="22" height="4" rx="1" fill="rgba(200,169,110,0.45)"/></svg>',
+        "불교": '<span style="font-size:28px;color:rgba(200,169,110,0.55);line-height:1;display:block">卍</span>',
+        "무교": '<span style="font-size:18px;color:rgba(200,169,110,0.4);letter-spacing:6px;display:block">— —</span>'
+    }
+    verses = {
+        "기독교": '"나는 부활이요 생명이니" — 요한복음 11:25',
+        "천주교": '"주님은 나의 목자, 아쉬울 것 없어라" — 시편 23:1',
+        "불교": '"인연 따라 왔다가 인연 따라 가노니" — 화엄경',
+        "무교": "그 분의 삶은 우리 마음 속에 영원히 살아 숨쉽니다."
+    }
+    rips = {
+        "기독교": "소천하시다", "천주교": "하느님 곁으로 돌아가시다",
+        "불교": "극락왕생하시다", "무교": "영면하시다"
+    }
+    symbol_html = symbols[religion]
+    verse = verses[religion]
+    rip = rips[religion]
+    today = datetime.now().strftime("%Y.%m.%d")
+
+    # 영정사진 섹션
+    if photo_url:
+        photo_section = (
+            f'<div class="photo-wrap">'
+            f'<img src="{photo_url}" class="photo-img" onerror="this.parentNode.innerHTML=\'<div class=photo-main><div style=font-size:64px;opacity:0.3>👤</div></div>\'">'
+            f'<div class="photo-gradient"></div>'
+            f'</div>'
+        )
+    else:
+        photo_section = (
+            '<div class="photo-wrap">'
+            '<div class="photo-main">'
+            '<div style="font-size:64px;opacity:0.3">👤</div>'
+            '</div>'
+            '<div class="photo-gradient"></div>'
+            '</div>'
+        )
+
+    # 날짜/시간 포맷
+    checkin_datetime = fmt_date(fields.get("입실일시", ""))
+    ct = fields.get("입실일시 시간", "")
+    if ct: checkin_datetime += " " + fmt_time(ct)
+    funeral_datetime = fmt_date(fields.get("입관일시", ""))
+    ft = fields.get("입관일시 시간", "")
+    if ft: funeral_datetime += " " + fmt_time(ft)
+    burial_datetime = fmt_date(fields.get("발인일시", ""))
+    bt = fields.get("발인일시 시간", "")
+    if bt: burial_datetime += " " + fmt_time(bt)
+
+    # 상가정보 섹션
+    info_rows = ""
+    if checkin_datetime: info_rows += f'<div class="info-row"><span class="info-key">입실</span><div class="info-val">{checkin_datetime}</div></div>'
+    if funeral_datetime: info_rows += f'<div class="info-row"><span class="info-key">입관</span><div class="info-val">{funeral_datetime}</div></div>'
+    if burial_datetime:  info_rows += f'<div class="info-row"><span class="info-key">발인</span><div class="info-val">{burial_datetime}</div></div>'
+    if burial_place:     info_rows += f'<div class="info-row"><span class="info-key">장지</span><div class="info-val">{burial_place}</div></div>'
+    funeral_info_section = f'<div class="section"><div class="sec-title">상 가 정 보</div>{info_rows}</div>' if info_rows else ""
+
+    # 장례식장 섹션 (카카오맵 + 전화)
+    ep_q = urllib.parse.quote(funeral_place) if funeral_place else ""
+    tel_normalized = ""
+    if funeral_tel:
+        t = funeral_tel.strip()
+        if t.startswith("+82"): t = "0" + t[3:].lstrip("-").lstrip(" ")
+        tel_normalized = re.sub(r'[^\d-]', '', t)
+    tel_btn = f'<a href="tel:{tel_normalized}" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px;background:#1a1714;color:#e8e0d0;border-radius:4px;font-size:13px;font-weight:600;flex:1;text-decoration:none">📞 전화</a>' if tel_normalized else ""
+    map_btn = f'<a href="https://map.kakao.com/link/search/{ep_q}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:#FEE500;border-radius:4px;font-size:13px;font-weight:700;color:#1a1714;flex:1">🗺 카카오맵으로 길찾기</a>'
+    btn_row = f'<div style="display:flex;gap:8px;margin-top:12px">{tel_btn}{map_btn}</div>'
+    funeral_place_section = ""
+    if funeral_place:
+        funeral_place_section = (
+            f'<div class="section"><div class="sec-title">장 례 식 장</div>'
+            f'<div class="place-name">{funeral_place}</div>'
+            f'<div class="place-addr">{funeral_addr}</div>'
+            f'{btn_row}</div>'
+        )
+
+    # 유가족 섹션
+    family_section = ""
+    if chief_mourner:
+        lines = [l.strip() for l in chief_mourner.replace('<br>','\n').split('\n') if l.strip()]
+        rows = "".join([f'<div class="family-row"><span class="family-name">{l}</span></div>' for l in lines])
+        family_section = f'<div class="section"><div class="sec-title">유 가 족</div>{rows}</div>'
+
+    # 공지 섹션
+    notice_section = ""
+    if notice and "해당 없음" not in notice:
+        notice_section = f'<div class="section"><div class="sec-title">공 지 사 항</div><div class="notice-text">{notice}</div></div>'
+
+    # 조의금 섹션
+    donation_section = ""
+    if bank_info and bank_info not in ("0",""):
+        acct_esc = bank_info.replace("'", "\\'")
+        donation_section = (
+            f'<div class="section"><div class="sec-title">조 의 금</div>'
+            f'<div class="acct-box">'
+            f'<div class="acct-icon">🏦</div>'
+            f'<div class="acct-info"><div class="acct-num">{bank_info}</div></div>'
+            f'<button class="copy-btn" onclick="copyText(\'{acct_esc}\')">복사</button>'
+            f'</div></div>'
+        )
+
+    # 생애 타임라인
+    timeline_section = build_life_timeline(life_events)
+
+    # 추모관 버튼 (같은 파일명 기준 memorial 링크)
+    memorial_filename = urllib.parse.quote("adv-memorial-" + safe_filename(deceased_name))
+    memorial_url = f"https://kiki4i.github.io/humandocu/bugo/{memorial_filename}.html"
+    memorial_section = (
+        '<div class="memorial-entry">'
+        f'<div class="memorial-tag">Advanced · 故 {deceased_name} 님의</div>'
+        '<div class="memorial-title">온라인 추모관</div>'
+        '<div class="memorial-desc">생애 타임라인 · 디지털 방명록</div>'
+        f'<a href="{memorial_url}" class="memorial-btn">추모관 입장하기 <span class="memorial-btn-arrow">→</span></a>'
+        '</div>'
+    )
+
+    # 카카오 공유 JS
+    first_mourner = ""
+    if chief_mourner:
+        first_line = chief_mourner.replace('<br>','\n').split('\n')[0].strip()
+        parts = first_line.split()
+        first_mourner = parts[-1] if parts else first_line
+    share_title = (first_mourner + "의 " + relationship + " " if (first_mourner and relationship) else "") + f"故 {deceased_name}님 부고"
+    share_js = (
+        "function shareKakao(){var url=window.location.href;"
+        "if(navigator.share){navigator.share({title:'" + share_title + "',url:url}).catch(function(){});}"
+        "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다.');});}"
+        "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('복사되었습니다.');}}"
+        "function copyText(t){if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){showToast('복사되었습니다');});}"
+        "else{var el=document.createElement('textarea');el.value=t;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('복사되었습니다');}}"
+        "function showToast(msg){var t=document.getElementById('hd-toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}"
+    )
+
+    og_title = f"故 {deceased_name}님 부고"
+    og_desc = f"삼가 고인의 명복을 빕니다.{' 발인 ' + burial_datetime if burial_datetime else ''}"
+    og_image = photo_url if photo_url else "https://humandocu.com/chrysanthemum.jpg"
+
+    html = (
+        '<!DOCTYPE html><html lang="ko"><head>'
+        '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
+        f'<title>부고 · 故 {deceased_name}</title>'
+        f'<meta property="og:title" content="{og_title}">'
+        f'<meta property="og:description" content="{og_desc}">'
+        f'<meta property="og:image" content="{og_image}">'
+        '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">'
+        '<style>'
+        ':root{--ink:#1a1714;--ink2:#3d3a30;--ink3:#78716c;--bg:#f5f3ef;--bg2:#ede9e2;--bg3:#e3ddd4;--gold:#9a7d4a;--gold2:#c4a96e;--white:#ffffff;--serif:\'Noto Serif KR\',Georgia,serif;--sans:\'Noto Sans KR\',sans-serif}'
+        '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}'
+        'body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto;padding-bottom:40px;-webkit-font-smoothing:antialiased}'
+        'a{text-decoration:none;color:inherit}'
+        '.header{background:#1a1714;padding:0 0 28px;text-align:center}'
+        '.photo-wrap{position:relative;width:100%;height:320px;overflow:hidden}'
+        '.photo-main{width:100%;height:100%;background:linear-gradient(160deg,#c9a87c 0%,#e8d5b0 30%,#d4c4a0 60%,#b8a88c 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}'
+        '.photo-img{width:100%;height:100%;object-fit:cover;object-position:top}'
+        '.photo-gradient{position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#1a1714)}'
+        '.badge{font-size:10px;letter-spacing:.16em;color:rgba(200,169,110,.5);padding-top:18px;margin-bottom:10px}'
+        '.symbol{display:flex;justify-content:center;margin-bottom:8px}'
+        '.name-row{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:4px}'
+        '.go{font-size:13px;color:rgba(200,169,110,.55);letter-spacing:.12em}'
+        '.dname{font-size:34px;font-weight:400;color:#f5f3ef;font-family:var(--serif);letter-spacing:.04em}'
+        '.dsub{font-size:12px;color:rgba(249,246,240,.42);margin-bottom:3px}'
+        '.dbirth{font-size:11px;color:rgba(249,246,240,.28);letter-spacing:.04em;margin-bottom:3px}'
+        '.ddate{font-size:11px;color:rgba(249,246,240,.3);letter-spacing:.06em}'
+        '.ddate span{color:rgba(200,169,110,.6)}'
+        '.bible{font-size:10px;color:rgba(200,169,110,.38);font-style:italic;font-family:var(--serif);margin-top:8px;letter-spacing:.04em;padding:0 20px}'
+        '.divider{border:none;border-top:0.5px solid rgba(200,169,110,.18);margin:14px 24px}'
+        '.oneline{font-size:15px;font-style:italic;color:rgba(249,246,240,.85);line-height:1.9;text-align:center;font-family:var(--serif);margin-bottom:14px;padding:0 20px}'
+        '.tribute{border-left:2px solid rgba(200,169,110,.35);padding-left:14px;margin:0 24px}'
+        '.tribute-text{font-size:13px;color:rgba(249,246,240,.55);line-height:1.9;font-family:var(--serif)}'
+        '.memorial-entry{margin:6px 0;background:linear-gradient(135deg,#2d4a3e 0%,#1a2e26 100%);padding:24px 20px;text-align:center}'
+        '.memorial-tag{font-size:9px;letter-spacing:.2em;color:rgba(168,197,171,.6);margin-bottom:8px}'
+        '.memorial-title{font-size:18px;font-weight:400;color:#e8f0e9;font-family:var(--serif);margin-bottom:6px}'
+        '.memorial-desc{font-size:12px;color:rgba(168,197,171,.7);line-height:1.7;margin-bottom:18px}'
+        '.memorial-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(168,197,171,.15);border:1px solid rgba(168,197,171,.35);color:#a8c5ab;font-size:13px;font-weight:500;padding:12px 24px;border-radius:3px;font-family:var(--sans)}'
+        '.memorial-btn-arrow{font-size:16px}'
+        '.section{background:var(--white);margin:6px 0;padding:18px 20px}'
+        '.sec-title{font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--gold);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bg3);display:flex;align-items:center;gap:6px}'
+        '.sec-title::before{content:"";width:3px;height:13px;background:var(--gold2);border-radius:2px;flex-shrink:0}'
+        '.family-row{padding:7px 0;border-bottom:1px solid var(--bg2)}'
+        '.family-row:last-child{border-bottom:none}'
+        '.family-name{font-size:14px;color:var(--ink)}'
+        '.info-row{display:flex;padding:8px 0;border-bottom:1px solid var(--bg2)}'
+        '.info-row:last-child{border-bottom:none}'
+        '.info-key{font-size:11px;color:var(--ink3);width:44px;flex-shrink:0;padding-top:2px}'
+        '.info-val{font-size:13px;color:var(--ink);line-height:1.5;flex:1}'
+        '.place-name{font-size:15px;font-weight:500;color:var(--ink);margin-bottom:4px}'
+        '.place-addr{font-size:12px;color:var(--ink3)}'
+        '.notice-text{font-size:13px;color:var(--ink);line-height:1.7}'
+        '.acct-box{background:var(--bg);border:1px solid var(--bg3);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:10px}'
+        '.acct-icon{width:32px;height:32px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}'
+        '.acct-num{font-size:14px;font-weight:500;color:var(--ink)}'
+        '.copy-btn{font-size:11px;font-weight:500;color:var(--gold);padding:5px 10px;border:1px solid rgba(154,125,74,.3);border-radius:3px;background:none;cursor:pointer;font-family:var(--sans)}'
+        '.share-btn{display:flex;align-items:center;justify-content:center;gap:7px;background:#FEE500;border-radius:4px;padding:14px;font-size:14px;font-weight:700;color:#1a1714;width:100%;border:none;cursor:pointer;font-family:var(--sans)}'
+        '.page-footer{background:#1a1714;padding:24px 20px;text-align:center;margin-top:6px}'
+        '.footer-main-text{font-family:var(--serif);font-size:14px;color:rgba(249,246,240,.5);line-height:1.9;margin-bottom:6px}'
+        '.footer-main-text span{color:var(--gold2)}'
+        '.footer-sub-text{font-size:11px;color:rgba(200,169,110,.38);line-height:1.8;margin-bottom:16px}'
+        '.footer-divider{border:none;border-top:0.5px solid rgba(200,169,110,.12);margin:14px 40px}'
+        '.footer-btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}'
+        '.footer-btn{font-size:11px;font-weight:500;color:rgba(200,169,110,.7);padding:7px 14px;border:1px solid rgba(200,169,110,.25);border-radius:3px;background:none;font-family:var(--sans);display:inline-block}'
+        '.footer-info{font-size:10px;color:rgba(249,246,240,.2);margin-top:14px;line-height:1.7}'
+        '.tl-wrap{position:relative;padding-left:60px}'
+        '.tl-wrap::before{content:"";position:absolute;left:44px;top:6px;bottom:6px;width:1px;background:var(--bg3)}'
+        '.tl-item{position:relative;margin-bottom:16px;display:flex;align-items:flex-start;gap:0}'
+        '.tl-item:last-child{margin-bottom:0}'
+        '.tl-year{position:absolute;left:-60px;width:52px;font-size:11px;color:var(--gold);font-weight:500;text-align:right;padding-top:2px;line-height:1.3}'
+        '.tl-dot{position:absolute;left:-12px;top:6px;width:8px;height:8px;background:var(--gold2);border-radius:50%;flex-shrink:0}'
+        '.tl-content{font-size:13px;color:var(--ink);line-height:1.7}'
+        '#hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1714;color:#f5f3ef;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}'
+        '</style></head><body>'
+        '<div id="hd-toast"></div>'
+        '<div class="header">'
+        + photo_section +
+        '<div class="badge">부 고 訃 告</div>'
+        '<div class="symbol">' + symbol_html + '</div>'
+        f'<div class="name-row"><span class="go">故</span><span class="dname">{deceased_name}</span></div>'
+        f'<div class="dsub">{dsub}</div>'
+        f'<div class="dbirth">{birth_date} 生</div>'
+        f'<div class="ddate"><span>{death_date}</span> {rip}</div>'
+        f'<div class="bible">{verse}</div>'
+        '<div class="divider"></div>'
+        f'<div class="oneline">"{one_liner}"</div>'
+        '<div class="tribute">'
+        f'<div class="tribute-text">{tribute_para}</div>'
+        '</div></div>'
+        + memorial_section
+        + funeral_info_section
+        + funeral_place_section
+        + family_section
+        + timeline_section
+        + notice_section
+        + donation_section +
+        '<div class="section"><button class="share-btn" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button></div>'
+        '<div class="page-footer">'
+        '<div class="footer-main-text">한 사람의 삶은 기억되어야 합니다.<br><span>휴먼다큐</span>가 그 곁에 있겠습니다.</div>'
+        '<div class="footer-sub-text">고인의 이야기를 소중히 담아<br>오래도록 기억될 수 있도록 함께합니다.</div>'
+        '<div class="footer-divider"></div>'
+        '<div class="footer-btn-row">'
+        '<a href="https://www.humandocu.com" target="_blank" class="footer-btn">휴먼다큐 둘러보기</a>'
+        f'<a href="{memorial_url}" class="footer-btn" style="background:rgba(200,169,110,.7);color:#1a1714;border:none">온라인 추모관 →</a>'
+        '</div>'
+        f'<div class="footer-info">www.humandocu.com · 031-539-9709 · {today} 발행</div>'
+        '</div>'
+        f'<script>{share_js}</script>'
+        '</body></html>'
+    )
+    return html
+
+
 def upload_to_github(filename, html_content):
     path = f"{GITHUB_FOLDER}/{filename}.html"
     api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
@@ -679,8 +1001,11 @@ def webhook_advanced():
         )
         print(f"[ADVANCED] 추모글: {one_liner}")
 
-        # 베이직과 동일한 build_html로 초안 생성 (즉시 발송용)
-        html = build_html(fields, one_liner, tribute_para)
+        # 어드밴스드 완성본 HTML 생성
+        html = build_html_advanced(
+            fields, one_liner, tribute_para,
+            photo_url, title, intro, life_events, relationship, chief_name
+        )
         filename = "adv-" + safe_filename(deceased_name)
         pages_url = upload_to_github(filename, html)
         print(f"[ADVANCED] Pages URL: {pages_url}")
