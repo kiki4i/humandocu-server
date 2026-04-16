@@ -274,7 +274,7 @@ def build_html(fields, one_liner, tribute_para):
     funeral_addr  = fields.get("장례식장 주소", "")
     funeral_tel   = fields.get("장례식장 전화번호", "")
     burial_place  = fields.get("장지이름 또는 주소", "")
-    notice        = fields.get("공지사항", "")
+    notice        = fields.get("안내 말씀", "")
 
     first_mourner = ""
     if chief_mourner:
