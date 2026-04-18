@@ -895,7 +895,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         + family_section
         + timeline_section
         + notice_section
-        + donation_section +
+        + donation_section
         + memorial_section +
         '<div class="section"><button class="share-btn" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button></div>'
         '<div class="page-footer">'
