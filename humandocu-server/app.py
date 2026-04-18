@@ -672,20 +672,29 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
     today = datetime.now().strftime("%Y.%m.%d")
 
     # 영정사진 섹션
+    # 배너 (베이직과 동일한 종교별 배너)
+    banner_section = (
+        '<div class="hero-adv">'
+        '<img src="' + BANNER_IMAGES.get(religion, BANNER_IMAGES["무교"]) + '" alt="">'
+        '<div class="hero-adv-overlay"></div>'
+        '<div class="hero-adv-txt"><div class="hero-adv-hanja">訃告</div></div>'
+        '<div class="hero-adv-wm">humandocu.com</div>'
+        '</div>'
+    )
     if photo_url:
         photo_section = (
-            f'<div class="photo-wrap">'
-            f'<img src="{photo_url}" class="photo-img" onerror="this.parentNode.innerHTML=\'<div class=photo-main><div style=font-size:64px;opacity:0.3>👤</div></div>\'">'
-            f'<div class="photo-gradient"></div>'
-            f'</div>'
+            '<div class="photo-wrap">'
+            '<div class="photo-frame">'
+            f'<img src="{photo_url}" class="photo-img" onerror="this.style.display=\'none\'">'
+            '</div>'
+            '</div>'
         )
     else:
         photo_section = (
             '<div class="photo-wrap">'
-            '<div class="photo-main">'
-            '<div style="font-size:64px;opacity:0.3">👤</div>'
+            '<div class="photo-frame">'
+            '<div class="photo-placeholder">👤</div>'
             '</div>'
-            '<div class="photo-gradient"></div>'
             '</div>'
         )
 
@@ -802,10 +811,16 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         'body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto;padding-bottom:40px;-webkit-font-smoothing:antialiased}'
         'a{text-decoration:none;color:inherit}'
         '.header{background:#1a1714;padding:0 0 28px;text-align:center}'
-        '.photo-wrap{position:relative;width:100%;height:320px;overflow:hidden}'
-        '.photo-main{width:100%;height:100%;background:linear-gradient(160deg,#c9a87c 0%,#e8d5b0 30%,#d4c4a0 60%,#b8a88c 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}'
-        '.photo-img{width:100%;height:100%;object-fit:cover;object-position:top}'
-        '.photo-gradient{position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#1a1714)}'
+        '.hero-adv{width:100%;height:150px;position:relative;overflow:hidden}'
+        '.hero-adv img{width:100%;height:100%;object-fit:cover;object-position:center 40%;filter:brightness(0.75) saturate(0.85)}'
+        '.hero-adv-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(6,4,3,0.88) 0%,rgba(6,4,3,0.55) 35%,rgba(6,4,3,0.10) 70%,transparent 100%)}'
+        '.hero-adv-txt{position:absolute;left:20px;top:50%;transform:translateY(-50%)}'
+        '.hero-adv-hanja{font-family:\'Noto Serif KR\',Georgia,serif;font-size:30px;font-weight:200;color:rgba(249,246,240,0.92);letter-spacing:.12em}'
+        '.hero-adv-wm{position:absolute;right:10px;bottom:8px;font-size:9px;color:rgba(255,255,255,0.18);letter-spacing:.05em}'
+        '.photo-wrap{display:flex;justify-content:center;padding:28px 0 20px;background:#1a1714}'
+        '.photo-frame{width:140px;height:180px;border:3px solid rgba(200,169,110,0.5);padding:4px;background:#1a1714;box-shadow:0 4px 24px rgba(0,0,0,0.5)}'
+        '.photo-img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}'
+        '.photo-placeholder{width:100%;height:100%;background:linear-gradient(160deg,#2a2520 0%,#1a1714 100%);display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.3}'
         '.badge{font-size:10px;letter-spacing:.16em;color:rgba(200,169,110,.5);padding-top:18px;margin-bottom:10px}'
         '.symbol{display:flex;justify-content:center;margin-bottom:8px}'
         '.name-row{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:4px}'
@@ -862,6 +877,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '#hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1714;color:#f5f3ef;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}'
         '</style></head><body>'
         '<div id="hd-toast"></div>'
+        + banner_section +
         '<div class="header">'
         + photo_section +
         f'<div class="name-row"><span class="go">故</span><span class="dname">{deceased_name}</span></div>'
@@ -874,13 +890,13 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '<div class="tribute">'
         f'<div class="tribute-text">{tribute_para}</div>'
         '</div></div>'
-        + memorial_section
         + funeral_info_section
         + funeral_place_section
         + family_section
         + timeline_section
         + notice_section
         + donation_section +
+        + memorial_section +
         '<div class="section"><button class="share-btn" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button></div>'
         '<div class="page-footer">'
         '<div class="footer-main-text">한 사람의 삶은 기억되어야 합니다.<br><span>휴먼다큐</span>가 그 곁에 있겠습니다.</div>'
