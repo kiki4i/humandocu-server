@@ -133,7 +133,7 @@ def parse_tally_advanced(payload):
     return fields
 
 
-def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words):
+def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"):
     """어드밴스드용 추모글 생성 - 직함/한줄소개 추가 반영"""
     gender_hint = "남성" if "남" in gender else "여성"
     title_hint = f" ({title})" if title else ""
@@ -154,6 +154,16 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
 - 헌정 단락은 3~4문장, 진심 어리고 시적으로
 - 직함과 한줄 소개를 녹여 고인만의 개성이 드러나게
 - 성 고정관념적 표현 금지
+""" + (
+        """
+[스타일 지침]
+- 차분하고 절제된 문체로 작성하세요
+- 담담하게 그리움을 표현하며, 고요하고 깊은 여운을 남기세요
+- 화려한 수식보다 진실된 한 마디가 더 울림 있습니다""" if style == "A" else """
+[스타일 지침]
+- 따뜻하고 서정적인 문체로 작성하세요
+- 고인의 생동감 넘치는 모습과 체온이 느껴지도록 묘사하세요
+- 가족과 조문객의 마음에 위로가 되는 따뜻한 언어를 사용하세요""") + """
 
 [출력 형식]
 한_줄_추모_문구: (18자 이내)
@@ -216,7 +226,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
 def safe_filename(name):
     return re.sub(r'\s+', '', name)
 
-def generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words):
+def generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words, style="A"):
     gender_hint = "남성" if "남" in gender else "여성"
     prompt = f"""당신은 20년 경력의 한국 전문 추모 작가입니다. 아래 정보를 바탕으로 디지털 부고에 들어갈 추모 글을 작성해주세요.
 
@@ -234,6 +244,16 @@ def generate_tribute(deceased_name, gender, memory, personality, bright_moment, 
 - 헌정 단락은 3~4문장, 진심 어리고 시적으로
 - 위 네 가지 정보를 고루 녹여내어 고인만의 개성이 드러나게
 - 성 고정관념적 표현 금지
+""" + (
+        """
+[스타일 지침]
+- 차분하고 절제된 문체로 작성하세요
+- 담담하게 그리움을 표현하며, 고요하고 깊은 여운을 남기세요
+- 화려한 수식보다 진실된 한 마디가 더 울림 있습니다""" if style == "A" else """
+[스타일 지침]
+- 따뜻하고 서정적인 문체로 작성하세요
+- 고인의 생동감 넘치는 모습과 체온이 느껴지도록 묘사하세요
+- 가족과 조문객의 마음에 위로가 되는 따뜻한 언어를 사용하세요""") + """
 
 [출력 형식]
 한_줄_추모_문구: (18자 이내)
@@ -991,7 +1011,7 @@ def webhook_basic():
         print("[BASIC] Claude API 호출 - 버전A...")
         one_liner_a, tribute_para_a = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words)
         print("[BASIC] Claude API 호출 - 버전B...")
-        one_liner_b, tribute_para_b = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words)
+        one_liner_b, tribute_para_b = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words, style="B")
         print(f"[BASIC] 추모글A: {one_liner_a}")
         print(f"[BASIC] 추모글B: {one_liner_b}")
         filename   = safe_filename(deceased_name)
@@ -1042,7 +1062,7 @@ def webhook_advanced():
         )
         print("[ADVANCED] Claude API 호출 - 버전B...")
         one_liner_b, tribute_para_b = generate_tribute_advanced(
-            deceased_name, gender, title, intro, memory, personality, bright_moment, last_words
+            deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="B"
         )
         print(f"[ADVANCED] 추모글A: {one_liner_a}")
         print(f"[ADVANCED] 추모글B: {one_liner_b}")
