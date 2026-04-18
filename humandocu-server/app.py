@@ -1041,6 +1041,61 @@ def health():
 def health_check():
     return jsonify({"status": "ok"}), 200
 
+@app.route("/test", methods=["GET"])
+def test_basic():
+    """브라우저에서 바로 테스트: /test?religion=기독교&name=테스트고인"""
+    from flask import request as freq
+    religion = freq.args.get("religion", "무교")
+    name     = freq.args.get("name", "테스트고인")
+    tier     = freq.args.get("tier", "basic")  # basic or advanced
+
+    # 공통 테스트 필드
+    fields = {
+        "고인 성함": name,
+        "성별": "남",
+        "생년월일": "1950-03-15",
+        "별세일": "2026-04-18",
+        "종교": religion,
+        "장례식장 이름": "휴먼다큐 테스트장례식장",
+        "장례식장 주소": "경기도 수원시 영통구 광교로 107",
+        "장례식장 전화번호": "031-539-9709",
+        "입실일시": "2026-04-18 오전 10시 00분",
+        "입관일시": "2026-04-19 오후 2시 00분",
+        "발인일시": "2026-04-20 오전 7시 00분",
+        "장지이름 또는 주소": "경기도 용인시 수지구 풍덕천동",
+        "유가족 명단": "아들. 휴먼다큐\n딸. 테스트딸",
+        "조의금 계좌": "신한은행 110-123-456789 테스트",
+        "공지사항": "화환은 정중히 사양합니다.",
+        "고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?": "항상 새벽에 일어나 마당을 쓸던 모습",
+        "고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?": "늘 '괜찮아, 다 잘 될 거야'라고 말씀하셨어요",
+        "고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?": "자녀들 졸업식 때 눈물을 참으시던 모습",
+        "끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.": "아버지, 정말 감사했습니다. 사랑합니다.",
+        "신청자 이메일": "mongmong4i@gmail.com",
+    }
+
+    try:
+        one_liner, tribute_para = generate_tribute(
+            fields["고인 성함"], fields["성별"],
+            fields["고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?"],
+            fields["고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?"],
+            fields["고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?"],
+            fields["끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요."]
+        )
+        html = build_html(fields, one_liner, tribute_para)
+        filename = safe_filename(name)
+        pages_url = upload_to_github(filename, html)
+        send_email(fields["신청자 이메일"], name, pages_url)
+        return jsonify({
+            "status": "success",
+            "religion": religion,
+            "name": name,
+            "url": pages_url,
+            "message": f"이메일({fields['신청자 이메일']})로 발송 완료!"
+        }), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
