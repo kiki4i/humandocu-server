@@ -1070,6 +1070,15 @@ def webhook_advanced():
         print(f"[ADVANCED] 추모글A: {one_liner_a}")
         print(f"[ADVANCED] 추모글B: {one_liner_b}")
 
+        # Firebase에 1차 어드밴스드 데이터 저장 (답례장 연동용)
+        firebase_save_advanced(deceased_name, {
+            "생년월일": fields.get("생년월일", ""),
+            "별세일": fields.get("별세일", ""),
+            "한줄평": one_liner_a,
+            "고인 소개": intro,
+            "상주 성함": chief_name,
+            "신청자 이메일": contact_email,
+        })
         filename   = "adv-" + safe_filename(deceased_name)
         filename_b = "adv-" + safe_filename(deceased_name) + "-b"
         html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
@@ -1156,6 +1165,435 @@ def test_basic():
             "url": pages_url,
             "message": f"이메일({fields['신청자 이메일']})로 발송 완료!"
         }), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+
+# ─────────────────────────────────────────────────────────────────
+# Firebase 헬퍼
+# ─────────────────────────────────────────────────────────────────
+
+def firebase_get_advanced(deceased_name):
+    try:
+        import urllib.parse as up
+        safe = up.quote(deceased_name, safe="")
+        url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            raw = resp.json().get("fields", {})
+            result = {}
+            for k, v in raw.items():
+                if "stringValue" in v:
+                    result[k] = v["stringValue"]
+            print(f"[FIREBASE] 조회 성공: {deceased_name} → {list(result.keys())}")
+            return result
+        print(f"[FIREBASE] 조회 없음 {resp.status_code}: {deceased_name}")
+        return {}
+    except Exception as e:
+        print(f"[FIREBASE] 오류: {e}")
+        return {}
+
+
+def firebase_save_advanced(deceased_name, data):
+    try:
+        import urllib.parse as up
+        safe = up.quote(deceased_name, safe="")
+        url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
+        fs_fields = {k: {"stringValue": str(v)} for k, v in data.items()}
+        resp = requests.patch(url, json={"fields": fs_fields}, timeout=10)
+        print(f"[FIREBASE] 저장: {resp.status_code} - {deceased_name}")
+    except Exception as e:
+        print(f"[FIREBASE] 저장 오류: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────
+# 답례장 Tally 파싱
+# ─────────────────────────────────────────────────────────────────
+
+def parse_tally_damnyejang(payload):
+    fields = {}
+    for field in payload.get("data", {}).get("fields", []):
+        label = field.get("label", "").strip()
+        ftype = field.get("type", "")
+        value = field.get("value")
+        if value is None:
+            continue
+        if ftype == "FILE_UPLOAD":
+            urls = []
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        u = item.get("url") or item.get("downloadUrl") or ""
+                        if u:
+                            urls.append(u)
+                    elif isinstance(item, str):
+                        urls.append(item)
+            elif isinstance(value, dict):
+                u = value.get("url") or value.get("downloadUrl") or ""
+                if u:
+                    urls.append(u)
+            fields[label] = urls[0] if len(urls) == 1 else (urls if urls else "")
+        else:
+            fields[label] = str(value).strip() if value else ""
+    return fields
+
+
+# ─────────────────────────────────────────────────────────────────
+# Claude API - 상주 인사말 생성
+# ─────────────────────────────────────────────────────────────────
+
+def generate_damnyejang_message(deceased_name, chief_name, chief_words, adv_data):
+    memo = adv_data.get("한줄평", "") or adv_data.get("고인 소개", "")
+    prompt = (
+        f"당신은 장례 답례장 글을 쓰는 전문 작가입니다.\n\n"
+        f"고인 이름: {deceased_name}\n"
+        f"상주 이름: {chief_name}\n"
+        f"상주가 하고 싶은 말: {chief_words}\n"
+        f"고인 메모: {memo}\n\n"
+        "위 정보를 바탕으로 답례장 상주 인사말을 써주세요.\n"
+        "조건:\n"
+        "- 4~6줄, 짧고 진심이 담긴 문장\n"
+        "- 상투적인 표현(삼가 고인의 명복, 깊이 감사드립니다 등) 사용 금지\n"
+        "- 실제 사람이 쓴 것처럼 자연스럽고 따뜻하게\n"
+        "- 마지막에 꼭 찾아뵙겠다는 느낌의 문장 포함\n"
+        "- 줄바꿈은 <br>로\n\n"
+        "인사말만 출력하세요."
+    )
+    resp = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": CLAUDE_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        },
+        json={
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 500,
+            "messages": [{"role": "user", "content": prompt}]
+        },
+        timeout=60
+    )
+    resp.raise_for_status()
+    return resp.json()["content"][0]["text"].strip()
+
+
+# ─────────────────────────────────────────────────────────────────
+# 답례장 HTML 생성
+# ─────────────────────────────────────────────────────────────────
+
+def build_html_damnyejang(d_fields, adv_data, chief_msg):
+    deceased_name  = d_fields.get("고인이름", "")
+    chief_name     = d_fields.get("상주 이름", "")
+    contact        = d_fields.get("문자 받으실 연락처", "")
+    rep_photo      = d_fields.get("고인 대표사진", "")
+    chief_photo    = d_fields.get("유가족 단체사진", "")
+    deceased_voice = d_fields.get("고인 육성 파일", "")
+    chief_voice    = d_fields.get("상주 육성 파일", "")
+
+    # 생몰일 (Firebase 1차 데이터에서)
+    birth = adv_data.get("생년월일", "")
+    death = adv_data.get("별세일", "")
+    dates_str = ""
+    if birth and death:
+        try:
+            b  = datetime.strptime(birth[:10], "%Y-%m-%d")
+            dd = datetime.strptime(death[:10], "%Y-%m-%d")
+            dates_str = f"{b.year}. {b.month:02d}. {b.day:02d} — {dd.year}. {dd.month:02d}. {dd.day:02d}"
+        except Exception:
+            dates_str = f"{birth[:10]} — {death[:10]}"
+
+    # 한줄평 (Firebase 또는 기본값)
+    oneliner = adv_data.get("한줄평", "") or adv_data.get("고인 소개", "") or "평생을 가족과 이웃을 위해 헌신하셨던 분."
+    oneliner = oneliner[:80]
+
+    # 장례 사진 섹션
+    photo_items = []
+    for i in range(1, 6):
+        photo_url = d_fields.get(f"장례사진{i}", "")
+        caption   = (
+            d_fields.get(f"장례사진{i} 설명", "")
+            or d_fields.get(f"장례 사진{i} 설명", "")
+        )
+        if photo_url:
+            photo_items.append((photo_url, caption))
+
+    photos_html_parts = []
+    for photo_url, caption in photo_items:
+        photos_html_parts.append(
+            '<div style="margin:0 18px 4px;">'
+            f'<img src="{photo_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">'
+            '</div>'
+            f'<div style="font-size:11px;color:#7a5c40;margin:7px 18px 16px;letter-spacing:0.5px;line-height:1.7;">{caption}</div>'
+        )
+    photos_html = "\n".join(photos_html_parts)
+
+    # 고인 사진
+    if rep_photo:
+        rep_photo_html = (
+            f'<img src="{rep_photo}" '
+            'style="width:108px;height:136px;object-fit:cover;object-position:top;'
+            'border-radius:2px;border:1.5px solid #c8a87a;display:block;">'
+        )
+    else:
+        rep_photo_html = (
+            '<div style="width:108px;height:136px;background:#d4bca0;border-radius:2px;'
+            'border:1.5px solid #c8a87a;display:flex;align-items:center;justify-content:center;">'
+            '<svg width="36" height="36" viewBox="0 0 36 36">'
+            '<circle cx="18" cy="12" r="7" fill="#6b4530" opacity="0.3"/>'
+            '<ellipse cx="18" cy="30" rx="12" ry="8" fill="#6b4530" opacity="0.3"/>'
+            '</svg></div>'
+        )
+
+    # 고인 육성 버튼
+    if deceased_voice:
+        voice_btn_html = (
+            f'<button onclick="playAudio(\'{deceased_voice}\')" '
+            'style="display:flex;align-items:center;gap:10px;padding:10px 12px;'
+            'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;width:100%;'
+            'margin-top:12px;font-family:inherit;">'
+            '<div style="width:34px;height:34px;border-radius:50%;background:#3d2b1f;'
+            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+            '<svg width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+            '<div style="text-align:left;">'
+            '<div style="font-size:9px;color:#b08860;letter-spacing:1px;margin-bottom:2px;">육성 인사말</div>'
+            f'<div style="font-size:11px;color:#3d2b1f;">故 {deceased_name}님의 마지막 인사말</div>'
+            '</div></button>'
+        )
+    else:
+        voice_btn_html = ""
+
+    # 상주 단체사진
+    if chief_photo:
+        chief_photo_html = (
+            f'<img src="{chief_photo}" '
+            'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:2px;">'
+        )
+    else:
+        chief_photo_html = (
+            '<div style="width:100%;aspect-ratio:16/9;background:#d0b898;border-radius:2px;'
+            'display:flex;align-items:center;justify-content:center;">'
+            '<svg width="44" height="44" viewBox="0 0 44 44" opacity="0.2">'
+            '<path d="M4 32 L14 20 L21 28 L28 18 L40 32Z" fill="#6b4530"/>'
+            '<circle cx="34" cy="12" r="5" fill="#6b4530"/></svg></div>'
+        )
+
+    # 상주 육성 버튼 (사진 위 오버레이)
+    if chief_voice:
+        chief_voice_btn = (
+            f'<button onclick="playAudio(\'{chief_voice}\')" '
+            'style="display:flex;align-items:center;gap:10px;padding:10px 12px;'
+            'background:rgba(61,43,31,0.88);border:0.5px solid rgba(200,168,122,0.5);'
+            'cursor:pointer;font-family:inherit;">'
+            '<div style="width:34px;height:34px;border-radius:50%;'
+            'background:rgba(255,240,220,0.15);border:1px solid rgba(255,230,190,0.3);'
+            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+            '<svg width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+            '<div style="text-align:left;">'
+            '<div style="font-size:9px;color:rgba(255,230,190,0.55);letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
+            '<div style="font-size:11px;color:#fef0dc;">상주 육성 듣기</div>'
+            '</div></button>'
+        )
+        chief_photo_section = (
+            '<div style="position:relative;margin-bottom:6px;">'
+            + chief_photo_html
+            + '<div style="position:absolute;bottom:12px;right:12px;">'
+            + chief_voice_btn
+            + '</div></div>'
+        )
+    else:
+        chief_photo_section = (
+            '<div style="margin-bottom:6px;">' + chief_photo_html + '</div>'
+        )
+
+    # 메모리얼 페이지 URL
+    memorial_url = (
+        "https://kiki4i.github.io/humandocu/bugo/"
+        + urllib.parse.quote("adv-memorial-" + safe_filename(deceased_name))
+        + ".html"
+    )
+
+    # 카카오 / 문자 링크
+    if "kakao" in contact.lower() or "open" in contact.lower() or "http" in contact.lower():
+        kakao_href = contact
+        sms_href   = "#"
+    else:
+        kakao_href = f"https://open.kakao.com/o/{contact}"
+        sms_href   = f"sms:{contact}?body=故%20{urllib.parse.quote(deceased_name)}%20선생님의%20명복을%20빕니다.%20가족분들%20건강%20잘%20챙기시길%20바랍니다."
+
+    html = (
+        "<!DOCTYPE html>\n"
+        '<html lang="ko">\n'
+        "<head>\n"
+        '<meta charset="UTF-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+        f"<title>故 {deceased_name} 답례장 | 휴먼다큐</title>\n"
+        "<style>\n"
+        "*{margin:0;padding:0;box-sizing:border-box;}\n"
+        "body{background:#fdf8f2;font-family:'Noto Serif KR',Georgia,serif;max-width:480px;margin:0 auto;}\n"
+        "</style>\n"
+        "</head>\n"
+        "<body>\n\n"
+
+        # 1. 배너
+        '<div style="background:#3d2b1f;padding:48px 28px 40px;text-align:center;">\n'
+        '<div style="font-size:26px;font-weight:300;color:#fef0dc;letter-spacing:6px;margin-bottom:8px;">정말 고맙습니다</div>\n'
+        '<div style="font-size:17px;font-weight:300;color:rgba(254,240,220,0.75);letter-spacing:3px;margin-bottom:16px;">덕분에 잘 모셨습니다</div>\n'
+        '<div style="font-size:12px;color:rgba(255,230,190,0.55);line-height:2.1;letter-spacing:1px;">깊이 감사드리며<br>저희 가족, 꼭 잊지 않겠습니다</div>\n'
+        '<div style="width:28px;height:0.5px;background:rgba(255,230,190,0.2);margin:20px auto 0;"></div>\n'
+        "</div>\n\n"
+
+        # 2. 고인 소개
+        '<div style="background:#f8f0e6;padding:32px 20px 28px;">\n'
+        '<div style="display:flex;gap:16px;align-items:stretch;">\n'
+        '<div style="flex-shrink:0;">' + rep_photo_html + '</div>\n'
+        '<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;">\n'
+        '<div>\n'
+        f'<div style="font-size:20px;color:#3d2b1f;letter-spacing:5px;margin-bottom:5px;">故 {deceased_name}</div>\n'
+        f'<div style="font-size:10px;color:#a07850;letter-spacing:1px;margin-bottom:10px;">{dates_str}</div>\n'
+        f'<div style="font-size:12px;color:#6b4530;line-height:1.95;font-style:italic;">{oneliner}</div>\n'
+        '</div>\n'
+        + voice_btn_html + '\n'
+        '</div>\n'
+        '</div>\n'
+        f'<a href="{memorial_url}" style="display:block;margin:16px 0 0;padding:9px 0;'
+        'border:0.5px solid #c8a87a;font-size:11px;color:#6b4530;letter-spacing:2px;'
+        'background:transparent;text-align:center;text-decoration:none;">메모리얼 페이지 방문하기 →</a>\n'
+        "</div>\n\n"
+
+        # 3. 장례 사진
+        '<div style="background:#ede4d6;padding:28px 0;">\n'
+        '<div style="font-size:10px;color:#a07850;text-align:center;margin-bottom:18px;letter-spacing:2px;">장 례 사 진</div>\n'
+        + photos_html + '\n'
+        "</div>\n\n"
+
+        # 4. 상주 인사
+        '<div style="background:#f8f0e6;padding:32px 20px;">\n'
+        + chief_photo_section + '\n'
+        f'<div style="font-size:13px;color:#5a3e2b;line-height:2.15;text-align:center;margin:22px 0 18px;padding:0 4px;">{chief_msg}</div>\n'
+        '<div style="font-size:11px;color:#a07850;letter-spacing:2px;text-align:center;">상주 일동</div>\n'
+        f'<div style="font-size:15px;color:#3d2b1f;letter-spacing:4px;text-align:center;margin-top:5px;">{chief_name}</div>\n'
+        "</div>\n\n"
+
+        # 5. 위로 전하기
+        '<div style="background:#f0e6d8;padding:28px 20px;">\n'
+        '<div style="font-size:10px;letter-spacing:3px;color:#b08860;text-align:center;margin-bottom:6px;">유족에게 위로 전하기</div>\n'
+        '<div style="font-size:11px;color:#a07850;text-align:center;letter-spacing:1px;margin-bottom:18px;line-height:1.8;">마음을 담아 위로를 전해보세요</div>\n'
+        '<div style="background:#fff9f2;border:0.5px solid #c8a87a;border-radius:6px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:#5a3e2b;line-height:2;">\n'
+        '<div style="font-size:9px;color:#b08860;letter-spacing:2px;margin-bottom:8px;">위로 문구 예시</div>\n'
+        f'故 {deceased_name} 선생님의 명복을 빕니다.<br>\n'
+        '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
+        '가족분들 건강 잘 챙기시길 바랍니다.\n'
+        '</div>\n'
+        f'<a href="{kakao_href}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+        'width:100%;padding:13px;background:#FEE500;border-radius:4px;text-decoration:none;margin-bottom:0;">\n'
+        '<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">카카오톡으로 위로 전하기</span>\n'
+        '</a>\n'
+        f'<a href="{sms_href}" style="display:block;width:100%;margin-top:10px;padding:12px;'
+        'border:0.5px solid #c8a87a;font-size:12px;color:#6b4530;letter-spacing:2px;'
+        'background:transparent;text-align:center;text-decoration:none;">문자로 보내기</a>\n'
+        "</div>\n\n"
+
+        # 6. 휴먼다큐
+        '<div style="background:#3d2b1f;padding:26px 24px;text-align:center;">\n'
+        '<div style="font-size:12px;color:rgba(255,230,190,0.6);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>\n'
+        '<div style="font-size:10px;color:rgba(255,230,190,0.35);line-height:1.9;margin-bottom:14px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>\n'
+        '<a href="https://humandocu.com" style="display:inline-block;padding:8px 20px;'
+        'border:0.5px solid rgba(255,230,190,0.25);font-size:10px;color:rgba(255,230,190,0.5);'
+        'letter-spacing:2px;text-decoration:none;">humandocu.com</a>\n'
+        '<div style="font-size:9px;color:rgba(255,230,190,0.18);letter-spacing:4px;margin-top:16px;">HUMANDOCU MEMORIAL PLATFORM</div>\n'
+        "</div>\n\n"
+
+        '<audio id="audioPlayer" style="display:none;"></audio>\n'
+        "<script>\n"
+        "function playAudio(url) {\n"
+        "  var a = document.getElementById('audioPlayer');\n"
+        "  if (a.src === url && !a.paused) { a.pause(); return; }\n"
+        "  a.src = url; a.play();\n"
+        "}\n"
+        "</script>\n"
+        "</body>\n"
+        "</html>"
+    )
+    return html
+
+
+def send_email_damnyejang(to_email, deceased_name, pages_url):
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#3d2b1f;color:#fef0dc;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU</p>'
+        f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">답례장이 완성되었습니다</p>'
+        '</div>'
+        '<div style="padding:32px;background:#fff">'
+        f'<p style="line-height:2;font-size:14px;">故 <strong>{deceased_name}</strong> 님의 디지털 답례장이 완성되었습니다.<br>카카오톡으로 공유해 주세요.</p>'
+        '<div style="margin:24px 0;text-align:center">'
+        f'<a href="{pages_url}" style="display:inline-block;background:#3d2b1f;color:#fef0dc;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;">📄 답례장 열기</a>'
+        '</div>'
+        '<div style="padding:16px;background:#f8f0e6;border-left:3px solid #c8a87a">'
+        '<p style="font-size:11px;color:#b08860;letter-spacing:2px;margin-bottom:6px;">📋 공유용 링크</p>'
+        f'<a href="{pages_url}" style="color:#3d2b1f;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
+        '</div></div>'
+        '<div style="background:#f8f0e6;padding:20px;text-align:center;font-size:11px;color:#b08860">'
+        '<a href="https://humandocu.com" style="color:#b08860;text-decoration:none">휴먼다큐닷컴</a>'
+        '</div></div>'
+    )
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        json={
+            "from": "휴먼다큐 <noreply@humandocu.com>",
+            "to": [to_email],
+            "subject": f"[휴먼다큐] 故 {deceased_name} 님의 답례장이 완성되었습니다",
+            "html": html_body
+        },
+        timeout=30
+    )
+    resp.raise_for_status()
+    print(f"[DAMNYEJANG] 이메일 발송: {to_email}")
+
+
+@app.route("/webhook/damnyejang", methods=["POST"])
+def webhook_damnyejang():
+    try:
+        payload = request.get_json(force=True)
+        print(f"[DAMNYEJANG] 수신: {json.dumps(payload, ensure_ascii=False)[:300]}")
+
+        d_fields = parse_tally_damnyejang(payload)
+        print(f"[DAMNYEJANG] 파싱: {list(d_fields.keys())}")
+
+        deceased_name = d_fields.get("고인이름", "").strip()
+        chief_name    = d_fields.get("상주 이름", "").strip()
+        chief_words   = d_fields.get("상주가 하고 싶은 말씀", "").strip()
+        contact_email = d_fields.get("신청자 이메일", "mongmong4i@gmail.com")
+
+        if not deceased_name:
+            return jsonify({"error": "고인이름 없음"}), 400
+
+        # Firebase에서 1차 어드밴스드 데이터 조회
+        adv_data = firebase_get_advanced(deceased_name)
+
+        # 상주 인사말 Claude 생성
+        chief_msg = generate_damnyejang_message(deceased_name, chief_name, chief_words, adv_data)
+        print(f"[DAMNYEJANG] 인사말 생성 완료")
+
+        # HTML 생성
+        html = build_html_damnyejang(d_fields, adv_data, chief_msg)
+
+        # GitHub 업로드
+        filename  = "damnyejang-" + safe_filename(deceased_name)
+        pages_url = upload_to_github(filename, html)
+        print(f"[DAMNYEJANG] 업로드: {pages_url}")
+
+        # 이메일 발송
+        send_email_damnyejang(contact_email, deceased_name, pages_url)
+
+        return jsonify({"status": "success", "url": pages_url}), 200
+
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
