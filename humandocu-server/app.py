@@ -1213,8 +1213,14 @@ def firebase_save_advanced(deceased_name, data):
 # ─────────────────────────────────────────────────────────────────
 
 def parse_tally_damnyejang(payload):
+    """답례장 Tally 폼 파싱
+    - 장례사진N 다음에 오는 텍스트 필드를 자동으로 장례사진N설명으로 매핑
+    """
+    raw_fields = payload.get("data", {}).get("fields", [])
     fields = {}
-    for field in payload.get("data", {}).get("fields", []):
+    
+    # 1차 파싱
+    for field in raw_fields:
         label = field.get("label", "").strip()
         ftype = field.get("type", "")
         value = field.get("value")
@@ -1237,6 +1243,26 @@ def parse_tally_damnyejang(payload):
             fields[label] = urls[0] if len(urls) == 1 else (urls if urls else "")
         else:
             fields[label] = str(value).strip() if value else ""
+
+    # 2차: 사진 다음 텍스트 필드를 캡션으로 자동 매핑
+    # Tally에서 placeholder가 label로 잡히는 경우 대비
+    photo_labels = [f"장례사진{i}" for i in range(1, 6)]
+    for idx, field in enumerate(raw_fields):
+        label = field.get("label", "").strip()
+        if label in photo_labels:
+            # 바로 다음 필드가 텍스트면 캡션으로 사용
+            if idx + 1 < len(raw_fields):
+                next_field = raw_fields[idx + 1]
+                next_type  = next_field.get("type", "")
+                next_val   = next_field.get("value")
+                next_label = next_field.get("label", "").strip()
+                if next_type not in ("FILE_UPLOAD",) and next_val:
+                    cap_key = label + "설명"
+                    # 아직 캡션이 없을 때만 매핑
+                    if not fields.get(cap_key):
+                        fields[cap_key] = str(next_val).strip()
+                        print(f"[DAMNYEJANG] 캡션 자동매핑: {label} → {cap_key} = {fields[cap_key][:30]}")
+
     return fields
 
 
@@ -1309,12 +1335,16 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     oneliner = oneliner[:80]
 
     # 장례 사진 섹션
+    # Tally에서 캡션 라벨이 "장례사진1설명" 또는 placeholder 텍스트로 잡힐 수 있음
+    # → 여러 패턴 시도 + 폴백으로 fields 순서 기반 파싱
     photo_items = []
     for i in range(1, 6):
         photo_url = d_fields.get(f"장례사진{i}", "")
-        caption   = (
-            d_fields.get(f"장례사진{i} 설명", "")
+        caption = (
+            d_fields.get(f"장례사진{i}설명", "")
+            or d_fields.get(f"장례사진{i} 설명", "")
             or d_fields.get(f"장례 사진{i} 설명", "")
+            or d_fields.get(f"장례사진{i}캡션", "")
         )
         if photo_url:
             photo_items.append((photo_url, caption))
