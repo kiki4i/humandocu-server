@@ -1036,7 +1036,7 @@ def webhook_basic():
         print(f"[BASIC] Pages URL: {url_a}")
         if contact_email:
             send_email(contact_email, deceased_name, url_a)
-        return jsonify({"status": "success", "deceased": deceased_name, "url": pages_url}), 200
+        return jsonify({"status": "success", "deceased": deceased_name, "url": url_a}), 200
     except Exception as e:
         print(f"[BASIC] 오류: {e}")
         import traceback; traceback.print_exc()
