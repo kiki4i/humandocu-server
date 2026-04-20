@@ -1217,55 +1217,52 @@ def firebase_save_advanced(deceased_name, data):
 # ─────────────────────────────────────────────────────────────────
 
 def parse_tally_damnyejang(payload):
-    """답례장 Tally 폼 파싱
-    - 장례사진N 다음에 오는 텍스트 필드를 자동으로 장례사진N설명으로 매핑
-    """
     raw_fields = payload.get("data", {}).get("fields", [])
     fields = {}
-    
-    # 1차 파싱
-    for field in raw_fields:
-        label = field.get("label", "").strip()
+    photo_idx = 0
+
+    for i, field in enumerate(raw_fields):
+        label = (field.get("label") or "").strip()
         ftype = field.get("type", "")
         value = field.get("value")
-        if value is None:
-            continue
+
         if ftype == "FILE_UPLOAD":
             urls = []
             if isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
                         u = item.get("url") or item.get("downloadUrl") or ""
-                        if u:
-                            urls.append(u)
+                        if u: urls.append(u)
                     elif isinstance(item, str):
                         urls.append(item)
-            elif isinstance(value, dict):
-                u = value.get("url") or value.get("downloadUrl") or ""
-                if u:
-                    urls.append(u)
-            fields[label] = urls[0] if len(urls) == 1 else (urls if urls else "")
-        else:
-            fields[label] = str(value).strip() if value else ""
+            url = urls[0] if urls else ""
 
-    # 2차: 사진 다음 텍스트 필드를 캡션으로 자동 매핑
-    # Tally에서 placeholder가 label로 잡히는 경우 대비
-    photo_labels = [f"장례사진{i}" for i in range(1, 6)]
-    for idx, field in enumerate(raw_fields):
-        label = field.get("label", "").strip()
-        if label in photo_labels:
-            # 바로 다음 필드가 텍스트면 캡션으로 사용
-            if idx + 1 < len(raw_fields):
-                next_field = raw_fields[idx + 1]
-                next_type  = next_field.get("type", "")
-                next_val   = next_field.get("value")
-                next_label = next_field.get("label", "").strip()
-                if next_type not in ("FILE_UPLOAD",) and next_val:
-                    cap_key = label + "설명"
-                    # 아직 캡션이 없을 때만 매핑
-                    if not fields.get(cap_key):
-                        fields[cap_key] = str(next_val).strip()
-                        print(f"[DAMNYEJANG] 캡션 자동매핑: {label} → {cap_key} = {fields[cap_key][:30]}")
+            # 장례사진N설명 label 아래 FILE_UPLOAD
+            if label.startswith("장례사진") and label.endswith("설명"):
+                photo_idx += 1
+                fields[f"장례사진{photo_idx}"] = url
+            elif label == "고인 대표사진":
+                fields["고인 대표사진"] = url
+            elif label == "유가족 단체사진":
+                fields["유가족 단체사진"] = url
+            elif label == "고인 육성 파일":
+                fields["고인 육성 파일"] = url
+            elif label == "상주 육성 파일":
+                fields["상주 육성 파일"] = url
+            else:
+                fields[label] = url
+
+        elif ftype == "INPUT_TEXT" or ftype == "TEXTAREA" or ftype == "TEXT":
+            # 장례사진 캡션 텍스트 (label 없거나 placeholder만 있는 경우)
+            if not label and photo_idx > 0:
+                cap_key = f"장례사진{photo_idx}설명"
+                if cap_key not in fields:
+                    fields[cap_key] = str(value).strip() if value else ""
+            else:
+                fields[label] = str(value).strip() if value else ""
+        else:
+            if label:
+                fields[label] = str(value).strip() if value else ""
 
     return fields
 
