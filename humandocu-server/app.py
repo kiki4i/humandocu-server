@@ -925,7 +925,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '<div class="hero"><img src="' + BANNER_IMAGES.get(religion, BANNER_IMAGES["무교"]) + '" alt=""><div class="hero-overlay"></div><div class="hero-txt"><div class="hero-hanja">訃告</div></div><div class="hero-wm">humandocu.com</div></div>'
         + photo_section +
         '<div class="header">'
-        '<div class="deceased-name">故 ' + deceased_name + '</div>'
+       '<div class="deceased-name">故 ' + deceased_name + ('<span style="font-size:16px;color:rgba(200,169,110,0.7);margin-left:8px;letter-spacing:2px"> ' + title + '</span>' if title else '') + '</div>'
         '<div class="rip-text">' + rip + '</div>'
         '</div>'
         '<div class="dates-verse">'
