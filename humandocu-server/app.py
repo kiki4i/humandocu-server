@@ -1032,78 +1032,70 @@ def webhook_basic():
 
 @app.route("/webhook/advanced", methods=["POST"])
 def webhook_advanced():
-    try:
-        payload = request.get_json(force=True)
-        print("[ADVANCED] 웹훅 수신")
-        fields = parse_tally_advanced(payload)
-        print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
+    payload = request.get_json(force=True)
 
-        deceased_name = fields.get("고인 성함", "").strip()
-        if not deceased_name:
-            return jsonify({"error": "고인 성함 없음"}), 400
+    def process():
+        try:
+            print("[ADVANCED] 웹훅 수신")
+            fields = parse_tally_advanced(payload)
+            print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
 
-        # 어드밴스드 전용 필드
-        title         = fields.get("직함/직책", "")
-        intro         = fields.get("고인 한줄 소개", "")
-        relationship  = fields.get("고인과 상주의 관계", "")
-        chief_name    = fields.get("상주 성함", "")
-        life_events   = fields.get("생애 주요 사건", "")
-        photo_url     = fields.get("고인 사진(영정)", "")
+            deceased_name = fields.get("고인 성함", "").strip()
+            if not deceased_name:
+                return
 
-        # 베이직과 공통 필드
-        gender        = fields.get("성별", "")
-        memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
-        personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
-        bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
-                        fields.get(" 고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
-        last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
-        contact_email = fields.get("신청자 이메일", "")
+            title         = fields.get("직함/직책", "")
+            intro         = fields.get("고인 한줄 소개", "")
+            relationship  = fields.get("고인과 상주의 관계", "")
+            chief_name    = fields.get("상주 성함", "")
+            life_events   = fields.get("생애 주요 사건", "")
+            photo_url     = fields.get("고인 사진(영정)", "")
+            gender        = fields.get("성별", "")
+            memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
+            personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
+            bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
+                            fields.get(" 고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
+            last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
+            contact_email = fields.get("신청자 이메일", "")
 
-        print("[ADVANCED] Claude API 호출 - 버전A...")
-        one_liner_a, tribute_para_a = generate_tribute_advanced(
-            deceased_name, gender, title, intro, memory, personality, bright_moment, last_words
-        )
-        print("[ADVANCED] Claude API 호출 - 버전B...")
-        one_liner_b, tribute_para_b = generate_tribute_advanced(
-            deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="B"
-        )
-        print(f"[ADVANCED] 추모글A: {one_liner_a}")
-        print(f"[ADVANCED] 추모글B: {one_liner_b}")
+            print("[ADVANCED] Claude API 호출 - 버전A...")
+            one_liner_a, tribute_para_a = generate_tribute_advanced(
+                deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"
+            )
+            print("[ADVANCED] Claude API 호출 - 버전B...")
+            one_liner_b, tribute_para_b = generate_tribute_advanced(
+                deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="B"
+            )
+            print(f"[ADVANCED] 추모글A: {one_liner_a}")
+            print(f"[ADVANCED] 추모글B: {one_liner_b}")
 
-        # Firebase에 1차 어드밴스드 데이터 저장 (답례장 연동용)
-        firebase_save_advanced(deceased_name, {
-            "생년월일": fields.get("생년월일", ""),
-            "별세일": fields.get("별세일", ""),
-            "한줄평": one_liner_a,
-            "고인 소개": intro,
-            "상주 성함": chief_name,
-            "신청자 이메일": contact_email,
-        })
-        filename   = "adv-" + safe_filename(deceased_name)
-        filename_b = "adv-" + safe_filename(deceased_name) + "-b"
-        html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
-        html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
-        pages_url = upload_to_github(filename,   html_a)
-        _         = upload_to_github(filename_b, html_b)
-        print(f"[ADVANCED] Pages URL: {pages_url}")
+            firebase_save_advanced(deceased_name, {
+                "생년월일": fields.get("생년월일", ""),
+                "별세일":   fields.get("별세일", ""),
+                "한줄평":   one_liner_a,
+                "고인 소개": intro,
+                "상주 성함": chief_name,
+                "신청자 이메일": contact_email,
+            })
 
-        if contact_email:
-            send_email_advanced(contact_email, deceased_name, pages_url)
+            filename   = "adv-" + safe_filename(deceased_name)
+            filename_b = "adv-" + safe_filename(deceased_name) + "-b"
+            html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+            html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
+            pages_url = upload_to_github(filename,   html_a)
+            _         = upload_to_github(filename_b, html_b)
+            print(f"[ADVANCED] Pages URL: {pages_url}")
 
-        return jsonify({
-            "status": "success",
-            "deceased": deceased_name,
-            "url": pages_url,
-            "photo_url": photo_url,
-            "life_events": life_events,
-            "relationship": relationship,
-            "chief_name": chief_name
-        }), 200
+            if contact_email:
+                send_email_advanced(contact_email, deceased_name, pages_url)
 
-    except Exception as e:
-        print(f"[ADVANCED] 오류: {e}")
-        import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            print(f"[ADVANCED] 오류: {e}")
+            import traceback; traceback.print_exc()
+
+    import threading
+    threading.Thread(target=process).start()
+    return jsonify({"status": "received"}), 200
 
 
 @app.route("/", methods=["GET"])
