@@ -1507,8 +1507,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         # 4. 상주 인사
         '<div style="background:#f8f0e6;padding:32px 20px;">\n'
         + chief_photo_section + '\n'
-        f'<div style="font-size:13px;color:#5a3e2b;line-height:2.15;text-align:center;margin:22px 0 18px;padding:0 4px;">{chief_msg}</div>\n'
-        '<div style="font-size:11px;color:#a07850;letter-spacing:2px;text-align:center;">상주 일동</div>\n'
+        f'<div style="font-size:13px;color:#5a3e2b;line-height:2.15;text-align:center;margin:22px 0 18px;padding:0 4px;">{chief_msg}</div>\n' 
         f'<div style="font-size:15px;color:#3d2b1f;letter-spacing:4px;text-align:center;margin-top:5px;">{chief_name}</div>\n'
         "</div>\n\n"
 
