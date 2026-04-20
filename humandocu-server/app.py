@@ -1521,7 +1521,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
         '가족분들 건강 잘 챙기시길 바랍니다.\n'
         '</div>\n'
-        f'<a href="{kakao_href}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+        f'<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">{chief_name}에게 카카오톡으로 위로 전하기</span>\n'
         'width:100%;padding:13px;background:#FEE500;border-radius:4px;text-decoration:none;margin-bottom:0;">\n'
         '<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">카카오톡으로 위로 전하기</span>\n'
         '</a>\n'
