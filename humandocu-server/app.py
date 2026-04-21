@@ -1220,7 +1220,7 @@ def parse_tally_damnyejang(payload):
     raw_fields = payload.get("data", {}).get("fields", [])
     fields = {}
     photo_idx = 0
-    for i, field in enumerate(raw_fields):
+    for field in raw_fields:
         label = (field.get("label") or "").strip()
         ftype = field.get("type", "")
         value = field.get("value")
@@ -1230,11 +1230,12 @@ def parse_tally_damnyejang(payload):
                 for item in value:
                     if isinstance(item, dict):
                         u = item.get("url") or item.get("downloadUrl") or ""
-                        if u: urls.append(u)
+                        if u:
+                            urls.append(u)
                     elif isinstance(item, str):
                         urls.append(item)
             url = urls[0] if urls else ""
-            if label.startswith("장례사진") and ("설명" in label):
+            if label.startswith("장례사진") and "설명" in label:
                 photo_idx += 1
                 fields[f"장례사진{photo_idx}"] = url
             elif label == "고인 대표사진":
@@ -1247,17 +1248,13 @@ def parse_tally_damnyejang(payload):
                 fields["상주 육성 파일"] = url
             else:
                 fields[label] = url
-        elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
+        elif value is not None:
             if not label and photo_idx > 0:
                 cap_key = f"장례사진{photo_idx}설명"
                 fields[cap_key] = str(value).strip() if value else ""
-            else:
-                fields[label] = str(value).strip() if value else ""
-        else:
-            if label:
+            elif label:
                 fields[label] = str(value).strip() if value else ""
     return fields
-
 
 # ─────────────────────────────────────────────────────────────────
 # Claude API - 상주 인사말 생성
