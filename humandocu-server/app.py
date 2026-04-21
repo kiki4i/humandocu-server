@@ -110,24 +110,32 @@ def parse_tally_advanced(payload):
 
             # FILE_UPLOAD (고인 사진) - URL만 추출
             elif field_type == "FILE_UPLOAD":
-                if isinstance(value, list) and value:
-                    value = value[0].get("url", "")
-                else:
-                    value = ""
+    if isinstance(value, list) and value:
+        url = value[0].get("url", "") if isinstance(value[0], dict) else str(value[0])
+    else:
+        url = ""
+    # 생애 사진 파싱
+    if label and label.startswith("생애 사진") and "설명" in label:
+        # "생애 사진1과 설명" → 생애사진1
+        num = ''.join(filter(str.isdigit, label))
+        fields[f"생애사진{num}"] = url
+    else:
+        value = url
 
             else:
                 if isinstance(value, list): value = value[0] if value else ""
 
             # INPUT_TIME (label=null) 처리
-            if field_type == "INPUT_TIME" and label is None and prev_label:
-                fields[prev_label + " 시간"] = str(value).strip() if value else ""
-            elif label:
-                # 개별 CHECKBOXES 항목 (label에 괄호 포함) 스킵
-                if field_type == "CHECKBOXES" and "(" in label and ")" in label and options == []:
-                    pass
-                else:
-                    fields[label] = str(value).strip() if value else ""
-                    prev_label = label
+           if field_type == "INPUT_TIME" and label is None and prev_label:
+    fields[prev_label + " 시간"] = str(value).strip() if value else ""
+elif label:
+    # 생애 사진 설명 텍스트 처리
+    if label.startswith("생애 사진") and "설명" in label:
+        num = ''.join(filter(str.isdigit, label))
+        # label이 있는 텍스트 필드 = 캡션
+        pass  # FILE_UPLOAD에서 이미 처리
+    fields[label] = str(value).strip() if value else ""
+    prev_label = label
     except Exception as e:
         print(f"[parse_tally_advanced] 오류: {e}")
     return fields
