@@ -1249,7 +1249,7 @@ def parse_tally_damnyejang(payload):
             else:
                 fields[label] = url
         elif value is not None:
-            if not label and photo_idx > 0:
+            if photo_idx > 0 and label not in fields:
                 cap_key = f"장례사진{photo_idx}설명"
                 fields[cap_key] = str(value).strip() if value else ""
             elif label:
