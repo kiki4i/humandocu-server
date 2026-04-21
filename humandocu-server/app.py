@@ -1352,7 +1352,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     if rep_photo:
         rep_photo_html = (
             f'<img src="{rep_photo}" '
-            'style="width:108px;height:136px;object-fit:cover;object-position:top;'
+            'style="width:100%;height:136px;object-fit:cover;object-position:top;'
             'border-radius:2px;border:1.5px solid #c8a87a;display:block;">'
         )
     else:
@@ -1467,9 +1467,9 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
 
         # 2. 고인 소개
         '<div style="background:#f8f0e6;padding:32px 20px 28px;">\n'
-        '<div style="display:flex;gap:16px;align-items:flex-start;">\n'
-        '<div style="flex-shrink:0;">' + rep_photo_html + '</div>\n'
-        '<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;">\n'
+        ''<div style="display:flex;gap:16px;align-items:flex-start;">\n'
+        '<div style="flex-shrink:0;width:108px;">' + rep_photo_html + '</div>\n'
+        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">\n'
         '<div>\n'
         f'<div style="font-size:20px;color:#3d2b1f;letter-spacing:5px;margin-bottom:5px;">故 {deceased_name}</div>\n'
         f'<div style="font-size:10px;color:#a07850;letter-spacing:1px;margin-bottom:10px;">{dates_str}</div>\n'
