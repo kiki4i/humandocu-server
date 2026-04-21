@@ -192,20 +192,20 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
 
 
 def send_email_advanced(to_email, deceased_name, pages_url):
-    """어드밴스드 초안 발송 이메일"""
+    """어드밴스드 부고 발송 이메일"""
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
         '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
-        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고 초안이 발행되었습니다</p>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">디지털 부고가 완성되었습니다</p>'
         '</div>'
         '<div style="padding:32px;background:#fff">'
-        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">삼가 고인의 명복을 빕니다.<br><br>'
-        f'<strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지(초안)가 완성되었습니다.<br><br>'
-        f'<span style="color:#8b7355;font-size:13px">✦ 영정사진·추모관이 포함된 완성본은 6시간 내 재발송됩니다.</span></p>'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
+        f'<strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지가 완성되었습니다.<br><br>'
+        f'아래 링크를 카카오톡으로 공유해 주세요.</p>'
         '<div style="margin:24px 0;text-align:center">'
-        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 초안 열기</a>'
+        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 열기</a>'
         '</div>'
         '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
