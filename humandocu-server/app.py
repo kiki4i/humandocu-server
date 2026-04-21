@@ -112,7 +112,7 @@ def parse_tally_advanced(payload):
                     url = ""
                 if label and label.startswith("생애 사진") and "설명" in label:
                     num = ''.join(filter(str.isdigit, label))
-                    fields[f"생애사진{num}"] = url
+                    fields[f"생애 사진{num}"] = url
                 else:
                     value = url
 
@@ -196,7 +196,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     # 생애 사진
     photos_html = ""
     for i in range(1, 6):
-        url = fields.get(f"생애사진{i}", "")
+        url = fields.get(f"생애 사진{i}", "")
         cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
         if url:
             photos_html += (
