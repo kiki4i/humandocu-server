@@ -1252,12 +1252,13 @@ def parse_tally_damnyejang(payload):
             else:
                 fields[label] = url
 
-        elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
-            # 장례사진 캡션 텍스트 (label 없거나 placeholder만 있는 경우)
+       elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
             if not label and photo_idx > 0:
                 cap_key = f"장례사진{photo_idx}설명"
-                if cap_key not in fields:
-                    fields[cap_key] = str(value).strip() if value else ""
+                # 이미 placeholder가 들어있으면 실제 입력값으로 덮어쓰기
+                fields[cap_key] = str(value).strip() if value else ""
+            else:
+                fields[label] = str(value).strip() if value else ""
             else:
                 fields[label] = str(value).strip() if value else ""
         else:
