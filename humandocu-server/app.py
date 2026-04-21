@@ -1368,7 +1368,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     # 고인 육성 버튼
     if deceased_voice:
         voice_btn_html = (
-            f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\', \'voiceBtn\')" '
+            f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\', \'voiceSvg\')" '
             'style="display:flex;align-items:center;gap:10px;padding:7px 10px;'
             'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
             'margin-top:12px;font-family:inherit;box-sizing:border-box;">'
@@ -1402,14 +1402,14 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     # 상주 육성 버튼 (사진 위 오버레이)
     if chief_voice:
         chief_voice_btn = (
-            f'<button onclick="playAudio(\'{chief_voice}\')" '
+            f'<button onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
             'style="display:flex;align-items:center;gap:10px;padding:10px 12px;'
             'background:rgba(61,43,31,0.88);border:0.5px solid rgba(200,168,122,0.5);'
             'cursor:pointer;font-family:inherit;">'
             '<div style="width:34px;height:34px;border-radius:50%;'
             'background:rgba(255,240,220,0.15);border:1px solid rgba(255,230,190,0.3);'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<svg id="chiefSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
             '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
             '<div style="text-align:left;">'
             '<div style="font-size:9px;color:rgba(255,230,190,0.55);letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
@@ -1526,9 +1526,8 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '<audio id="audioPlayer" style="display:none;"></audio>\n'
         "<script>\n"
         "var currentAudio = null;\n"
-        "var currentBtnId = null;\n"
-        "function toggleAudio(url, btnId) {\n"
-        "  var svg = document.getElementById('voiceSvg');\n"
+        "function toggleAudio(url, svgId) {\n"
+        "  var svg = document.getElementById(svgId);\n"
         "  if (currentAudio && !currentAudio.paused) {\n"
         "    currentAudio.pause();\n"
         "    if (svg) svg.innerHTML = '<polygon points=\"3,1 12,6.5 3,12\" fill=\"#fef0dc\"/>';\n"
