@@ -187,7 +187,83 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
             tribute_para = " ".join(rest)
     return one_liner, tribute_para
 
+def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url):
+    birth_date = fmt_date(adv_data.get("생년월일", ""))
+    death_date = fmt_date(adv_data.get("별세일", ""))
+    one_liner  = adv_data.get("한줄평", "")
+    intro      = adv_data.get("고인 소개", "")
 
+    # 생애 사진
+    photos_html = ""
+    for i in range(1, 6):
+        url = fields.get(f"생애사진{i}", "")
+        cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
+        if url:
+            photos_html += (
+                f'<div style="margin-bottom:20px">'
+                f'<img src="{url}" style="width:100%;border-radius:4px;display:block;">'
+                + (f'<div style="font-size:12px;color:#8b7355;margin-top:6px;line-height:1.7;padding:0 4px">{cap}</div>' if cap else '')
+                + '</div>'
+            )
+
+    # 생애 타임라인
+    timeline_html = ""
+    if life_events:
+        lines = [l.strip() for l in life_events.replace('\r','').split('\n') if l.strip()]
+        items = ""
+        for line in lines:
+            parts = line.split('-', 1) if '-' in line else ['', line]
+            year = parts[0].strip()
+            content = parts[1].strip() if len(parts) > 1 else line
+            items += (
+                f'<div style="display:flex;gap:14px;margin-bottom:14px;align-items:flex-start">'
+                f'<div style="min-width:48px;font-size:11px;color:#8b7355;padding-top:3px;letter-spacing:0.5px">{year}</div>'
+                f'<div style="width:1px;background:#d4c9b5;flex-shrink:0;margin-top:6px"></div>'
+                f'<div style="flex:1;font-size:13px;color:#2c2c2c;line-height:1.8">{content}</div>'
+                f'</div>'
+            )
+        timeline_html = (
+            '<div style="background:#f9f5ef;border:0.5px solid #d4c9b5;padding:20px;margin-top:1px">'
+            '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:16px">생 애 타 임 라 인</div>'
+            + items +
+            '</div>'
+        )
+
+    rep_photo_html = f'<img src="{photo_url}" style="width:120px;height:150px;object-fit:cover;object-position:top;border-radius:2px;border:1.5px solid #c8a96e;display:block;">' if photo_url else ''
+
+    today = datetime.now().strftime("%Y.%m.%d")
+
+    html = (
+        '<!DOCTYPE html><html lang="ko"><head>'
+        '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        f'<title>故 {deceased_name} 메모리얼</title>'
+        '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
+        '<style>'
+        '*{margin:0;padding:0;box-sizing:border-box}'
+        'body{font-family:\'Noto Serif KR\',Georgia,serif;background:#f5f0e8;color:#2c2c2c;max-width:480px;margin:0 auto}'
+        '</style></head><body>'
+        '<div style="background:#1a1a2e;padding:32px 20px;text-align:center">'
+        '<div style="font-size:9px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:16px">MEMORIAL PAGE</div>'
+        + (f'<div style="display:flex;justify-content:center;margin-bottom:16px">{rep_photo_html}</div>' if rep_photo_html else '') +
+        f'<div style="font-size:24px;font-weight:300;color:#f5f0e8;letter-spacing:4px;margin-bottom:6px">故 {deceased_name}</div>'
+        f'<div style="font-size:11px;color:rgba(200,169,110,0.5);letter-spacing:1px">{birth_date} — {death_date}</div>'
+        f'<div style="font-size:13px;font-style:italic;color:rgba(200,169,110,0.7);margin-top:12px;line-height:1.7">{one_liner}</div>'
+        '</div>'
+        '<div style="background:#fff;padding:24px 20px;margin-top:1px">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px">고 인 소 개</div>'
+        f'<div style="font-size:14px;line-height:2.1;color:#3a3a3a">{intro}</div>'
+        '</div>'
+        + timeline_html +
+        ('<div style="background:#fff;padding:20px;margin-top:1px">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:16px">생 애 사 진</div>'
+        + photos_html +
+        '</div>' if photos_html else '') +
+        '<div style="background:#1a1a2e;padding:16px;text-align:center;font-size:11px;color:#5a5a7a;margin-top:1px">'
+        f'<a href="https://humandocu.com" style="color:#8888aa;text-decoration:none">휴먼다큐닷컴</a> · {today}'
+        '</div>'
+        '</body></html>'
+    )
+    return html
 def send_email_advanced(to_email, deceased_name, pages_url):
     """어드밴스드 부고 발송 이메일"""
     html_body = (
@@ -1095,6 +1171,14 @@ def webhook_advanced():
             html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
             html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
             pages_url = upload_to_github(filename,   html_a)
+            memorial_html = build_html_memorial(deceased_name, fields, {
+                "생년월일": fields.get("생년월일", ""),
+                "별세일": fields.get("별세일", ""),
+                "한줄평": one_liner_a,
+                "고인 소개": intro,
+            }, life_events, photo_url)
+            memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
+            upload_to_github(memorial_filename, memorial_html)
             _         = upload_to_github(filename_b, html_b)
             print(f"[ADVANCED] Pages URL: {pages_url}")
 
