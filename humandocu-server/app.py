@@ -1252,7 +1252,7 @@ def parse_tally_damnyejang(payload):
             else:
                 fields[label] = url
 
-        elif ftype == "INPUT_TEXT" or ftype == "TEXTAREA" or ftype == "TEXT":
+        elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
             # 장례사진 캡션 텍스트 (label 없거나 placeholder만 있는 경우)
             if not label and photo_idx > 0:
                 cap_key = f"장례사진{photo_idx}설명"
