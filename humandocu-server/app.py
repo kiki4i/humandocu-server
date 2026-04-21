@@ -1378,7 +1378,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
             '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
             '<div style="text-align:left;">'
             '<div style="font-size:9px;color:#b08860;letter-spacing:1px;margin-bottom:2px;">육성 인사말</div>'
-            f'<div style="font-size:11px;color:#3d2b1f;">故 {deceased_name}님의 마지막 인사말</div>'
+            f'<div style="font-size:11px;color:#3d2b1f;word-break:keep-all;">故 {deceased_name}님의 육성</div>'
             '</div></button>'
         )
     else:
@@ -1467,7 +1467,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
 
         # 2. 고인 소개
         '<div style="background:#f8f0e6;padding:32px 20px 28px;">\n'
-        ''<div style="display:flex;gap:16px;align-items:flex-start;">\n'
+        '<div style="display:flex;gap:16px;align-items:flex-start;">\n'
         '<div style="flex-shrink:0;width:108px;">' + rep_photo_html + '</div>\n'
         '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">\n'
         '<div>\n'
