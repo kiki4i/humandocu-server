@@ -1315,7 +1315,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     chief_name     = d_fields.get("상주 이름", "")
     contact        = d_fields.get("문자 받으실 연락처", "")
     rep_photo      = d_fields.get("고인 대표사진", "")
-    chief_photo    = d_fields.get("유가족 단체사진", "")
+    chief_photo    = d_fields.get("유가족 답례사진", "")
     deceased_voice = d_fields.get("고인 육성 파일", "")
     chief_voice    = d_fields.get("상주 육성 파일", "")
 
@@ -1598,8 +1598,8 @@ def webhook_damnyejang():
 
         deceased_name = d_fields.get("고인이름", "").strip()
         chief_name    = d_fields.get("상주 이름", "").strip()
-        chief_words   = d_fields.get("상주가 하고 싶은 말씀", "").strip()
-        contact_email = d_fields.get("신청자 이메일", "mongmong4i@gmail.com")
+        chief_words = d_fields.get("상주가 대표로 하고 싶은 말씀", "").strip()
+        contact_email = d_fields.get("답례장 링크 받으실 이메일", "mongmong4i@gmail.com")
 
         if not deceased_name:
             return jsonify({"error": "고인이름 없음"}), 400
