@@ -1593,7 +1593,7 @@ def send_email_damnyejang(to_email, deceased_name, pages_url):
 def webhook_damnyejang():
     try:
         payload = request.get_json(force=True)
-        print(f"[DAMNYEJANG] 수신: {json.dumps(payload, ensure_ascii=False)[:300]}")
+        print(f"[DAMNYEJANG] 수신 FULL: {json.dumps(payload, ensure_ascii=False)}")
 
         d_fields = parse_tally_damnyejang(payload)
         print(f"[DAMNYEJANG] 파싱: {list(d_fields.keys())}")
