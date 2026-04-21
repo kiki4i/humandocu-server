@@ -1535,19 +1535,13 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '<div style="font-size:9px;color:rgba(255,230,190,0.18);letter-spacing:4px;margin-top:16px;">HUMANDOCU MEMORIAL PLATFORM</div>\n'
         "</div>\n\n"
 
-        '<audio id="audioPlayer" style="display:none;"></audio>\n'
+     '<audio id="audioPlayer" style="display:none;"></audio>\n'
         "<script>\n"
-        "function playAudio(url) {\n"
-        "  var a = document.getElementById('audioPlayer');\n"
-        "  if (a.src === url && !a.paused) { a.pause(); return; }\n"
-        "  a.src = url; a.play();\n"
-        "}\n"
-        "</script>\n"
         "var currentAudio = null;\n"
-        "function playAudio(url, btn) {\n"
+        "function playAudio(url) {\n"
         "  if (currentAudio && !currentAudio.paused) {\n"
         "    currentAudio.pause();\n"
-        "    if (currentAudio.src.includes(url)) { currentAudio = null; return; }\n"
+        "    if (currentAudio.src === url) { currentAudio = null; return; }\n"
         "  }\n"
         "  currentAudio = new Audio(url);\n"
         "  currentAudio.play();\n"
