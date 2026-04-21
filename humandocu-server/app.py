@@ -1249,13 +1249,12 @@ def parse_tally_damnyejang(payload):
             else:
                 fields[label] = url
         elif value is not None:
-            if photo_idx > 0 and label not in fields:
+            if photo_idx > 0 and label not in ("고인이름", "고인 대표사진", "유가족 답례사진", "고인 육성 파일", "상주 육성 파일"):
                 cap_key = f"장례사진{photo_idx}설명"
                 fields[cap_key] = str(value).strip() if value else ""
-            elif label:
+            if label:
                 fields[label] = str(value).strip() if value else ""
     return fields
-
 # ─────────────────────────────────────────────────────────────────
 # Claude API - 상주 인사말 생성
 # ─────────────────────────────────────────────────────────────────
