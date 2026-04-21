@@ -1238,7 +1238,7 @@ def parse_tally_damnyejang(payload):
             url = urls[0] if urls else ""
 
             # 장례사진N설명 label 아래 FILE_UPLOAD
-            if label.startswith("장례사진") and label.endswith("설명"):
+            if label.startswith("장례사진") and ("설명" in label):
                 photo_idx += 1
                 fields[f"장례사진{photo_idx}"] = url
             elif label == "고인 대표사진":
@@ -1504,8 +1504,6 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         # 4. 상주 인사
         '<div style="background:#f8f0e6;padding:32px 20px;">\n'
         + chief_photo_section + '\n'
-        f'<div style="font-size:13px;color:#5a3e2b;line-height:2.15;text-align:center;margin:22px 0 18px;padding:0 4px;">{chief_msg}</div>\n' 
-        f'<div style="font-size:15px;color:#3d2b1f;letter-spacing:4px;text-align:center;margin-top:5px;">{chief_name}</div>\n'
         "</div>\n\n"
 
         # 5. 위로 전하기
@@ -1518,11 +1516,11 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
         '가족분들 건강 잘 챙기시길 바랍니다.\n'
         '</div>\n'
+        f'<a href="{kakao_href}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+        'width:100%;padding:13px;background:#FEE500;border-radius:4px;text-decoration:none;margin-bottom:10px;">\n'
         f'<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">{chief_name}에게 카카오톡으로 위로 전하기</span>\n'
-        'width:100%;padding:13px;background:#FEE500;border-radius:4px;text-decoration:none;margin-bottom:0;">\n'
-        '<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">카카오톡으로 위로 전하기</span>\n'
         '</a>\n'
-        f'<a href="{sms_href}" style="display:block;width:100%;margin-top:10px;padding:12px;'
+        f'<a href="{sms_href}" style="display:block;width:100%;padding:12px;'
         'border:0.5px solid #c8a87a;font-size:12px;color:#6b4530;letter-spacing:2px;'
         'background:transparent;text-align:center;text-decoration:none;">문자로 보내기</a>\n'
         "</div>\n\n"
