@@ -1220,12 +1220,10 @@ def parse_tally_damnyejang(payload):
     raw_fields = payload.get("data", {}).get("fields", [])
     fields = {}
     photo_idx = 0
-
     for i, field in enumerate(raw_fields):
         label = (field.get("label") or "").strip()
         ftype = field.get("type", "")
         value = field.get("value")
-
         if ftype == "FILE_UPLOAD":
             urls = []
             if isinstance(value, list):
@@ -1236,35 +1234,28 @@ def parse_tally_damnyejang(payload):
                     elif isinstance(item, str):
                         urls.append(item)
             url = urls[0] if urls else ""
-
-            # 장례사진N설명 label 아래 FILE_UPLOAD
             if label.startswith("장례사진") and ("설명" in label):
                 photo_idx += 1
                 fields[f"장례사진{photo_idx}"] = url
             elif label == "고인 대표사진":
                 fields["고인 대표사진"] = url
-            elif label == "유가족 단체사진":
-                fields["유가족 단체사진"] = url
+            elif label == "유가족 답례사진":
+                fields["유가족 답례사진"] = url
             elif label == "고인 육성 파일":
                 fields["고인 육성 파일"] = url
             elif label == "상주 육성 파일":
                 fields["상주 육성 파일"] = url
             else:
                 fields[label] = url
-
-       elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
+        elif ftype in ("INPUT_TEXT", "TEXTAREA", "TEXT", "SHORT_ANSWER", "LONG_ANSWER", "INPUT_NUMBER") or (not label and value):
             if not label and photo_idx > 0:
                 cap_key = f"장례사진{photo_idx}설명"
-                # 이미 placeholder가 들어있으면 실제 입력값으로 덮어쓰기
                 fields[cap_key] = str(value).strip() if value else ""
-            else:
-                fields[label] = str(value).strip() if value else ""
             else:
                 fields[label] = str(value).strip() if value else ""
         else:
             if label:
                 fields[label] = str(value).strip() if value else ""
-
     return fields
 
 
