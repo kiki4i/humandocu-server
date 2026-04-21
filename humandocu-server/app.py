@@ -1368,13 +1368,13 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     # 고인 육성 버튼
     if deceased_voice:
         voice_btn_html = (
-            f'<button onclick="playAudio(\'{deceased_voice}\')" '
+            f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\', \'voiceBtn\')" '
             'style="display:flex;align-items:center;gap:10px;padding:7px 10px;'
             'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
             'margin-top:12px;font-family:inherit;box-sizing:border-box;">'
-            '<div style="width:34px;height:34px;border-radius:50%;background:#3d2b1f;'
+            '<div id="voiceIcon" style="width:34px;height:34px;border-radius:50%;background:#3d2b1f;'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<svg id="voiceSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
             '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
             '<div style="text-align:left;">'
             '<div style="font-size:9px;color:#b08860;letter-spacing:1px;margin-bottom:2px;">육성 인사말</div>'
@@ -1526,13 +1526,20 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '<audio id="audioPlayer" style="display:none;"></audio>\n'
         "<script>\n"
         "var currentAudio = null;\n"
-        "function playAudio(url) {\n"
+        "var currentBtnId = null;\n"
+        "function toggleAudio(url, btnId) {\n"
+        "  var svg = document.getElementById('voiceSvg');\n"
         "  if (currentAudio && !currentAudio.paused) {\n"
         "    currentAudio.pause();\n"
-        "    if (currentAudio.src === url) { currentAudio = null; return; }\n"
+        "    if (svg) svg.innerHTML = '<polygon points=\"3,1 12,6.5 3,12\" fill=\"#fef0dc\"/>';\n"
+        "    if (currentAudio.src.includes(url)) { currentAudio = null; return; }\n"
         "  }\n"
         "  currentAudio = new Audio(url);\n"
         "  currentAudio.play();\n"
+        "  if (svg) svg.innerHTML = '<rect x=\"2\" y=\"1\" width=\"3\" height=\"11\" fill=\"#fef0dc\"/><rect x=\"8\" y=\"1\" width=\"3\" height=\"11\" fill=\"#fef0dc\"/>';\n"
+        "  currentAudio.onended = function() {\n"
+        "    if (svg) svg.innerHTML = '<polygon points=\"3,1 12,6.5 3,12\" fill=\"#fef0dc\"/>';\n"
+        "  };\n"
         "}\n"
         "</script>\n"
         "</body>\n"
