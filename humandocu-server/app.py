@@ -1370,7 +1370,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         voice_btn_html = (
             f'<button onclick="playAudio(\'{deceased_voice}\')" '
             'style="display:flex;align-items:center;gap:10px;padding:7px 10px;'
-            'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;width:100%;'
+            'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
             'margin-top:12px;font-family:inherit;">'
             '<div style="width:34px;height:34px;border-radius:50%;background:#3d2b1f;'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
