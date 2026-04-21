@@ -807,15 +807,18 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
     if notice and "해당 없음" not in notice:
         notice_section = f'<div class="notice-section">{notice}</div>'
 
-    # ── 온라인 추모관 버튼 ──────────────────────────────────────
+   # ── 메모리얼 페이지 버튼 ──────────────────────────────────────
     memorial_filename = urllib.parse.quote("adv-memorial-" + safe_filename(deceased_name))
     memorial_url = f"https://kiki4i.github.io/humandocu/bugo/{memorial_filename}.html"
     memorial_section = (
-        '<div style="background:#0d1f18;padding:20px;margin-top:1px;text-align:center">'
-        '<div style="font-size:9px;letter-spacing:4px;color:rgba(168,210,175,0.5);margin-bottom:8px">온라인 추모관</div>'
-        f'<div style="font-size:16px;color:#e8f0e9;font-family:\'Noto Serif KR\',serif;font-weight:300;margin-bottom:6px">故 {deceased_name} 님의 추모 공간</div>'
-        '<div style="font-size:11px;color:rgba(168,210,175,0.6);margin-bottom:16px">생애 타임라인 · 디지털 방명록</div>'
-        f'<a href="{memorial_url}" style="display:inline-flex;align-items:center;gap:8px;background:rgba(168,210,175,0.12);border:1px solid rgba(168,210,175,0.3);color:#a8d2af;font-size:13px;padding:12px 28px;border-radius:3px;text-decoration:none">추모관 입장하기 →</a>'
+        '<div style="background:#1a1714;padding:24px 20px;margin-top:1px;text-align:center">'
+        '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.5);margin-bottom:12px">MEMORIAL PAGE</div>'
+        f'<div style="font-size:15px;color:#f5f0e8;font-family:\'Noto Serif KR\',serif;font-weight:300;letter-spacing:2px;margin-bottom:6px">故 {deceased_name} 님을 기억합니다</div>'
+        '<div style="font-size:10px;color:rgba(200,169,110,0.5);margin-bottom:18px;letter-spacing:1px">생애 타임라인 · 사진 갤러리 · 디지털 방명록</div>'
+        f'<a href="{memorial_url}" style="display:inline-flex;align-items:center;gap:8px;'
+        'background:transparent;border:0.5px solid rgba(200,169,110,0.4);'
+        'color:#c8a96e;font-size:12px;letter-spacing:2px;padding:11px 28px;'
+        'text-decoration:none;">메모리얼 페이지 방문하기 →</a>'
         '</div>'
     )
 
