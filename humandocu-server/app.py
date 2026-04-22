@@ -6,6 +6,8 @@ import re
 import urllib.parse
 import bcrypt
 import secrets
+import firebase_admin
+from firebase_admin import credentials, firestore as fb_firestore
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 
@@ -1509,96 +1511,81 @@ def test_basic():
 
 
 # ─────────────────────────────────────────────────────────────────
-# Firebase 헬퍼
+# Firebase Admin SDK 초기화 (서비스 계정 → 보안 규칙 우회)
 # ─────────────────────────────────────────────────────────────────
+_fb_db = None
+
+def _get_db():
+    global _fb_db
+    if _fb_db is not None:
+        return _fb_db
+    svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+    if not svc_json:
+        raise RuntimeError("FIREBASE_SERVICE_ACCOUNT_JSON 환경변수가 설정되지 않았습니다")
+    cred = credentials.Certificate(json.loads(svc_json))
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+    _fb_db = fb_firestore.client()
+    print("[FIREBASE] Admin SDK 초기화 완료")
+    return _fb_db
+
 
 def firebase_get_advanced(deceased_name):
     try:
-        import urllib.parse as up
-        safe = up.quote(deceased_name, safe="")
-        url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            raw = resp.json().get("fields", {})
-            result = {}
-            for k, v in raw.items():
-                if "stringValue" in v:
-                    result[k] = v["stringValue"]
-            print(f"[FIREBASE] 조회 성공: {deceased_name} → {list(result.keys())}")
-            return result
-        print(f"[FIREBASE] 조회 없음 {resp.status_code}: {deceased_name}")
+        doc = _get_db().collection("advanced").document(deceased_name).get()
+        if doc.exists:
+            data = doc.to_dict() or {}
+            print(f"[FIREBASE] 조회 성공: {deceased_name} → {list(data.keys())}")
+            return data
+        print(f"[FIREBASE] 문서 없음: {deceased_name}")
         return {}
     except Exception as e:
-        print(f"[FIREBASE] 오류: {e}")
+        print(f"[FIREBASE] 조회 오류: {e}")
         return {}
 
 
 def firebase_save_advanced(deceased_name, data):
     try:
-        import urllib.parse as up
-        safe = up.quote(deceased_name, safe="")
-        url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
-        fs_fields = {k: {"stringValue": str(v)} for k, v in data.items()}
-        resp = requests.patch(url, json={"fields": fs_fields}, timeout=10)
-        if resp.status_code == 200:
-            print(f"[FIREBASE] 저장 성공: {deceased_name} → {list(data.keys())}")
-        else:
-            print(f"[FIREBASE] 저장 실패 {resp.status_code}: {resp.text[:300]}")
+        _get_db().collection("advanced").document(deceased_name).set(data, merge=True)
+        print(f"[FIREBASE] 저장 성공: {deceased_name} → {list(data.keys())}")
     except Exception as e:
         print(f"[FIREBASE] 저장 오류: {e}")
 
 
 # ─────────────────────────────────────────────────────────────────
-# 방명록 Firestore 헬퍼
+# 방명록 Firestore 헬퍼 (Admin SDK)
 # ─────────────────────────────────────────────────────────────────
-FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents"
-
-def _gb_col_url(deceased_name):
-    safe = urllib.parse.quote(deceased_name, safe="")
-    return f"{FIRESTORE_BASE}/advanced/{safe}/guestbook"
 
 def firebase_add_guestbook(deceased_name, author, message, password_hash):
     """방명록 글 추가 → 생성된 doc_id 반환, 실패 시 None"""
     try:
-        url = _gb_col_url(deceased_name)
         now = datetime.now(timezone.utc).isoformat()
-        payload = {
-            "fields": {
-                "author":        {"stringValue": author},
-                "message":       {"stringValue": message},
-                "password_hash": {"stringValue": password_hash},
-                "created_at":    {"stringValue": now},
-            }
-        }
-        resp = requests.post(url, json=payload, timeout=10)
-        if resp.status_code == 200:
-            doc_name = resp.json().get("name", "")
-            doc_id = doc_name.split("/")[-1]
-            print(f"[GUESTBOOK] 저장 성공: {deceased_name} / {doc_id}")
-            return doc_id
-        print(f"[GUESTBOOK] 저장 실패 {resp.status_code}: {resp.text[:200]}")
-        return None
+        _, doc_ref = (_get_db()
+                      .collection("advanced").document(deceased_name)
+                      .collection("guestbook")
+                      .add({"author": author, "message": message,
+                            "password_hash": password_hash, "created_at": now}))
+        print(f"[GUESTBOOK] 저장 성공: {deceased_name} / {doc_ref.id}")
+        return doc_ref.id
     except Exception as e:
         print(f"[GUESTBOOK] 저장 오류: {e}")
         return None
 
+
 def firebase_get_guestbook(deceased_name):
-    """방명록 글 목록 조회 → [{id, author, message, created_at}, ...] (최신순)"""
+    """방명록 글 목록 → [{id, author, message, created_at}, ...] 최신순"""
     try:
-        url = _gb_col_url(deceased_name)
-        resp = requests.get(url, timeout=10)
-        if resp.status_code != 200:
-            return []
-        documents = resp.json().get("documents", [])
+        docs = (_get_db()
+                .collection("advanced").document(deceased_name)
+                .collection("guestbook").get())
         result = []
-        for doc in documents:
-            fields = doc.get("fields", {})
-            doc_id = doc.get("name", "").split("/")[-1]
+        for doc in docs:
+            d = doc.to_dict() or {}
             result.append({
-                "id":         doc_id,
-                "author":     fields.get("author", {}).get("stringValue", ""),
-                "message":    fields.get("message", {}).get("stringValue", ""),
-                "created_at": fields.get("created_at", {}).get("stringValue", ""),
+                "id":         doc.id,
+                "author":     d.get("author", ""),
+                "message":    d.get("message", ""),
+                "created_at": d.get("created_at", ""),
             })
         result.sort(key=lambda x: x["created_at"], reverse=True)
         return result
@@ -1606,29 +1593,27 @@ def firebase_get_guestbook(deceased_name):
         print(f"[GUESTBOOK] 조회 오류: {e}")
         return []
 
+
 def firebase_delete_guestbook(deceased_name, doc_id):
     """방명록 글 삭제 → True/False"""
     try:
-        safe = urllib.parse.quote(deceased_name, safe="")
-        safe_id = urllib.parse.quote(doc_id, safe="")
-        url = f"{FIRESTORE_BASE}/advanced/{safe}/guestbook/{safe_id}"
-        resp = requests.delete(url, timeout=10)
-        print(f"[GUESTBOOK] 삭제: {resp.status_code} - {doc_id}")
-        return resp.status_code == 200
+        (_get_db()
+         .collection("advanced").document(deceased_name)
+         .collection("guestbook").document(doc_id).delete())
+        print(f"[GUESTBOOK] 삭제 완료: {doc_id}")
+        return True
     except Exception as e:
         print(f"[GUESTBOOK] 삭제 오류: {e}")
         return False
 
+
 def firebase_get_guestbook_doc(deceased_name, doc_id):
-    """특정 방명록 문서 조회 (비밀번호 검증용)"""
+    """특정 방명록 문서 조회 (비밀번호 검증용) → plain dict or None"""
     try:
-        safe = urllib.parse.quote(deceased_name, safe="")
-        safe_id = urllib.parse.quote(doc_id, safe="")
-        url = f"{FIRESTORE_BASE}/advanced/{safe}/guestbook/{safe_id}"
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            return resp.json().get("fields", {})
-        return None
+        doc = (_get_db()
+               .collection("advanced").document(deceased_name)
+               .collection("guestbook").document(doc_id).get())
+        return doc.to_dict() if doc.exists else None
     except Exception as e:
         print(f"[GUESTBOOK] 단건 조회 오류: {e}")
         return None
@@ -2111,8 +2096,8 @@ def delete_guestbook(doc_id):
     if fields is None:
         return jsonify({"error": "존재하지 않는 글"}), 404
 
-    # 작성자 비밀번호 확인
-    author_hash = fields.get("password_hash", {}).get("stringValue", "")
+    # 작성자 비밀번호 확인 (Admin SDK → plain dict)
+    author_hash = fields.get("password_hash", "")
     author_ok = bool(author_hash and bcrypt.checkpw(password.encode(), author_hash.encode()))
     print(f"[DELETE] author_ok={author_ok}, has_author_hash={bool(author_hash)}")
 
@@ -2142,54 +2127,37 @@ def delete_guestbook(doc_id):
 
 @app.route("/api/debug/advanced", methods=["GET"])
 def debug_advanced():
-    """GET /api/debug/advanced?name=고인이름 — Firestore advanced 문서 필드 확인 (해시값 제외)"""
+    """GET /api/debug/advanced?name=고인이름 — Firestore advanced 문서 필드 확인"""
     name = request.args.get("name", "").strip()
     if not name:
         return jsonify({"error": "name 파라미터 필요"}), 400
-
-    safe = urllib.parse.quote(name, safe="")
-    url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code != 200:
-            return jsonify({"error": f"Firestore {resp.status_code}", "body": resp.text[:300]}), 502
-        raw = resp.json().get("fields", {})
-        safe_fields = {}
-        for k, v in raw.items():
-            if "stringValue" in v:
-                val = v["stringValue"]
-                # 해시값(bcrypt)은 마스킹
-                if k == "admin_password":
-                    safe_fields[k] = f"[hash:{len(val)}chars] {val[:7]}..."
-                else:
-                    safe_fields[k] = val
-        return jsonify({"name": name, "fields": safe_fields, "field_keys": list(raw.keys())}), 200
+        doc = _get_db().collection("advanced").document(name).get()
+        if not doc.exists:
+            return jsonify({"error": "문서 없음", "name": name}), 404
+        data = doc.to_dict() or {}
+        safe_fields = {
+            k: (f"[hash:{len(str(v))}chars] {str(v)[:7]}..." if k == "admin_password" else v)
+            for k, v in data.items()
+        }
+        return jsonify({"name": name, "fields": safe_fields, "field_keys": list(data.keys())}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/debug/set-admin-password", methods=["POST"])
 def debug_set_admin_password():
-    """POST body: {name, admin_password} — 기존 부고에 관리자 비밀번호를 수동 설정"""
+    """POST {name, admin_password} — 기존 부고에 관리자 비밀번호 수동 설정"""
     data = request.get_json(silent=True) or {}
     name     = (data.get("name", "") or "").strip()
     admin_pw = (data.get("admin_password", "") or "").strip()
     if not name or not admin_pw:
         return jsonify({"error": "name, admin_password 필요"}), 400
-
     pw_hash = bcrypt.hashpw(admin_pw.encode(), bcrypt.gensalt()).decode()
-
-    safe = urllib.parse.quote(name, safe="")
-    url  = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
-    # updateMask 사용 → 기존 필드 유지하고 admin_password만 추가/덮어쓰기
-    patch_url = url + "?updateMask.fieldPaths=admin_password"
     try:
-        resp = requests.patch(patch_url,
-            json={"fields": {"admin_password": {"stringValue": pw_hash}}},
-            timeout=10)
-        if resp.status_code == 200:
-            return jsonify({"status": "ok", "message": f"{name} 관리자 비밀번호 설정 완료"}), 200
-        return jsonify({"error": f"Firestore {resp.status_code}", "body": resp.text[:300]}), 502
+        _get_db().collection("advanced").document(name).set(
+            {"admin_password": pw_hash}, merge=True)
+        return jsonify({"status": "ok", "message": f"{name} 관리자 비밀번호 설정 완료"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
