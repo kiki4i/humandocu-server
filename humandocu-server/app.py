@@ -204,7 +204,7 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
     return one_liner, tribute_para
 
 def _build_guestbook_section(deceased_name):
-    _api = "https://humandocu-production.up.railway.app"
+    _api = "https://humandocu-server-production.up.railway.app"
     safe_name = (deceased_name
         .replace('&', '&amp;').replace('"', '&quot;')
         .replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;'))
