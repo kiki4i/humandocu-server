@@ -4,10 +4,26 @@ import base64
 import requests
 import re
 import urllib.parse
+import bcrypt
 from flask import Flask, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin", "")
+    allowed = ("https://kiki4i.github.io", "http://localhost")
+    if any(origin.startswith(a) for a in allowed):
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
+@app.route("/api/guestbook", methods=["OPTIONS"])
+@app.route("/api/guestbook/<doc_id>", methods=["OPTIONS"])
+def guestbook_preflight(doc_id=None):
+    return "", 204
 
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
@@ -1297,6 +1313,92 @@ def firebase_save_advanced(deceased_name, data):
 
 
 # ─────────────────────────────────────────────────────────────────
+# 방명록 Firestore 헬퍼
+# ─────────────────────────────────────────────────────────────────
+FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents"
+
+def _gb_col_url(deceased_name):
+    safe = urllib.parse.quote(deceased_name, safe="")
+    return f"{FIRESTORE_BASE}/advanced/{safe}/guestbook"
+
+def firebase_add_guestbook(deceased_name, author, message, password_hash):
+    """방명록 글 추가 → 생성된 doc_id 반환, 실패 시 None"""
+    try:
+        url = _gb_col_url(deceased_name)
+        now = datetime.now(timezone.utc).isoformat()
+        payload = {
+            "fields": {
+                "author":        {"stringValue": author},
+                "message":       {"stringValue": message},
+                "password_hash": {"stringValue": password_hash},
+                "created_at":    {"stringValue": now},
+            }
+        }
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code == 200:
+            doc_name = resp.json().get("name", "")
+            doc_id = doc_name.split("/")[-1]
+            print(f"[GUESTBOOK] 저장 성공: {deceased_name} / {doc_id}")
+            return doc_id
+        print(f"[GUESTBOOK] 저장 실패 {resp.status_code}: {resp.text[:200]}")
+        return None
+    except Exception as e:
+        print(f"[GUESTBOOK] 저장 오류: {e}")
+        return None
+
+def firebase_get_guestbook(deceased_name):
+    """방명록 글 목록 조회 → [{id, author, message, created_at}, ...] (최신순)"""
+    try:
+        url = _gb_col_url(deceased_name)
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return []
+        documents = resp.json().get("documents", [])
+        result = []
+        for doc in documents:
+            fields = doc.get("fields", {})
+            doc_id = doc.get("name", "").split("/")[-1]
+            result.append({
+                "id":         doc_id,
+                "author":     fields.get("author", {}).get("stringValue", ""),
+                "message":    fields.get("message", {}).get("stringValue", ""),
+                "created_at": fields.get("created_at", {}).get("stringValue", ""),
+            })
+        result.sort(key=lambda x: x["created_at"], reverse=True)
+        return result
+    except Exception as e:
+        print(f"[GUESTBOOK] 조회 오류: {e}")
+        return []
+
+def firebase_delete_guestbook(deceased_name, doc_id):
+    """방명록 글 삭제 → True/False"""
+    try:
+        safe = urllib.parse.quote(deceased_name, safe="")
+        safe_id = urllib.parse.quote(doc_id, safe="")
+        url = f"{FIRESTORE_BASE}/advanced/{safe}/guestbook/{safe_id}"
+        resp = requests.delete(url, timeout=10)
+        print(f"[GUESTBOOK] 삭제: {resp.status_code} - {doc_id}")
+        return resp.status_code == 200
+    except Exception as e:
+        print(f"[GUESTBOOK] 삭제 오류: {e}")
+        return False
+
+def firebase_get_guestbook_doc(deceased_name, doc_id):
+    """특정 방명록 문서 조회 (비밀번호 검증용)"""
+    try:
+        safe = urllib.parse.quote(deceased_name, safe="")
+        safe_id = urllib.parse.quote(doc_id, safe="")
+        url = f"{FIRESTORE_BASE}/advanced/{safe}/guestbook/{safe_id}"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            return resp.json().get("fields", {})
+        return None
+    except Exception as e:
+        print(f"[GUESTBOOK] 단건 조회 오류: {e}")
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────
 # 답례장 Tally 파싱
 # ─────────────────────────────────────────────────────────────────
 
@@ -1707,6 +1809,73 @@ def webhook_damnyejang():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+# ─────────────────────────────────────────────────────────────────
+# 방명록 API
+# ─────────────────────────────────────────────────────────────────
+
+@app.route("/api/guestbook", methods=["GET"])
+def get_guestbook():
+    """GET /api/guestbook?name=고인이름"""
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "name 파라미터 필요"}), 400
+    entries = firebase_get_guestbook(name)
+    return jsonify({"entries": entries}), 200
+
+
+@app.route("/api/guestbook", methods=["POST"])
+def post_guestbook():
+    """POST /api/guestbook  body: {name, author, message, password}"""
+    data = request.get_json(silent=True) or {}
+    name     = (data.get("name", "") or "").strip()
+    author   = (data.get("author", "") or "").strip()
+    message  = (data.get("message", "") or "").strip()
+    password = (data.get("password", "") or "").strip()
+
+    if not name:
+        return jsonify({"error": "name 필요"}), 400
+    if not author:
+        return jsonify({"error": "작성자 이름 필요"}), 400
+    if not message:
+        return jsonify({"error": "내용 필요"}), 400
+    if not password:
+        return jsonify({"error": "비밀번호 필요"}), 400
+    if len(message) > 500:
+        return jsonify({"error": "내용은 500자 이내로 작성해 주세요"}), 400
+
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    doc_id = firebase_add_guestbook(name, author, message, pw_hash)
+    if doc_id is None:
+        return jsonify({"error": "저장 실패"}), 500
+
+    return jsonify({"status": "ok", "id": doc_id}), 201
+
+
+@app.route("/api/guestbook/<doc_id>", methods=["DELETE"])
+def delete_guestbook(doc_id):
+    """DELETE /api/guestbook/<doc_id>  body: {name, password}"""
+    data = request.get_json(silent=True) or {}
+    name     = (data.get("name", "") or "").strip()
+    password = (data.get("password", "") or "").strip()
+
+    if not name or not password:
+        return jsonify({"error": "name, password 필요"}), 400
+
+    fields = firebase_get_guestbook_doc(name, doc_id)
+    if fields is None:
+        return jsonify({"error": "존재하지 않는 글"}), 404
+
+    stored_hash = fields.get("password_hash", {}).get("stringValue", "")
+    if not stored_hash or not bcrypt.checkpw(password.encode(), stored_hash.encode()):
+        return jsonify({"error": "비밀번호가 일치하지 않습니다"}), 403
+
+    ok = firebase_delete_guestbook(name, doc_id)
+    if not ok:
+        return jsonify({"error": "삭제 실패"}), 500
+
+    return jsonify({"status": "ok"}), 200
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
