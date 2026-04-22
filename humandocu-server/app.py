@@ -5,6 +5,7 @@ import requests
 import re
 import urllib.parse
 import bcrypt
+import secrets
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 
@@ -470,6 +471,73 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         timeout=30)
     resp.raise_for_status()
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
+
+
+def send_email_admin_password(to_email, deceased_name, admin_pw):
+    """추모관 관리자 비밀번호를 상주 이메일로 전송"""
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · MEMORIAL</p>'
+        f'<h2 style="font-weight:300;letter-spacing:3px;font-size:20px;margin-bottom:6px">故 {deceased_name} 추모관</h2>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">방명록 관리자 비밀번호</p>'
+        '</div>'
+        '<div style="padding:32px;background:#fff">'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
+        f'故 <strong>{deceased_name}</strong> 님의 추모관 방명록 관리자 비밀번호입니다.<br>'
+        f'부적절한 방명록 글을 삭제할 때 사용하세요.</p>'
+        '<div style="margin:24px 0;text-align:center;background:#f5f0e8;border:1px solid #d4c9b5;border-radius:6px;padding:24px">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:10px">관리자 비밀번호</p>'
+        f'<p style="font-size:32px;font-weight:bold;letter-spacing:10px;color:#1a1a2e;margin:0">{admin_pw}</p>'
+        '</div>'
+        '<p style="font-size:12px;color:#8a8a8a;line-height:1.8">이 비밀번호는 안전한 곳에 보관해 주세요.<br>'
+        '방명록 삭제 시 글 작성자 비밀번호 또는 이 관리자 비밀번호를 사용할 수 있습니다.</p>'
+        '</div>'
+        '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
+    )
+    try:
+        resp = requests.post("https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+                  "subject": f"[휴먼다큐] 故 {deceased_name} 추모관 관리자 비밀번호", "html": html_body},
+            timeout=30)
+        resp.raise_for_status()
+        print(f"[ADMIN_PW] 이메일 발송 완료: {to_email}")
+    except Exception as e:
+        print(f"[ADMIN_PW] 이메일 발송 실패: {e}")
+
+
+def send_email_guestbook_notify(to_email, deceased_name, author):
+    """새 방명록 글 알림을 상주 이메일로 전송"""
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#2d4a3e;color:#e8f0e9;padding:28px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.6;margin-bottom:8px">HUMANDOCU · MEMORIAL</p>'
+        f'<h2 style="font-weight:300;letter-spacing:2px;font-size:18px;margin-bottom:4px">故 {deceased_name} 추모관</h2>'
+        '<p style="font-size:12px;opacity:0.6;letter-spacing:1px">새 방명록 알림</p>'
+        '</div>'
+        '<div style="padding:28px;background:#fff">'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
+        f'<strong>{author}</strong> 님이 방명록에 새 글을 남겼습니다.</p>'
+        '<div style="margin:20px 0;padding:16px;background:#f5f0e8;border-left:3px solid #7a9e7e;border-radius:0 4px 4px 0">'
+        f'<p style="font-size:12px;color:#8b7355;margin-bottom:4px;letter-spacing:1px">작성자</p>'
+        f'<p style="font-size:16px;color:#2c2c2c;margin:0">{author}</p>'
+        '</div>'
+        '</div>'
+        '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
+    )
+    try:
+        resp = requests.post("https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+                  "subject": f"[휴먼다큐] 故 {deceased_name} 추모관에 새 방명록이 등록되었습니다", "html": html_body},
+            timeout=30)
+        resp.raise_for_status()
+        print(f"[GUESTBOOK_NOTIFY] 알림 발송 완료: {to_email}")
+    except Exception as e:
+        print(f"[GUESTBOOK_NOTIFY] 알림 발송 실패: {e}")
 
 
 def safe_filename(name):
@@ -1333,6 +1401,9 @@ def webhook_advanced():
             print(f"[ADVANCED] 추모글A: {one_liner_a}")
             print(f"[ADVANCED] 추모글B: {one_liner_b}")
 
+            admin_pw      = "".join(str(secrets.randbelow(10)) for _ in range(6))
+            admin_pw_hash = bcrypt.hashpw(admin_pw.encode(), bcrypt.gensalt()).decode()
+
             firebase_save_advanced(deceased_name, {
                 "생년월일": fields.get("생년월일", ""),
                 "별세일":   fields.get("별세일", ""),
@@ -1340,6 +1411,7 @@ def webhook_advanced():
                 "고인 소개": intro,
                 "상주 성함": chief_name,
                 "신청자 이메일": contact_email,
+                "admin_password": admin_pw_hash,
             })
 
             filename   = "adv-" + safe_filename(deceased_name)
@@ -1360,6 +1432,7 @@ def webhook_advanced():
 
             if contact_email:
                 send_email_advanced(contact_email, deceased_name, pages_url)
+                send_email_admin_password(contact_email, deceased_name, admin_pw)
 
         except Exception as e:
             print(f"[ADVANCED] 오류: {e}")
@@ -2009,6 +2082,15 @@ def post_guestbook():
     if doc_id is None:
         return jsonify({"error": "저장 실패"}), 500
 
+    # 상주 이메일 알림 (비동기 - 응답 지연 방지)
+    import threading
+    def _notify():
+        adv = firebase_get_advanced(name)
+        chief_email = adv.get("신청자 이메일", "")
+        if chief_email:
+            send_email_guestbook_notify(chief_email, name, author)
+    threading.Thread(target=_notify, daemon=True).start()
+
     return jsonify({"status": "ok", "id": doc_id}), 201
 
 
@@ -2026,8 +2108,22 @@ def delete_guestbook(doc_id):
     if fields is None:
         return jsonify({"error": "존재하지 않는 글"}), 404
 
-    stored_hash = fields.get("password_hash", {}).get("stringValue", "")
-    if not stored_hash or not bcrypt.checkpw(password.encode(), stored_hash.encode()):
+    # 작성자 비밀번호 확인
+    author_hash = fields.get("password_hash", {}).get("stringValue", "")
+    author_ok = bool(author_hash and bcrypt.checkpw(password.encode(), author_hash.encode()))
+
+    # 관리자 비밀번호 확인 (작성자 비밀번호가 틀렸을 때만 조회)
+    admin_ok = False
+    if not author_ok:
+        adv = firebase_get_advanced(name)
+        admin_hash = adv.get("admin_password", "")
+        if admin_hash:
+            try:
+                admin_ok = bcrypt.checkpw(password.encode(), admin_hash.encode())
+            except Exception:
+                admin_ok = False
+
+    if not author_ok and not admin_ok:
         return jsonify({"error": "비밀번호가 일치하지 않습니다"}), 403
 
     ok = firebase_delete_guestbook(name, doc_id)
