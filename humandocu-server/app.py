@@ -2125,6 +2125,40 @@ def delete_guestbook(doc_id):
     return jsonify({"status": "ok"}), 200
 
 
+@app.route("/api/debug/firebase-test", methods=["GET"])
+def debug_firebase_test():
+    """Admin SDK 초기화 + 실제 Firestore 읽기를 시도하고 에러 전문을 반환"""
+    import traceback
+    result = {}
+    try:
+        svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+        parsed = json.loads(svc_json)
+        result["step1_json_parse"] = "ok"
+        result["project_id"] = parsed.get("project_id")
+        result["client_email"] = parsed.get("client_email")
+    except Exception as e:
+        result["step1_json_parse"] = f"FAIL: {e}"
+        return jsonify(result), 500
+
+    try:
+        db = _get_db()
+        result["step2_sdk_init"] = "ok"
+    except Exception as e:
+        result["step2_sdk_init"] = f"FAIL: {e}"
+        result["traceback"] = traceback.format_exc()[-3000:]
+        return jsonify(result), 500
+
+    try:
+        db.collection("advanced").limit(1).get()
+        result["step3_firestore_read"] = "ok"
+    except Exception as e:
+        result["step3_firestore_read"] = f"FAIL: {type(e).__name__}: {e}"
+        result["traceback"] = traceback.format_exc()[-3000:]
+        return jsonify(result), 500
+
+    return jsonify(result), 200
+
+
 @app.route("/api/debug/firebase-env", methods=["GET"])
 def debug_firebase_env():
     val = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
