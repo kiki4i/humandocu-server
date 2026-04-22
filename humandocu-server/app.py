@@ -13,7 +13,7 @@ app = Flask(__name__)
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin", "")
-    allowed = ("https://kiki4i.github.io", "http://localhost")
+    allowed = ("https://kiki4i.github.io", "https://humandocu.com", "https://www.humandocu.com", "http://localhost")
     if any(origin.startswith(a) for a in allowed):
         response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
