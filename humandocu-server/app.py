@@ -2125,6 +2125,30 @@ def delete_guestbook(doc_id):
     return jsonify({"status": "ok"}), 200
 
 
+@app.route("/api/debug/firebase-env", methods=["GET"])
+def debug_firebase_env():
+    val = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+    if not val:
+        return jsonify({"exists": False, "length": 0, "preview": None}), 200
+    try:
+        parsed = json.loads(val)
+        parse_ok = True
+        project_id = parsed.get("project_id", "?")
+        client_email = parsed.get("client_email", "?")
+    except Exception as e:
+        parse_ok = False
+        project_id = None
+        client_email = None
+    return jsonify({
+        "exists": True,
+        "length": len(val),
+        "preview": val[:20],
+        "json_parse_ok": parse_ok,
+        "project_id": project_id,
+        "client_email": client_email,
+    }), 200
+
+
 @app.route("/api/debug/advanced", methods=["GET"])
 def debug_advanced():
     """GET /api/debug/advanced?name=고인이름 — Firestore advanced 문서 필드 확인"""
