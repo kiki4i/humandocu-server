@@ -203,6 +203,165 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
             tribute_para = " ".join(rest)
     return one_liner, tribute_para
 
+def _build_guestbook_section(deceased_name):
+    _api = "https://humandocu-production.up.railway.app"
+    safe_name = (deceased_name
+        .replace('&', '&amp;').replace('"', '&quot;')
+        .replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;'))
+    js = """
+const GB_NAME=%s;
+const GB_API="%s";
+let _delId=null;
+function escHtml(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function fmtDate(s){
+  if(!s)return"";
+  var d=new Date(s);
+  return d.getFullYear()+"."+(d.getMonth()+1).toString().padStart(2,"0")+"."+d.getDate().toString().padStart(2,"0");
+}
+function gbRender(entries){
+  var el=document.getElementById("gb-list");
+  if(!entries||!entries.length){
+    el.innerHTML='<div style="text-align:center;padding:28px 0;color:#b0a090;font-size:13px;line-height:2">아직 방명록이 없습니다.<br>첫 번째 추모 글을 남겨 주세요.</div>';
+    return;
+  }
+  el.innerHTML=entries.map(function(e){
+    return '<div style="border-bottom:0.5px solid #e8e2d8;padding:16px 0">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+      +'<div style="font-size:13px;font-weight:500;color:#2c2c2c">'+escHtml(e.author)+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+      +'<span style="font-size:11px;color:#b0a090">'+fmtDate(e.created_at)+'</span>'
+      +'<button data-del-id="'+e.id+'" style="font-size:11px;color:#b0a090;background:none;border:0.5px solid #d4c9b5;border-radius:2px;padding:2px 8px;cursor:pointer;font-family:inherit">삭제</button>'
+      +'</div></div>'
+      +'<div style="font-size:13px;color:#3a3a3a;line-height:1.9;white-space:pre-wrap">'+escHtml(e.message)+'</div>'
+      +'</div>';
+  }).join("");
+}
+function gbLoad(){
+  fetch(GB_API+"/api/guestbook?name="+encodeURIComponent(GB_NAME))
+  .then(function(r){return r.json();})
+  .then(function(d){gbRender(d.entries||[]);})
+  .catch(function(){
+    document.getElementById("gb-list").innerHTML='<div style="text-align:center;padding:20px;color:#b0a090;font-size:13px">불러오기 실패</div>';
+  });
+}
+function gbSubmit(){
+  var author=document.getElementById("gb-author").value.trim();
+  var msg=document.getElementById("gb-message").value.trim();
+  var pw=document.getElementById("gb-pw").value.trim();
+  var info=document.getElementById("gb-form-msg");
+  info.style.display="none";
+  if(!author){info.textContent="이름을 입력해 주세요";info.style.color="#c0392b";info.style.display="block";return;}
+  if(!msg){info.textContent="내용을 입력해 주세요";info.style.color="#c0392b";info.style.display="block";return;}
+  if(!pw){info.textContent="비밀번호를 입력해 주세요";info.style.color="#c0392b";info.style.display="block";return;}
+  var btn=document.getElementById("gb-submit");
+  btn.disabled=true;btn.textContent="저장 중...";
+  fetch(GB_API+"/api/guestbook",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:GB_NAME,author:author,message:msg,password:pw})
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==="ok"){
+      document.getElementById("gb-author").value="";
+      document.getElementById("gb-message").value="";
+      document.getElementById("gb-pw").value="";
+      info.textContent="방명록이 등록되었습니다.";info.style.color="#7a9e7e";info.style.display="block";
+      gbLoad();
+    }else{
+      info.textContent=d.error||"저장 실패";info.style.color="#c0392b";info.style.display="block";
+    }
+    btn.disabled=false;btn.textContent="남기기";
+  })
+  .catch(function(){
+    info.textContent="네트워크 오류. 다시 시도해 주세요.";info.style.color="#c0392b";info.style.display="block";
+    btn.disabled=false;btn.textContent="남기기";
+  });
+}
+function gbDeleteOpen(id){
+  _delId=id;
+  document.getElementById("modal-pw").value="";
+  document.getElementById("modal-err").style.display="none";
+  document.getElementById("gb-modal").style.display="flex";
+}
+function gbModalClose(){
+  _delId=null;
+  document.getElementById("gb-modal").style.display="none";
+}
+function gbDeleteConfirm(){
+  var pw=document.getElementById("modal-pw").value.trim();
+  var errEl=document.getElementById("modal-err");
+  if(!pw){errEl.textContent="비밀번호를 입력해 주세요";errEl.style.display="block";return;}
+  fetch(GB_API+"/api/guestbook/"+_delId,{
+    method:"DELETE",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:GB_NAME,password:pw})
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==="ok"){gbModalClose();gbLoad();}
+    else{errEl.textContent=d.error||"삭제 실패";errEl.style.display="block";}
+  })
+  .catch(function(){errEl.textContent="네트워크 오류";errEl.style.display="block";});
+}
+document.addEventListener("DOMContentLoaded",function(){
+  gbLoad();
+  document.getElementById("gb-list").addEventListener("click",function(ev){
+    var btn=ev.target.closest("[data-del-id]");
+    if(btn)gbDeleteOpen(btn.getAttribute("data-del-id"));
+  });
+});
+""" % (json.dumps(deceased_name), _api)
+
+    return (
+        '<div style="background:#fff;padding:24px 20px;margin-top:1px">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:20px">디 지 털 방 명 록</div>'
+        '<div style="background:#f9f5ef;border:0.5px solid #d4c9b5;border-radius:4px;padding:16px;margin-bottom:20px">'
+        '<div style="font-size:11px;color:#8b7355;margin-bottom:10px;letter-spacing:1px">추모 글 남기기</div>'
+        '<input id="gb-author" placeholder="이름" maxlength="20" '
+        'style="width:100%;padding:9px 12px;border:0.5px solid #d4c9b5;border-radius:3px;font-size:13px;'
+        'font-family:inherit;background:#fff;color:#2c2c2c;margin-bottom:8px;outline:none;display:block">'
+        '<textarea id="gb-message" placeholder="故 ' + safe_name + ' 님을 추모하며..." maxlength="500" rows="4" '
+        'style="width:100%;padding:9px 12px;border:0.5px solid #d4c9b5;border-radius:3px;font-size:13px;'
+        'font-family:inherit;background:#fff;color:#2c2c2c;margin-bottom:8px;outline:none;'
+        'resize:vertical;line-height:1.7;display:block"></textarea>'
+        '<div style="display:flex;gap:8px">'
+        '<input id="gb-pw" placeholder="비밀번호 (삭제 시 필요)" type="password" maxlength="20" '
+        'style="flex:1;padding:9px 12px;border:0.5px solid #d4c9b5;border-radius:3px;font-size:13px;'
+        'font-family:inherit;background:#fff;color:#2c2c2c;outline:none;min-width:0">'
+        '<button id="gb-submit" onclick="gbSubmit()" '
+        'style="padding:9px 18px;background:#1a1a2e;color:#c8a96e;border:none;border-radius:3px;font-size:13px;'
+        'font-family:inherit;cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">남기기</button>'
+        '</div>'
+        '<div id="gb-form-msg" style="font-size:12px;margin-top:8px;display:none"></div>'
+        '</div>'
+        '<div id="gb-list">'
+        '<div style="text-align:center;padding:24px;color:#b0a090;font-size:13px">불러오는 중...</div>'
+        '</div>'
+        '</div>'
+        '<div id="gb-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;'
+        'background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px">'
+        '<div style="background:#fff;padding:24px;border-radius:6px;width:100%;max-width:320px">'
+        '<div style="font-size:14px;color:#2c2c2c;margin-bottom:6px">글 삭제</div>'
+        '<div style="font-size:12px;color:#8b7355;margin-bottom:14px">작성 시 입력한 비밀번호를 입력해 주세요</div>'
+        '<input id="modal-pw" type="password" placeholder="비밀번호" maxlength="20" '
+        'style="width:100%;padding:10px 12px;border:0.5px solid #d4c9b5;border-radius:3px;font-size:14px;'
+        'font-family:inherit;outline:none;margin-bottom:10px;display:block">'
+        '<div id="modal-err" style="font-size:12px;color:#c0392b;margin-bottom:10px;display:none"></div>'
+        '<div style="display:flex;gap:8px;justify-content:flex-end">'
+        '<button onclick="gbModalClose()" '
+        'style="padding:8px 16px;background:#f5f0e8;border:0.5px solid #d4c9b5;border-radius:3px;font-size:13px;'
+        'font-family:inherit;cursor:pointer;color:#2c2c2c">취소</button>'
+        '<button onclick="gbDeleteConfirm()" '
+        'style="padding:8px 16px;background:#1a1a2e;border:none;border-radius:3px;font-size:13px;'
+        'font-family:inherit;cursor:pointer;color:#c8a96e">삭제</button>'
+        '</div>'
+        '</div>'
+        '</div>'
+        '<script>' + js + '</script>'
+    )
+
+
 def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url):
     birth_date = fmt_date(adv_data.get("생년월일", ""))
     death_date = fmt_date(adv_data.get("별세일", ""))
@@ -274,6 +433,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:16px">생 애 사 진</div>'
         + photos_html +
         '</div>' if photos_html else '') +
+        _build_guestbook_section(deceased_name) +
         '<div style="background:#1a1a2e;padding:16px;text-align:center;font-size:11px;color:#5a5a7a;margin-top:1px">'
         f'<a href="https://humandocu.com" style="color:#8888aa;text-decoration:none">휴먼다큐닷컴</a> · {today}'
         '</div>'
