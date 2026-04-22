@@ -1540,7 +1540,10 @@ def firebase_save_advanced(deceased_name, data):
         url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
         fs_fields = {k: {"stringValue": str(v)} for k, v in data.items()}
         resp = requests.patch(url, json={"fields": fs_fields}, timeout=10)
-        print(f"[FIREBASE] 저장: {resp.status_code} - {deceased_name}")
+        if resp.status_code == 200:
+            print(f"[FIREBASE] 저장 성공: {deceased_name} → {list(data.keys())}")
+        else:
+            print(f"[FIREBASE] 저장 실패 {resp.status_code}: {resp.text[:300]}")
     except Exception as e:
         print(f"[FIREBASE] 저장 오류: {e}")
 
@@ -2111,16 +2114,20 @@ def delete_guestbook(doc_id):
     # 작성자 비밀번호 확인
     author_hash = fields.get("password_hash", {}).get("stringValue", "")
     author_ok = bool(author_hash and bcrypt.checkpw(password.encode(), author_hash.encode()))
+    print(f"[DELETE] author_ok={author_ok}, has_author_hash={bool(author_hash)}")
 
     # 관리자 비밀번호 확인 (작성자 비밀번호가 틀렸을 때만 조회)
     admin_ok = False
     if not author_ok:
         adv = firebase_get_advanced(name)
         admin_hash = adv.get("admin_password", "")
+        print(f"[DELETE] advanced fields={list(adv.keys())}, has_admin_hash={bool(admin_hash)}")
         if admin_hash:
             try:
                 admin_ok = bcrypt.checkpw(password.encode(), admin_hash.encode())
-            except Exception:
+                print(f"[DELETE] admin_ok={admin_ok}")
+            except Exception as e:
+                print(f"[DELETE] admin bcrypt 오류: {e}")
                 admin_ok = False
 
     if not author_ok and not admin_ok:
@@ -2131,6 +2138,60 @@ def delete_guestbook(doc_id):
         return jsonify({"error": "삭제 실패"}), 500
 
     return jsonify({"status": "ok"}), 200
+
+
+@app.route("/api/debug/advanced", methods=["GET"])
+def debug_advanced():
+    """GET /api/debug/advanced?name=고인이름 — Firestore advanced 문서 필드 확인 (해시값 제외)"""
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "name 파라미터 필요"}), 400
+
+    safe = urllib.parse.quote(name, safe="")
+    url = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return jsonify({"error": f"Firestore {resp.status_code}", "body": resp.text[:300]}), 502
+        raw = resp.json().get("fields", {})
+        safe_fields = {}
+        for k, v in raw.items():
+            if "stringValue" in v:
+                val = v["stringValue"]
+                # 해시값(bcrypt)은 마스킹
+                if k == "admin_password":
+                    safe_fields[k] = f"[hash:{len(val)}chars] {val[:7]}..."
+                else:
+                    safe_fields[k] = val
+        return jsonify({"name": name, "fields": safe_fields, "field_keys": list(raw.keys())}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/debug/set-admin-password", methods=["POST"])
+def debug_set_admin_password():
+    """POST body: {name, admin_password} — 기존 부고에 관리자 비밀번호를 수동 설정"""
+    data = request.get_json(silent=True) or {}
+    name     = (data.get("name", "") or "").strip()
+    admin_pw = (data.get("admin_password", "") or "").strip()
+    if not name or not admin_pw:
+        return jsonify({"error": "name, admin_password 필요"}), 400
+
+    pw_hash = bcrypt.hashpw(admin_pw.encode(), bcrypt.gensalt()).decode()
+
+    safe = urllib.parse.quote(name, safe="")
+    url  = f"https://firestore.googleapis.com/v1/projects/humandocu-93c65/databases/(default)/documents/advanced/{safe}"
+    # updateMask 사용 → 기존 필드 유지하고 admin_password만 추가/덮어쓰기
+    patch_url = url + "?updateMask.fieldPaths=admin_password"
+    try:
+        resp = requests.patch(patch_url,
+            json={"fields": {"admin_password": {"stringValue": pw_hash}}},
+            timeout=10)
+        if resp.status_code == 200:
+            return jsonify({"status": "ok", "message": f"{name} 관리자 비밀번호 설정 완료"}), 200
+        return jsonify({"error": f"Firestore {resp.status_code}", "body": resp.text[:300]}), 502
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
