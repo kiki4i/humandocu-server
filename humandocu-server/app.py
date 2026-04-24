@@ -1024,8 +1024,6 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
             'margin:10px;">'
             f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:cover;object-position:top;display:block;">'
-            '<div style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);'
-            'font-size:10px;letter-spacing:4px;color:#c4a96e;white-space:nowrap">故</div>'
             '</div>'
             '</div></div>'
         )
@@ -1130,13 +1128,13 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
     memorial_url = f"https://kiki4i.github.io/humandocu/bugo/{memorial_filename}.html"
     memorial_section = (
         '<div style="background:#1a1714;padding:24px 20px;margin-top:1px;text-align:center">'
-        '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.5);margin-bottom:12px">MEMORIAL PAGE</div>'
-        f'<div style="font-size:15px;color:#f5f0e8;font-family:\'Noto Serif KR\',serif;font-weight:300;letter-spacing:2px;margin-bottom:6px">故 {deceased_name} 님을 기억합니다</div>'
-        '<div style="font-size:10px;color:rgba(200,169,110,0.5);margin-bottom:18px;letter-spacing:1px">생애 타임라인 · 사진 갤러리 · 디지털 방명록</div>'
+        '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.6);margin-bottom:12px">MEMORIAL PAGE</div>'
+        f'<div style="font-size:19px;color:#f5f0e8;font-family:\'Noto Serif KR\',serif;font-weight:400;letter-spacing:2px;margin-bottom:8px">故 {deceased_name} 님을 기억합니다</div>'
+        '<div style="font-size:11px;color:rgba(200,169,110,0.85);margin-bottom:20px;letter-spacing:1px">생애 타임라인 · 사진 갤러리 · 디지털 방명록</div>'
         f'<a href="{memorial_url}" style="display:inline-flex;align-items:center;gap:8px;'
-        'background:transparent;border:0.5px solid rgba(200,169,110,0.4);'
-        'color:#c8a96e;font-size:12px;letter-spacing:2px;padding:11px 28px;'
-        'text-decoration:none;">메모리얼 페이지 방문하기 →</a>'
+        'background:#c8a96e;border:1px solid #c8a96e;'
+        'color:#1a1a2e;font-size:13px;font-weight:700;letter-spacing:2px;padding:13px 32px;'
+        'border-radius:4px;text-decoration:none;">메모리얼 페이지 방문하기 →</a>'
         '</div>'
     )
 
@@ -1249,6 +1247,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '.notice-section{background:#f9f5ef;border-left:3px solid #c8b89a;padding:14px 20px;margin-top:1px;font-size:13px;color:#6a6a6a;line-height:1.9}'
         '.share-section{background:#fff;padding:20px;margin-top:1px}'
         '.kakao-btn-share{background:#FEE500;color:#3A1D1D;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
+        '.other-ver-btn{background:#1a1a2e;color:#c8a96e;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
         '.footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:1px}'
         '.footer a{color:#8888aa;text-decoration:none}'
         '#hd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9999}'
