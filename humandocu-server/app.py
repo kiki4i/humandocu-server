@@ -1918,7 +1918,8 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         sms_href   = "#"
     else:
         kakao_href = f"https://open.kakao.com/o/{contact}"
-        sms_href   = f"sms:{contact}?body=故%20{urllib.parse.quote(deceased_name)}%20선생님의%20명복을%20빕니다.%20가족분들%20건강%20잘%20챙기시길%20바랍니다."
+        sms_body   = f"故 {deceased_name}님의 명복을 빕니다.\n찾아뵙지 못해 죄송합니다.\n{chief_name}님과 가족분들 건강 잘 챙기시길 바랍니다."
+        sms_href   = f"sms:{contact}?body={urllib.parse.quote(sms_body)}"
 
     # ── 조건부 섹션 미리 조립
     section_divider = '<div style="width:40px;height:1px;background:#c8a87a;margin:0 auto 22px;"></div>\n'
@@ -2011,7 +2012,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '</a>\n'
         f'<a href="{sms_href}" style="display:block;width:100%;padding:14px;'
         'border:1.5px solid #c8a87a;font-size:14px;color:#2c2c2c;letter-spacing:2px;font-weight:500;'
-        'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 보내기</a>\n'
+        'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 전하기</a>\n'
         '</div>\n\n'
 
         # ── 7. 휴먼다큐 footer
