@@ -1799,7 +1799,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     deceased_voice = d_fields.get("고인 육성 파일", "")
     chief_voice    = d_fields.get("상주 육성 파일", "")
 
-    # 생몰일 (Firebase 1차 데이터에서)
+    # 생몰일
     birth = adv_data.get("생년월일", "")
     death = adv_data.get("별세일", "")
     dates_str = ""
@@ -1811,11 +1811,10 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         except Exception:
             dates_str = f"{birth[:10]} — {death[:10]}"
 
-    # 한줄평 (Firebase 또는 기본값)
     oneliner = adv_data.get("한줄평", "") or adv_data.get("고인 소개", "") or "평생을 가족과 이웃을 위해 헌신하셨던 분."
     oneliner = oneliner[:80]
 
-    # 장례 사진 섹션
+    # 장례 사진
     # Tally에서 캡션 라벨이 "장례사진1설명" 또는 placeholder 텍스트로 잡힐 수 있음
     # → 여러 패턴 시도 + 폴백으로 fields 순서 기반 파싱
     photo_items = []
@@ -1833,94 +1832,80 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     photos_html_parts = []
     for photo_url, caption in photo_items:
         photos_html_parts.append(
-            '<div style="margin:0 18px 4px;">'
-            f'<img src="{photo_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">'
+            '<div style="margin:0 20px 6px;">'
+            f'<img src="{photo_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:2px;">'
             '</div>'
-            f'<div style="font-size:11px;color:#7a5c40;margin:7px 18px 16px;letter-spacing:0.5px;line-height:1.7;">{caption}</div>'
+            + (f'<div style="font-size:13px;color:#3d2b1f;margin:8px 20px 22px;line-height:1.8;">{caption}</div>' if caption else '<div style="margin-bottom:22px"></div>')
         )
     photos_html = "\n".join(photos_html_parts)
 
-    # 고인 사진
+    # ── 영정사진 액자 (골드 프레임)
     if rep_photo:
-        rep_photo_html = (
-            f'<img src="{rep_photo}" '
-            'style="width:100%;height:136px;object-fit:cover;object-position:top;'
-            'border-radius:2px;border:1.5px solid #c8a87a;display:block;">'
+        rep_frame_html = (
+            '<div style="display:flex;justify-content:center;margin-bottom:22px;">'
+            '<div style="display:inline-block;'
+            'box-shadow:0 0 0 1px #c8a96e,0 0 0 5px #3d2b1f,0 0 0 7px #9a7d4a,0 0 0 11px #3d2b1f,0 0 0 13px #c8a96e;'
+            'margin:14px;">'
+            f'<img src="{rep_photo}" style="width:200px;height:250px;object-fit:cover;object-position:top;display:block;">'
+            '</div></div>'
         )
     else:
-        rep_photo_html = (
-            '<div style="width:108px;height:136px;background:#d4bca0;border-radius:2px;'
-            'border:1.5px solid #c8a87a;display:flex;align-items:center;justify-content:center;">'
-            '<svg width="36" height="36" viewBox="0 0 36 36">'
-            '<circle cx="18" cy="12" r="7" fill="#6b4530" opacity="0.3"/>'
-            '<ellipse cx="18" cy="30" rx="12" ry="8" fill="#6b4530" opacity="0.3"/>'
-            '</svg></div>'
-        )
+        rep_frame_html = ''
 
     # 고인 육성 버튼
     if deceased_voice:
         voice_btn_html = (
             f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\', \'voiceSvg\')" '
-            'style="display:flex;align-items:center;gap:10px;padding:7px 10px;'
-            'border:0.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
-            'margin-top:12px;font-family:inherit;box-sizing:border-box;">'
-            '<div id="voiceIcon" style="width:34px;height:34px;border-radius:50%;background:#3d2b1f;'
+            'style="display:flex;align-items:center;gap:12px;padding:12px 16px;'
+            'border:1.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
+            'margin-top:16px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:4px;">'
+            '<div style="width:40px;height:40px;border-radius:50%;background:#3d2b1f;'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg id="voiceSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<svg id="voiceSvg" width="14" height="14" viewBox="0 0 13 13" fill="none">'
             '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
             '<div style="text-align:left;">'
-            '<div style="font-size:9px;color:#b08860;letter-spacing:1px;margin-bottom:2px;">육성 인사말</div>'
-            f'<div style="font-size:11px;color:#3d2b1f;word-break:keep-all;">故 {deceased_name}님의 육성</div>'
+            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:3px;">육성 인사말</div>'
+            f'<div style="font-size:14px;color:#2c2c2c;font-weight:500;">故 {deceased_name}님의 목소리</div>'
             '</div></button>'
         )
     else:
         voice_btn_html = ""
 
-    # 상주 단체사진
+    # 상주 단체사진 + 육성 버튼
     if chief_photo:
         chief_photo_html = (
             f'<img src="{chief_photo}" '
-            'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:2px;">'
+            'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:4px;">'
         )
+        if chief_voice:
+            chief_voice_btn = (
+                f'<button onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
+                'style="display:flex;align-items:center;gap:10px;padding:11px 14px;'
+                'background:rgba(61,43,31,0.90);border:1px solid rgba(200,168,122,0.6);'
+                'cursor:pointer;font-family:inherit;border-radius:4px;">'
+                '<div style="width:36px;height:36px;border-radius:50%;'
+                'background:rgba(255,240,220,0.15);border:1px solid rgba(255,230,190,0.4);'
+                'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+                '<svg id="chiefSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
+                '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+                '<div style="text-align:left;">'
+                '<div style="font-size:10px;color:rgba(255,230,190,0.7);letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
+                '<div style="font-size:13px;color:#fef0dc;font-weight:500;">상주 육성 듣기</div>'
+                '</div></button>'
+            )
+            chief_photo_section = (
+                '<div style="position:relative;margin-bottom:8px;">'
+                + chief_photo_html
+                + '<div style="position:absolute;bottom:12px;right:12px;">'
+                + chief_voice_btn
+                + '</div></div>'
+            )
+        else:
+            chief_photo_section = '<div style="margin-bottom:8px;">' + chief_photo_html + '</div>'
     else:
-        chief_photo_html = (
-            '<div style="width:100%;aspect-ratio:16/9;background:#d0b898;border-radius:2px;'
-            'display:flex;align-items:center;justify-content:center;">'
-            '<svg width="44" height="44" viewBox="0 0 44 44" opacity="0.2">'
-            '<path d="M4 32 L14 20 L21 28 L28 18 L40 32Z" fill="#6b4530"/>'
-            '<circle cx="34" cy="12" r="5" fill="#6b4530"/></svg></div>'
-        )
+        chief_photo_section = ''
 
-    # 상주 육성 버튼 (사진 위 오버레이)
-    if chief_voice:
-        chief_voice_btn = (
-            f'<button onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
-            'style="display:flex;align-items:center;gap:10px;padding:10px 12px;'
-            'background:rgba(61,43,31,0.88);border:0.5px solid rgba(200,168,122,0.5);'
-            'cursor:pointer;font-family:inherit;">'
-            '<div style="width:34px;height:34px;border-radius:50%;'
-            'background:rgba(255,240,220,0.15);border:1px solid rgba(255,230,190,0.3);'
-            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg id="chiefSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
-            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
-            '<div style="text-align:left;">'
-            '<div style="font-size:9px;color:rgba(255,230,190,0.55);letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
-            '<div style="font-size:11px;color:#fef0dc;">상주 육성 듣기</div>'
-            '</div></button>'
-        )
-        chief_photo_section = (
-            '<div style="position:relative;margin-bottom:6px;">'
-            + chief_photo_html
-            + '<div style="position:absolute;bottom:12px;right:12px;">'
-            + chief_voice_btn
-            + '</div></div>'
-        )
-    else:
-        chief_photo_section = (
-            '<div style="margin-bottom:6px;">' + chief_photo_html + '</div>'
-        )
-
-    # 메모리얼 페이지 URL
+    # 메모리얼 URL
     memorial_url = (
         "https://kiki4i.github.io/humandocu/bugo/"
         + urllib.parse.quote("adv-memorial-" + safe_filename(deceased_name))
@@ -1934,6 +1919,34 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     else:
         kakao_href = f"https://open.kakao.com/o/{contact}"
         sms_href   = f"sms:{contact}?body=故%20{urllib.parse.quote(deceased_name)}%20선생님의%20명복을%20빕니다.%20가족분들%20건강%20잘%20챙기시길%20바랍니다."
+
+    # ── 조건부 섹션 미리 조립
+    section_divider = '<div style="width:40px;height:1px;background:#c8a87a;margin:0 auto 22px;"></div>\n'
+
+    photos_section = (
+        '<div style="background:#ede4d6;padding:36px 0;">\n'
+        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">장 례 사 진</div>\n'
+        + section_divider
+        + photos_html + '\n'
+        '</div>\n\n'
+    ) if photos_html else ''
+
+    chief_section = (
+        '<div style="background:#f8f0e6;padding:32px 20px;">\n'
+        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">유 가 족</div>\n'
+        + section_divider
+        + chief_photo_section + '\n'
+        '</div>\n\n'
+    ) if chief_photo_section else ''
+
+    chief_msg_section = (
+        '<div style="background:#fff9f2;padding:36px 20px;border-top:3px solid #c8a87a;border-bottom:3px solid #c8a87a;">\n'
+        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">상 주 인 사</div>\n'
+        + section_divider
+        + f'<div style="font-size:15px;line-height:2.4;color:#2c2c2c;border-left:3px solid #c8a87a;padding:14px 18px;background:#fdf8f2;border-radius:0 4px 4px 0;">{chief_msg}</div>\n'
+        + f'<div style="text-align:right;margin-top:20px;font-size:15px;color:#3d2b1f;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>\n'
+        '</div>\n\n'
+    ) if chief_msg else ''
 
     html = (
         "<!DOCTYPE html>\n"
@@ -1949,71 +1962,67 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         "</head>\n"
         "<body>\n\n"
 
-        # 1. 배너
-        '<div style="background:#3d2b1f;padding:48px 28px 40px;text-align:center;">\n'
-        '<div style="font-size:26px;font-weight:300;color:#fef0dc;letter-spacing:6px;margin-bottom:8px;">정말 고맙습니다</div>\n'
-        '<div style="font-size:17px;font-weight:300;color:rgba(254,240,220,0.75);letter-spacing:3px;margin-bottom:16px;">덕분에 잘 모셨습니다</div>\n'
-        '<div style="font-size:12px;color:rgba(255,230,190,0.55);line-height:2.1;letter-spacing:1px;">깊이 감사드리며<br>저희 가족, 꼭 잊지 않겠습니다</div>\n'
-        '<div style="width:28px;height:0.5px;background:rgba(255,230,190,0.2);margin:20px auto 0;"></div>\n'
-        "</div>\n\n"
+        # ── 1. 배너
+        '<div style="background:#3d2b1f;padding:52px 28px 44px;text-align:center;">\n'
+        '<div style="font-size:11px;letter-spacing:5px;color:rgba(200,169,110,0.55);margin-bottom:22px;">HUMANDOCU · 답례장</div>\n'
+        '<div style="font-size:28px;font-weight:300;color:#fef0dc;letter-spacing:6px;margin-bottom:10px;">정말 고맙습니다</div>\n'
+        '<div style="font-size:18px;font-weight:300;color:rgba(254,240,220,0.8);letter-spacing:3px;margin-bottom:22px;">덕분에 잘 모셨습니다</div>\n'
+        '<div style="width:40px;height:1px;background:rgba(200,169,110,0.4);margin:0 auto 22px;"></div>\n'
+        '<div style="font-size:13px;color:rgba(255,230,190,0.65);line-height:2.2;letter-spacing:1px;">깊이 감사드리며<br>저희 가족, 꼭 잊지 않겠습니다</div>\n'
+        '</div>\n\n'
 
-        # 2. 고인 소개
-        '<div style="background:#f8f0e6;padding:32px 20px 28px;">\n'
-        '<div style="display:flex;gap:16px;align-items:flex-start;">\n'
-        '<div style="flex-shrink:0;width:108px;">' + rep_photo_html + '</div>\n'
-        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">\n'
-        '<div>\n'
-        f'<div style="font-size:20px;color:#3d2b1f;letter-spacing:5px;margin-bottom:5px;">故 {deceased_name}</div>\n'
-        f'<div style="font-size:10px;color:#a07850;letter-spacing:1px;margin-bottom:10px;">{dates_str}</div>\n'
-        f'<div style="font-size:12px;color:#6b4530;line-height:1.95;font-style:italic;">{oneliner}</div>\n'
-        '</div>\n'
+        # ── 2. 고인 소개 (영정사진 액자 + 정보)
+        '<div style="background:#f8f0e6;padding:36px 20px 28px;text-align:center;border-bottom:2px solid #c8a87a;">\n'
+        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;margin-bottom:6px;font-weight:500;">고 인 소 개</div>\n'
+        + section_divider
+        + rep_frame_html
+        + f'<div style="font-size:22px;color:#1a1a2e;letter-spacing:5px;margin-bottom:8px;font-weight:300;">故 {deceased_name}</div>\n'
+        + f'<div style="font-size:13px;color:#8b7355;letter-spacing:1px;margin-bottom:16px;">{dates_str}</div>\n'
+        + f'<div style="font-size:14px;color:#3d2b1f;line-height:2.1;font-style:italic;padding:0 8px;">{oneliner}</div>\n'
         + voice_btn_html + '\n'
-        '</div>\n'
-        '</div>\n'
-        f'<a href="{memorial_url}" style="display:block;margin:16px 0 0;padding:9px 0;'
-        'border:0.5px solid #c8a87a;font-size:11px;color:#6b4530;letter-spacing:2px;'
-        'background:transparent;text-align:center;text-decoration:none;">메모리얼 페이지 방문하기 →</a>\n'
-        "</div>\n\n"
+        + f'<a href="{memorial_url}" style="display:block;margin:22px 0 0;padding:14px 0;'
+          'border:1.5px solid #c8a87a;font-size:13px;color:#2c2c2c;letter-spacing:2px;'
+          'background:#fff9f2;text-align:center;text-decoration:none;font-weight:500;border-radius:4px;">'
+          '메모리얼 페이지 방문하기 →</a>\n'
+        + '</div>\n\n'
 
-        # 3. 장례 사진
-        '<div style="background:#ede4d6;padding:28px 0;">\n'
-        '<div style="font-size:10px;color:#a07850;text-align:center;margin-bottom:18px;letter-spacing:2px;">장 례 사 진</div>\n'
-        + photos_html + '\n'
-        "</div>\n\n"
+        # ── 3. 장례 사진 (조건부)
+        + photos_section
 
-        # 4. 상주 인사
-        '<div style="background:#f8f0e6;padding:32px 20px;">\n'
-        + chief_photo_section + '\n'
-        "</div>\n\n"
+        # ── 4. 유가족 사진 (조건부)
+        + chief_section
 
-        # 5. 위로 전하기
-        '<div style="background:#f0e6d8;padding:28px 20px;">\n'
-        '<div style="font-size:10px;letter-spacing:3px;color:#b08860;text-align:center;margin-bottom:6px;">유족에게 위로 전하기</div>\n'
-        '<div style="font-size:11px;color:#a07850;text-align:center;letter-spacing:1px;margin-bottom:18px;line-height:1.8;">마음을 담아 위로를 전해보세요</div>\n'
-        '<div style="background:#fff9f2;border:0.5px solid #c8a87a;border-radius:6px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:#5a3e2b;line-height:2;">\n'
-        '<div style="font-size:9px;color:#b08860;letter-spacing:2px;margin-bottom:8px;">위로 문구 예시</div>\n'
-        f'故 {deceased_name} 선생님의 명복을 빕니다.<br>\n'
+        # ── 5. 상주 감사 인사 (조건부)
+        + chief_msg_section
+
+        # ── 6. 유족에게 위로 보내기
+        '<div style="background:#f0e6d8;padding:36px 20px;">\n'
+        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">유 족 에 게 위 로 보 내 기</div>\n'
+        + section_divider
+        + '<div style="background:#fff9f2;border:1.5px solid #c8a87a;border-radius:6px;padding:18px 20px;margin-bottom:22px;">\n'
+        '<div style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:12px;">위로 문구 예시</div>\n'
+        f'<div style="font-size:14px;color:#2c2c2c;line-height:2.2;">故 {deceased_name} 선생님의 명복을 빕니다.<br>\n'
         '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
-        '가족분들 건강 잘 챙기시길 바랍니다.\n'
+        '가족분들 건강 잘 챙기시길 바랍니다.</div>\n'
         '</div>\n'
         f'<a href="{kakao_href}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
-        'width:100%;padding:13px;background:#FEE500;border-radius:4px;text-decoration:none;margin-bottom:10px;">\n'
-        f'<span style="font-size:13px;color:#3C1E1E;font-weight:500;letter-spacing:1px;">{chief_name}에게 카카오톡으로 위로 전하기</span>\n'
+        'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
+        f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
         '</a>\n'
-        f'<a href="{sms_href}" style="display:block;width:100%;padding:12px;'
-        'border:0.5px solid #c8a87a;font-size:12px;color:#6b4530;letter-spacing:2px;'
-        'background:transparent;text-align:center;text-decoration:none;">문자로 보내기</a>\n'
-        "</div>\n\n"
+        f'<a href="{sms_href}" style="display:block;width:100%;padding:14px;'
+        'border:1.5px solid #c8a87a;font-size:14px;color:#2c2c2c;letter-spacing:2px;font-weight:500;'
+        'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 보내기</a>\n'
+        '</div>\n\n'
 
-        # 6. 휴먼다큐
-        '<div style="background:#3d2b1f;padding:26px 24px;text-align:center;">\n'
-        '<div style="font-size:12px;color:rgba(255,230,190,0.6);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>\n'
-        '<div style="font-size:10px;color:rgba(255,230,190,0.35);line-height:1.9;margin-bottom:14px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>\n'
-        '<a href="https://humandocu.com" style="display:inline-block;padding:8px 20px;'
-        'border:0.5px solid rgba(255,230,190,0.25);font-size:10px;color:rgba(255,230,190,0.5);'
-        'letter-spacing:2px;text-decoration:none;">humandocu.com</a>\n'
-        '<div style="font-size:9px;color:rgba(255,230,190,0.18);letter-spacing:4px;margin-top:16px;">HUMANDOCU MEMORIAL PLATFORM</div>\n'
-        "</div>\n\n"
+        # ── 7. 휴먼다큐 footer
+        '<div style="background:#3d2b1f;padding:30px 24px;text-align:center;">\n'
+        '<div style="font-size:12px;color:rgba(255,230,190,0.7);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>\n'
+        '<div style="font-size:11px;color:rgba(255,230,190,0.45);line-height:2.0;margin-bottom:16px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>\n'
+        '<a href="https://humandocu.com" style="display:inline-block;padding:9px 24px;'
+        'border:1px solid rgba(255,230,190,0.3);font-size:11px;color:rgba(255,230,190,0.65);'
+        'letter-spacing:2px;text-decoration:none;border-radius:2px;">humandocu.com</a>\n'
+        '<div style="font-size:9px;color:rgba(255,230,190,0.2);letter-spacing:4px;margin-top:18px;">HUMANDOCU MEMORIAL PLATFORM</div>\n'
+        '</div>\n\n'
 
         '<audio id="audioPlayer" style="display:none;"></audio>\n'
         "<script>\n"
