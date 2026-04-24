@@ -450,12 +450,11 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
         '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
-        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">디지털 부고가 완성되었습니다</p>'
+        f'<p style="font-size:12px;opacity:0.45;letter-spacing:2px">고 {deceased_name} 부고문이 완성되었습니다</p>'
         '</div>'
         '<div style="padding:32px;background:#fff">'
         f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
-        f'<strong>故 {deceased_name}</strong> 님의 디지털 부고 페이지가 완성되었습니다.<br><br>'
-        f'아래 링크를 카카오톡으로 공유해 주세요.</p>'
+        f'아래 링크를 공유해 주세요.</p>'
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 열기</a>'
         '</div>'
@@ -469,7 +468,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고 초안이 완성되었습니다", "html": html_body},
+              "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고문이 완성되었습니다", "html": html_body},
         timeout=30)
     resp.raise_for_status()
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
