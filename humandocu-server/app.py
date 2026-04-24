@@ -371,23 +371,32 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     one_liner  = adv_data.get("한줄평", "")
     intro      = adv_data.get("고인 소개", "")
 
-    # 생애 사진
-    photos_html = ""
+    # 생애 사진 데이터 수집 (최대 5장)
+    life_photos = []
     for i in range(1, 6):
         url = fields.get(f"생애 사진{i}", "")
         cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
         if url:
-            photos_html += (
-                f'<div style="margin-bottom:20px">'
-                f'<img src="{url}" style="width:100%;border-radius:4px;display:block;">'
-                + (f'<div style="font-size:12px;color:#8b7355;margin-top:6px;line-height:1.7;padding:0 4px">{cap}</div>' if cap else '')
-                + '</div>'
-            )
+            life_photos.append((url, cap))
+
+    # 상단 액자: 생애사진1 우선, 없으면 영정사진
+    frame_url = fields.get("생애 사진1", "") or photo_url
+    if frame_url:
+        frame_html = (
+            '<div style="display:flex;justify-content:center;margin-bottom:20px">'
+            '<div style="display:inline-block;'
+            'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
+            'margin:10px">'
+            f'<img src="{frame_url}" style="width:240px;height:300px;object-fit:cover;object-position:top;display:block;">'
+            '</div></div>'
+        )
+    else:
+        frame_html = ''
 
     # 생애 타임라인
     timeline_html = ""
     if life_events:
-        lines = [l.strip() for l in life_events.replace('\r','').split('\n') if l.strip()]
+        lines = [l.strip() for l in life_events.replace('\r', '').split('\n') if l.strip()]
         items = ""
         for line in lines:
             parts = line.split('-', 1) if '-' in line else ['', line]
@@ -407,7 +416,61 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             '</div>'
         )
 
-    rep_photo_html = f'<img src="{photo_url}" style="width:120px;height:150px;object-fit:cover;object-position:top;border-radius:2px;border:1.5px solid #c8a96e;display:block;">' if photo_url else ''
+    # 생애 사진 5장 (개별 표시 + 설명)
+    photos_section = ""
+    if life_photos:
+        photo_items = ""
+        for url, cap in life_photos:
+            photo_items += (
+                f'<div style="margin-bottom:24px">'
+                f'<img src="{url}" style="width:100%;border-radius:4px;display:block;">'
+                + (f'<div style="font-size:12px;color:#8b7355;margin-top:8px;line-height:1.7;padding:0 4px">{cap}</div>' if cap else '')
+                + '</div>'
+            )
+        photos_section = (
+            '<div style="background:#fff;padding:24px 20px;margin-top:1px">'
+            '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:18px">생 애 사 진</div>'
+            + photo_items +
+            '</div>'
+        )
+
+    # 슬라이드쇼 (사진 2장 이상일 때)
+    slideshow_section = ""
+    if len(life_photos) > 1:
+        slides = ""
+        dots = ""
+        for i, (url, cap) in enumerate(life_photos):
+            display = "block" if i == 0 else "none"
+            dot_bg = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
+            slides += (
+                f'<div class="sl" style="display:{display};text-align:center">'
+                f'<img src="{url}" style="width:100%;max-height:320px;object-fit:cover;border-radius:4px;display:block;">'
+                + (f'<div style="font-size:12px;color:#c8a96e;margin-top:10px;line-height:1.7">{cap}</div>' if cap else '')
+                + '</div>'
+            )
+            dots += (
+                f'<span class="dt" onclick="goSl({i})" '
+                f'style="display:inline-block;width:8px;height:8px;border-radius:50%;'
+                f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
+            )
+        n_total = str(len(life_photos))
+        slideshow_js = (
+            "var _si=0,_st=" + n_total + ";"
+            "function goSl(n){"
+            "document.querySelectorAll('.sl').forEach(function(e,i){e.style.display=i===n?'block':'none';});"
+            "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
+            "_si=n;}"
+            "function nxSl(){goSl((_si+1)%_st);}"
+            "setInterval(nxSl,3000);"
+        )
+        slideshow_section = (
+            '<div style="background:#1a1714;padding:24px 20px;margin-top:1px">'
+            '<div style="font-size:10px;letter-spacing:4px;color:rgba(200,169,110,0.6);margin-bottom:16px;text-align:center">사 진 슬 라 이 드</div>'
+            + slides
+            + f'<div style="text-align:center;margin-top:14px">{dots}</div>'
+            + f'<script>{slideshow_js}</script>'
+            + '</div>'
+        )
 
     today = datetime.now().strftime("%Y.%m.%d")
 
@@ -420,24 +483,28 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         '*{margin:0;padding:0;box-sizing:border-box}'
         'body{font-family:\'Noto Serif KR\',Georgia,serif;background:#f5f0e8;color:#2c2c2c;max-width:480px;margin:0 auto}'
         '</style></head><body>'
-        '<div style="background:#1a1a2e;padding:32px 20px;text-align:center">'
-        '<div style="font-size:9px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:16px">MEMORIAL PAGE</div>'
-        + (f'<div style="display:flex;justify-content:center;margin-bottom:16px">{rep_photo_html}</div>' if rep_photo_html else '') +
-        f'<div style="font-size:24px;font-weight:300;color:#f5f0e8;letter-spacing:4px;margin-bottom:6px">故 {deceased_name}</div>'
-        f'<div style="font-size:11px;color:rgba(200,169,110,0.5);letter-spacing:1px">{birth_date} — {death_date}</div>'
-        f'<div style="font-size:13px;font-style:italic;color:rgba(200,169,110,0.7);margin-top:12px;line-height:1.7">{one_liner}</div>'
+        # ── 헤더
+        '<div style="background:#1a1a2e;padding:32px 20px 28px;text-align:center">'
+        '<div style="font-size:9px;letter-spacing:5px;color:rgba(200,169,110,0.45);margin-bottom:20px">MEMORIAL PAGE</div>'
+        + frame_html
+        + f'<div style="font-size:24px;font-weight:300;color:#f5f0e8;letter-spacing:4px;margin-bottom:8px">故 {deceased_name}</div>'
+        + f'<div style="font-size:11px;color:rgba(200,169,110,0.6);letter-spacing:1px">{birth_date} — {death_date}</div>'
+        + (f'<div style="font-size:13px;font-style:italic;color:rgba(200,169,110,0.75);margin-top:14px;line-height:1.8;padding:0 12px">{one_liner}</div>' if one_liner else '')
+        + '</div>'
+        # ── AI 고인 소개
+        '<div style="background:#fff;padding:28px 20px;margin-top:1px">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:16px;text-align:center">✦ 고 인 소 개 ✦</div>'
+        f'<div style="font-size:14px;line-height:2.2;color:#3a3a3a;border-left:3px solid #c8a96e;padding-left:16px">{intro}</div>'
         '</div>'
-        '<div style="background:#fff;padding:24px 20px;margin-top:1px">'
-        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px">고 인 소 개</div>'
-        f'<div style="font-size:14px;line-height:2.1;color:#3a3a3a">{intro}</div>'
-        '</div>'
-        + timeline_html +
-        ('<div style="background:#fff;padding:20px;margin-top:1px">'
-        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:16px">생 애 사 진</div>'
-        + photos_html +
-        '</div>' if photos_html else '') +
-        _build_guestbook_section(deceased_name) +
-        '<div style="background:#1a1a2e;padding:16px;text-align:center;font-size:11px;color:#5a5a7a;margin-top:1px">'
+        # ── 생애 타임라인
+        + timeline_html
+        # ── 생애 사진 5장
+        + photos_section
+        # ── 슬라이드쇼
+        + slideshow_section
+        # ── 방명록
+        + _build_guestbook_section(deceased_name)
+        + '<div style="background:#1a1a2e;padding:16px;text-align:center;font-size:11px;color:#5a5a7a;margin-top:1px">'
         f'<a href="https://humandocu.com" style="color:#8888aa;text-decoration:none">휴먼다큐닷컴</a> · {today}'
         '</div>'
         '</body></html>'
@@ -450,7 +517,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
         '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
-        f'<p style="font-size:12px;opacity:0.45;letter-spacing:2px">고 {deceased_name} 부고문이 완성되었습니다</p>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고문이 완성되었습니다</p>'
         '</div>'
         '<div style="padding:32px;background:#fff">'
         f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
