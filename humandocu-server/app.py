@@ -1996,7 +1996,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         + chief_msg_section
 
         # ── 6. 유족에게 위로 보내기
-        '<div style="background:#f0e6d8;padding:36px 20px;">\n'
+        + '<div style="background:#f0e6d8;padding:36px 20px;">\n'
         '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">유 족 에 게 위 로 보 내 기</div>\n'
         + section_divider
         + '<div style="background:#fff9f2;border:1.5px solid #c8a87a;border-radius:6px;padding:18px 20px;margin-bottom:22px;">\n'
