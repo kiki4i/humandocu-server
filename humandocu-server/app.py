@@ -371,7 +371,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     one_liner  = adv_data.get("한줄평", "")
     intro      = adv_data.get("고인 소개", "")
 
-    # 생애 사진 데이터 수집 (최대 5장)
+    # 생애 사진 데이터 수집 (1~5장) — 슬라이드쇼용
     life_photos = []
     for i in range(1, 6):
         url = fields.get(f"생애 사진{i}", "")
@@ -379,16 +379,19 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         if url:
             life_photos.append((url, cap))
 
-    # 상단 액자: 생애사진1 우선, 없으면 영정사진
-    frame_url = fields.get("생애 사진1", "") or photo_url
+    # 상단 액자: 생애사진1 + 사진1 설명
+    frame_url = fields.get("생애 사진1", "")
+    frame_cap = fields.get("사진1에 대한 간단한 설명", "")
     if frame_url:
         frame_html = (
-            '<div style="display:flex;justify-content:center;margin-bottom:20px">'
+            '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px">'
             '<div style="display:inline-block;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
             'margin:10px">'
             f'<img src="{frame_url}" style="width:240px;height:300px;object-fit:cover;object-position:top;display:block;">'
-            '</div></div>'
+            '</div>'
+            + (f'<div style="font-size:12px;color:rgba(200,169,110,0.75);margin-top:6px;margin-bottom:4px;line-height:1.6;text-align:center;padding:0 16px">{frame_cap}</div>' if frame_cap else '')
+            + '</div>'
         )
     else:
         frame_html = ''
@@ -416,16 +419,29 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             '</div>'
         )
 
-    # 생애 사진 5장 (개별 표시 + 설명)
+    # 갤러리: 사진2~5 + 영정사진(캡션 없이)
+    gallery_photos = []
+    for i in range(2, 6):
+        url = fields.get(f"생애 사진{i}", "")
+        cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
+        if url:
+            gallery_photos.append((url, cap))
+
     photos_section = ""
-    if life_photos:
+    if gallery_photos or photo_url:
         photo_items = ""
-        for url, cap in life_photos:
+        for url, cap in gallery_photos:
             photo_items += (
                 f'<div style="margin-bottom:24px">'
                 f'<img src="{url}" style="width:100%;border-radius:4px;display:block;">'
                 + (f'<div style="font-size:12px;color:#8b7355;margin-top:8px;line-height:1.7;padding:0 4px">{cap}</div>' if cap else '')
                 + '</div>'
+            )
+        if photo_url:
+            photo_items += (
+                f'<div style="margin-bottom:24px">'
+                f'<img src="{photo_url}" style="width:100%;border-radius:4px;display:block;">'
+                '</div>'
             )
         photos_section = (
             '<div style="background:#fff;padding:24px 20px;margin-top:1px">'
@@ -434,12 +450,16 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             '</div>'
         )
 
-    # 슬라이드쇼 (사진 2장 이상일 때)
+    # 슬라이드쇼: 생애사진1~5 + 영정사진
+    slideshow_all = list(life_photos)
+    if photo_url:
+        slideshow_all.append((photo_url, ""))
+
     slideshow_section = ""
-    if len(life_photos) > 1:
+    if len(slideshow_all) > 1:
         slides = ""
         dots = ""
-        for i, (url, cap) in enumerate(life_photos):
+        for i, (url, cap) in enumerate(slideshow_all):
             display = "block" if i == 0 else "none"
             dot_bg = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
             slides += (
@@ -453,7 +473,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
                 f'style="display:inline-block;width:8px;height:8px;border-radius:50%;'
                 f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
             )
-        n_total = str(len(life_photos))
+        n_total = str(len(slideshow_all))
         slideshow_js = (
             "var _si=0,_st=" + n_total + ";"
             "function goSl(n){"
