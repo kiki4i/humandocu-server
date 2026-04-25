@@ -1746,6 +1746,7 @@ def parse_tally_damnyejang(payload):
                 fields[cap_key] = str(value).strip() if value else ""
             if label:
                 fields[label] = str(value).strip() if value else ""
+    print(f"[damnyejang] parsed fields keys: {list(fields.keys())}")
     return fields
 # ─────────────────────────────────────────────────────────────────
 # Claude API - 상주 인사말 생성
@@ -1912,14 +1913,45 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         + ".html"
     )
 
-    # 카카오 / 문자 링크
-    if "kakao" in contact.lower() or "open" in contact.lower() or "http" in contact.lower():
-        kakao_href = contact
-        sms_href   = "#"
+    # 카카오 / 문자 버튼 (연락처 있을 때만 활성화)
+    if contact:
+        if "kakao" in contact.lower() or "open" in contact.lower() or "http" in contact.lower():
+            kakao_btn_html = (
+                f'<a href="{contact}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+                'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
+                f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
+                '</a>\n'
+            )
+            sms_btn_html = ""
+        else:
+            sms_body = f"故 {deceased_name}님의 명복을 빕니다.\n찾아뵙지 못해 죄송합니다.\n{chief_name}님과 가족분들 건강 잘 챙기시길 바랍니다."
+            sms_href = f"sms:{contact}?body={urllib.parse.quote(sms_body)}"
+            kakao_btn_html = (
+                f'<a href="https://open.kakao.com/o/{contact}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+                'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
+                f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
+                '</a>\n'
+            )
+            sms_btn_html = (
+                f'<a href="{sms_href}" style="display:block;width:100%;padding:14px;'
+                'border:1.5px solid #c8a87a;font-size:14px;color:#2c2c2c;letter-spacing:2px;font-weight:500;'
+                'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 전하기</a>\n'
+            )
     else:
-        kakao_href = f"https://open.kakao.com/o/{contact}"
-        sms_body   = f"故 {deceased_name}님의 명복을 빕니다.\n찾아뵙지 못해 죄송합니다.\n{chief_name}님과 가족분들 건강 잘 챙기시길 바랍니다."
-        sms_href   = f"sms:{contact}?body={urllib.parse.quote(sms_body)}"
+        kakao_btn_html = (
+            '<button onclick="shareOrCopy()" style="display:flex;align-items:center;justify-content:center;gap:10px;'
+            'width:100%;padding:16px;background:#3d2b1f;border:none;border-radius:6px;cursor:pointer;margin-bottom:12px;">\n'
+            '<span style="font-size:15px;color:#fef0dc;font-weight:700;letter-spacing:1px;">🔗 이 답례장 공유하기</span>\n'
+            '</button>\n'
+            '<script>\n'
+            'function shareOrCopy() {\n'
+            f'  var shareData = {{title: "故 {deceased_name} 답례장", url: window.location.href}};\n'
+            '  if (navigator.share) { navigator.share(shareData); }\n'
+            '  else { navigator.clipboard.writeText(window.location.href).then(function() { alert("링크가 복사되었습니다."); }); }\n'
+            '}\n'
+            '</script>\n'
+        )
+        sms_btn_html = ""
 
     # ── 조건부 섹션 미리 조립
     section_divider = '<div style="width:40px;height:1px;background:#c8a87a;margin:0 auto 22px;"></div>\n'
@@ -2006,14 +2038,9 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
         '가족분들 건강 잘 챙기시길 바랍니다.</div>\n'
         '</div>\n'
-        f'<a href="{kakao_href}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
-        'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
-        f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
-        '</a>\n'
-        f'<a href="{sms_href}" style="display:block;width:100%;padding:14px;'
-        'border:1.5px solid #c8a87a;font-size:14px;color:#2c2c2c;letter-spacing:2px;font-weight:500;'
-        'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 전하기</a>\n'
-        '</div>\n\n'
+        + kakao_btn_html
+        + sms_btn_html
+        + '</div>\n\n'
 
         # ── 7. 휴먼다큐 footer
         '<div style="background:#3d2b1f;padding:30px 24px;text-align:center;">\n'
