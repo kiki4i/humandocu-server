@@ -1878,31 +1878,24 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
             f'<img src="{chief_photo}" '
             'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:4px;">'
         )
-        if chief_voice:
-            chief_voice_btn = (
-                f'<button onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
-                'style="display:flex;align-items:center;gap:10px;padding:11px 14px;'
-                'background:rgba(61,43,31,0.90);border:1px solid rgba(200,168,122,0.6);'
-                'cursor:pointer;font-family:inherit;border-radius:4px;">'
-                '<div style="width:36px;height:36px;border-radius:50%;'
-                'background:rgba(255,240,220,0.15);border:1px solid rgba(255,230,190,0.4);'
-                'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-                '<svg id="chiefSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
-                '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
-                '<div style="text-align:left;">'
-                '<div style="font-size:10px;color:rgba(255,230,190,0.7);letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
-                '<div style="font-size:13px;color:#fef0dc;font-weight:500;">상주 육성 듣기</div>'
-                '</div></button>'
-            )
-            chief_photo_section = (
-                '<div style="position:relative;margin-bottom:8px;">'
-                + chief_photo_html
-                + '<div style="position:absolute;bottom:12px;right:12px;">'
-                + chief_voice_btn
-                + '</div></div>'
-            )
-        else:
-            chief_photo_section = '<div style="margin-bottom:8px;">' + chief_photo_html + '</div>'
+        chief_voice_btn_html = (
+            f'<button id="chiefVoiceBtn" onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
+            'style="display:flex;align-items:center;gap:12px;padding:12px 16px;'
+            'border:1.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
+            'margin-top:12px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:4px;">'
+            '<div style="width:40px;height:40px;border-radius:50%;background:#3d2b1f;'
+            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+            '<svg id="chiefSvg" width="14" height="14" viewBox="0 0 13 13" fill="none">'
+            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+            '<div style="text-align:left;">'
+            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:3px;">가족 인사말</div>'
+            f'<div style="font-size:14px;color:#2c2c2c;font-weight:500;">상주 육성 듣기</div>'
+            '</div></button>'
+        ) if chief_voice else ""
+        chief_photo_section = (
+            '<div style="margin-bottom:8px;">' + chief_photo_html + '</div>'
+            + chief_voice_btn_html
+        )
     else:
         chief_photo_section = ''
 
