@@ -482,9 +482,20 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             "_si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
             "setInterval(nxSl,3000);"
+            "var _bgm=document.getElementById('bgm');"
+            "function toggleBgm(){"
+            "_bgm.muted=!_bgm.muted;"
+            "var btn=document.getElementById('bgm-btn');"
+            "btn.textContent=_bgm.muted?'🔇 음소거':'🔊 음악';"
+            "}"
+            "document.addEventListener('click',function(){if(_bgm.paused)_bgm.play();},{once:true});"
         )
         slideshow_section = (
-            '<div style="background:#1a1714;padding:24px 20px;margin-top:1px">'
+            '<div style="background:#1a1714;padding:24px 20px;margin-top:1px;position:relative">'
+            '<audio id="bgm" src="https://kiki4i.github.io/humandocu/bugo/bgm.mp3" autoplay loop></audio>'
+            '<button id="bgm-btn" onclick="toggleBgm()" style="position:absolute;top:14px;right:14px;'
+            'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
+            'padding:5px 13px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
             '<div style="font-size:10px;letter-spacing:4px;color:rgba(200,169,110,0.6);margin-bottom:16px;text-align:center">사 진 슬 라 이 드</div>'
             + slides
             + f'<div style="text-align:center;margin-top:14px">{dots}</div>'
