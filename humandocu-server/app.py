@@ -492,7 +492,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         )
         slideshow_section = (
             '<div style="background:#1a1714;padding:24px 20px;margin-top:1px;position:relative">'
-            '<audio id="bgm" src="https://kiki4i.github.io/humandocu/bugo/bgm.mp3" autoplay loop></audio>'
+            '<audio id="bgm" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
             '<button id="bgm-btn" onclick="toggleBgm()" style="position:absolute;top:14px;right:14px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
             'padding:5px 13px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
