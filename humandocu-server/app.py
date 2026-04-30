@@ -1689,7 +1689,11 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 다음 두 가지를 작성해주세요.
 
 1. [대표 시] - 이 사람의 인생 전체를 관통하는 짧은 시 1편
-   "나는 이런 사람입니다"와 "누군가에게 남기는 한 줄"을 중심으로.
+   아래 세 가지를 모두 종합해서 써주세요.
+   - "나는 이런 사람입니다": 그 사람이 스스로 정의한 정체성
+   - 인생 6장면 전체: 어떤 삶을 살았는지, 무엇을 사랑했는지, 어떤 순간들이 있었는지
+   - "누군가에게 남기는 한 줄": 그 사람이 가장 하고 싶은 말
+   세 가지가 녹아든, 이 사람만의 시여야 합니다.
 
 2. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩 (총 6편)
    각 장면 설명의 핵심 감정이나 이미지를 포착해주세요.
@@ -1870,6 +1874,15 @@ def sixshot_page(doc_id):
     if current_key:
         poem_dict[current_key] = "\n".join(current_lines)
 
+    # OG 태그용: 6번째 사진 우선, 없으면 앞에서부터 첫 번째
+    og_image = ""
+    for k in ["6", "5", "4", "3", "2", "1"]:
+        if shot_images.get(k):
+            og_image = shot_images[k]
+            break
+    og_desc = f"6장으로 정리한 {name}님의 인생 이야기 · 휴먼다큐 식스샷(Six Shot)"
+    page_url_self = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
         return "".join(f'<div style="line-height:2;font-size:17px;color:#2d2a22;font-family:Georgia,serif">{l}</div>' for l in lines)
@@ -1917,6 +1930,13 @@ def sixshot_page(doc_id):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{name}님의 인생 이야기 · 휴먼다큐</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="{name}님의 인생 이야기 · 휴먼다큐 식스샷">
+<meta property="og:description" content="{og_desc}">
+<meta property="og:image" content="{og_image}">
+<meta property="og:url" content="{page_url_self}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{og_image}">
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{ background: #f5f2eb; font-family: 'Noto Sans KR', sans-serif; color: #2d2a22; }}
