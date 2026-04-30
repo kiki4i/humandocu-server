@@ -2110,7 +2110,7 @@ def payment_success():
 </script>
 </body>
 </html>"""
-    return html, 200, {{"Content-Type": "text/html; charset=utf-8"}}
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
