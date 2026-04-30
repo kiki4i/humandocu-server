@@ -1466,7 +1466,9 @@ def webhook_advanced():
     """Tally 어드밴스드 웹훅 — 데이터를 Firebase에 임시 저장 후 결제 페이지 URL 반환"""
     payload = request.get_json(force=True)
     try:
-        print("[ADVANCED] 웹훅 수신")
+        # URL 쿼리 파라미터로 pending_id가 오면 기존 문서에 필드 업데이트
+        url_pending_id = request.args.get("pending_id", "")
+        print("[ADVANCED] 웹훅 수신", f"pending_id={url_pending_id}" if url_pending_id else "")
         fields = parse_tally_advanced(payload)
         print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
 
@@ -1474,19 +1476,34 @@ def webhook_advanced():
         if not deceased_name:
             return jsonify({"status": "error", "reason": "no_name"}), 400
 
-        # Firebase에 pending 상태로 임시 저장
+        # Firebase에 데이터 저장
         import uuid, datetime
-        pending_id = uuid.uuid4().hex[:16]
-        _get_db().collection("advanced_pending").document(pending_id).set({
-            "fields": fields,
-            "deceased_name": deceased_name,
-            "status": "pending",
-            "created_at": datetime.datetime.utcnow().isoformat(),
-        })
-        print(f"[ADVANCED] pending 저장: {pending_id} / {deceased_name}")
-
-        payment_url = f"https://humandocu-server-production.up.railway.app/payment/advanced?pending_id={pending_id}&name={deceased_name}"
-        return jsonify({"status": "ok", "payment_url": payment_url}), 200
+        if url_pending_id:
+            # 결제 완료 후 Tally 폼 제출 → 기존 pending 문서에 필드 업데이트
+            pending_id = url_pending_id
+            _get_db().collection("advanced_pending").document(pending_id).update({
+                "fields": fields,
+                "deceased_name": deceased_name,
+                "status": "pending",
+                "updated_at": datetime.datetime.utcnow().isoformat(),
+            })
+            print(f"[ADVANCED] 기존 pending 업데이트: {pending_id} / {deceased_name}")
+            # 즉시 파이프라인 실행
+            import threading
+            threading.Thread(target=_run_advanced_pipeline, args=(pending_id,), daemon=True).start()
+            return jsonify({"status": "ok", "mode": "pipeline_started"}), 200
+        else:
+            # 결제 전 단계 — 새 pending 생성 후 결제 페이지 URL 반환
+            pending_id = uuid.uuid4().hex[:16]
+            _get_db().collection("advanced_pending").document(pending_id).set({
+                "fields": fields,
+                "deceased_name": deceased_name,
+                "status": "pending",
+                "created_at": datetime.datetime.utcnow().isoformat(),
+            })
+            print(f"[ADVANCED] pending 저장: {pending_id} / {deceased_name}")
+            payment_url = f"https://humandocu-server-production.up.railway.app/payment/advanced?pending_id={pending_id}"
+            return jsonify({"status": "ok", "payment_url": payment_url}), 200
 
     except Exception as e:
         print(f"[ADVANCED] 웹훅 오류: {e}")
@@ -1885,16 +1902,24 @@ def _render_haiku_block(section, lines, shot_titles):
 
 @app.route("/payment/advanced", methods=["GET"])
 def payment_advanced_page():
-    """Tally 폼 완료 후 리디렉션되는 결제 페이지"""
-    # Tally가 URL 파라미터로 폼 데이터를 넘겨주지 않으므로
-    # 세션 대신 query param으로 주문번호/금액만 받고,
-    # 실제 폼 데이터는 결제 성공 후 webhook/advanced에서 처리
-    # → Tally "리디렉션 URL"에 ?amount=29000 붙여서 넘김
+    """어드밴스드 결제 페이지 — pending_id 미리 생성 후 결제 → Tally 폼 순서"""
+    import uuid, datetime
 
-    amount     = request.args.get("amount", "29000")
+    # pending_id가 없으면 새로 생성해서 Firebase에 placeholder 저장
     pending_id = request.args.get("pending_id", "")
-    name       = request.args.get("name", "")
-    label      = "어드밴스드 부고 페이지"
+    if not pending_id:
+        pending_id = uuid.uuid4().hex[:16]
+        _get_db().collection("advanced_pending").document(pending_id).set({
+            "status": "awaiting_payment",
+            "created_at": datetime.datetime.utcnow().isoformat(),
+        })
+        # 자신에게 pending_id 포함해서 리디렉션
+        from flask import redirect
+        return redirect(f"/payment/advanced?pending_id={pending_id}")
+
+    amount = "29000"
+    label  = "어드밴스드 부고 페이지"
+    name   = ""
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -1978,7 +2003,7 @@ async function startPayment() {{
       }});
       const result = await verify.json();
       if (result.ok) {{
-        window.location.href = '/payment/success';
+        window.location.href = '/payment/success?pending_id=' + encodeURIComponent(result.pending_id || '');
       }} else {{
         status.textContent = '결제 검증 실패. 고객센터에 문의해주세요. (031-539-9709)';
         btn.disabled = false;
@@ -2023,7 +2048,7 @@ def payment_verify():
                 import threading
                 threading.Thread(target=_run_advanced_pipeline, args=(pending_id,), daemon=True).start()
                 print(f"[PAYMENT] 파이프라인 실행: {pending_id}")
-            return jsonify({"ok": True})
+            return jsonify({"ok": True, "pending_id": pending_id})
         else:
             print(f"[PAYMENT] 검증 실패: status={status}, paid={paid_amount}, expected={expected_amount}")
             return jsonify({"ok": False, "reason": "amount_mismatch"})
@@ -2034,19 +2059,26 @@ def payment_verify():
 
 @app.route("/payment/success", methods=["GET"])
 def payment_success():
-    html = """<!DOCTYPE html>
+    pending_id = request.args.get("pending_id", "")
+    # Tally 어드밴스드 폼 ID
+    tally_form_id = "QKdjJ1"
+    tally_url = f"https://tally.so/r/{tally_form_id}"
+
+    html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>결제 완료 · 휴먼다큐</title>
 <style>
-  body{background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}
-  .card{background:#fff;max-width:440px;width:90%;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
-  .header{background:#0f0d09;padding:36px 32px;text-align:center;}
-  .check{font-size:48px;margin-bottom:12px;}
-  .header-title{font-size:20px;color:#f9f6f0;font-weight:300;}
-  .body{padding:32px;text-align:center;}
-  .msg{font-size:15px;color:#6b6050;line-height:1.9;}
-  .sub{font-size:12px;color:#9e8250;margin-top:20px;line-height:1.8;}
+  body{{background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}}
+  .card{{background:#fff;max-width:480px;width:90%;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}}
+  .header{{background:#0f0d09;padding:36px 32px;text-align:center;}}
+  .check{{font-size:48px;margin-bottom:12px;}}
+  .header-title{{font-size:20px;color:#f9f6f0;font-weight:300;}}
+  .body{{padding:32px;text-align:center;}}
+  .msg{{font-size:15px;color:#6b6050;line-height:1.9;margin-bottom:28px;}}
+  .btn{{display:inline-block;padding:16px 36px;background:#c8a96e;color:#0f0d09;text-decoration:none;font-size:15px;font-weight:700;border-radius:4px;letter-spacing:.05em;}}
+  .sub{{font-size:12px;color:#9e8250;margin-top:20px;line-height:1.8;}}
+  .pid{{font-size:11px;color:#ccc;margin-top:12px;}}
 </style>
 </head>
 <body>
@@ -2056,13 +2088,25 @@ def payment_success():
     <div class="header-title">결제가 완료되었습니다</div>
   </div>
   <div class="body">
-    <div class="msg">부고 페이지 제작이 시작되었습니다.<br>완성되면 입력하신 이메일로<br>발송해 드립니다.</div>
-    <div class="sub">제작 소요 시간: 약 10분 이내<br>문의: 031-539-9709</div>
+    <div class="msg">
+      이제 부고 정보를 입력해주세요.<br>
+      입력이 완료되면 약 10분 이내에<br>
+      이메일로 발송해 드립니다.
+    </div>
+    <a href="{tally_url}" class="btn">부고 정보 입력하기 →</a>
+    <div class="sub">문의: 031-539-9709</div>
+    <div class="pid">주문번호: {pending_id}</div>
   </div>
 </div>
+<script>
+  // pending_id를 localStorage에 저장 → Tally 완료 후 webhook에서 사용
+  if ('{pending_id}') {{
+    localStorage.setItem('hd_pending_id', '{pending_id}');
+  }}
+</script>
 </body>
 </html>"""
-    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+    return html, 200, {{"Content-Type": "text/html; charset=utf-8"}}
 
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
