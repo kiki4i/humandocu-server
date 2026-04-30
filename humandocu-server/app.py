@@ -1559,12 +1559,20 @@ def webhook_sixshot():
         all_fields = []
         try:
             for f in payload["data"]["fields"]:
-                lbl = (f.get("label") or "").strip()
+                lbl = f.get("label")
+                if lbl is not None: lbl = lbl.strip()
                 val = f.get("value", "")
-                if isinstance(val, list): val = val[0] if val else ""
+                ftype = f.get("type", "")
+                if ftype == "FILE_UPLOAD":
+                    if isinstance(val, list) and val:
+                        val = val[0].get("url", "") if isinstance(val[0], dict) else ""
+                    else:
+                        val = ""
+                elif isinstance(val, list):
+                    val = val[0] if val else ""
                 all_fields.append((lbl, str(val).strip() if val else ""))
-        except:
-            pass
+        except Exception as e:
+            print(f"[SIXSHOT] all_fields 파싱 오류: {e}")
 
         shots = {}
         shot_labels = [
@@ -1575,12 +1583,12 @@ def webhook_sixshot():
             "사진05 · 발버둥쳤던 날",
             "사진06 · 지금 이 순간",
         ]
-        desc_label = "사진 설명 (단답형, 30자 이내)"
         shot_idx = 0
         for lbl, val in all_fields:
             if lbl in shot_labels:
                 shot_idx = shot_labels.index(lbl) + 1
-            elif lbl == desc_label and shot_idx > 0:
+            elif lbl is None and shot_idx > 0 and val:
+                # label이 null인 텍스트 필드 = 사진 설명
                 shots[shot_idx] = val
                 shot_idx = 0
 
