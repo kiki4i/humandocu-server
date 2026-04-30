@@ -1940,7 +1940,7 @@ async function startPayment() {{
 </script>
 </body>
 </html>"""
-    return html, 200, {{"Content-Type": "text/html; charset=utf-8"}}
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
 @app.route("/payment/verify", methods=["POST"])
