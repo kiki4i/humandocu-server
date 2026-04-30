@@ -1609,14 +1609,15 @@ def webhook_sixshot():
                 poems = generate_sixshot_haiku(name, shots, identity, last_msg)
                 print(f"[SIXSHOT] 시 생성 완료")
 
-                # Firebase 저장
+                # Firebase 저장 (Firestore는 딕셔너리 키를 str로만 허용)
                 import datetime
+                shots_str = {str(k): v for k, v in shots.items()}
                 firebase_save_sixshot(doc_id, {
                     "name": name,
                     "email": email,
                     "identity": identity,
                     "last_msg": last_msg,
-                    "shots": shots,
+                    "shots": shots_str,
                     "poems": poems,
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
