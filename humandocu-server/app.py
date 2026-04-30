@@ -1541,6 +1541,264 @@ def webhook_advanced():
     return jsonify({"status": "received"}), 200
 
 
+@app.route("/webhook/sixshot", methods=["POST"])
+def webhook_sixshot():
+    try:
+        payload = request.get_json(force=True)
+        print("[SIXSHOT] 웹훅 수신")
+        fields = parse_tally(payload)
+        print("[SIXSHOT] 파싱:", json.dumps(fields, ensure_ascii=False))
+
+        name  = fields.get("이름", "").strip()
+        email = fields.get("이메일", "").strip()
+        if not name or not email:
+            return jsonify({"error": "이름/이메일 없음"}), 400
+
+        shot1 = fields.get("사진 설명 (단답형, 30자 이내)", "")
+        # Tally에서 같은 라벨이 반복되면 마지막 값만 남으므로 인덱스로 추출
+        all_fields = []
+        try:
+            for f in payload["data"]["fields"]:
+                lbl = (f.get("label") or "").strip()
+                val = f.get("value", "")
+                if isinstance(val, list): val = val[0] if val else ""
+                all_fields.append((lbl, str(val).strip() if val else ""))
+        except:
+            pass
+
+        shots = {}
+        shot_labels = [
+            "사진01 · 태어남 · 유년",
+            "사진02 · 청년의 시절",
+            "사진03 · 가장 빛났을 때",
+            "사진04 · 사랑했던 것들",
+            "사진05 · 발버둥쳤던 날",
+            "사진06 · 지금 이 순간",
+        ]
+        desc_label = "사진 설명 (단답형, 30자 이내)"
+        shot_idx = 0
+        for lbl, val in all_fields:
+            if lbl in shot_labels:
+                shot_idx = shot_labels.index(lbl) + 1
+            elif lbl == desc_label and shot_idx > 0:
+                shots[shot_idx] = val
+                shot_idx = 0
+
+        identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
+        last_msg   = fields.get("메세지", "") or fields.get("메시지", "")
+
+        print(f"[SIXSHOT] shots: {shots}")
+        print(f"[SIXSHOT] identity: {identity}")
+
+        # 하이쿠 생성
+        haikus = generate_sixshot_haiku(name, shots, identity, last_msg)
+        print(f"[SIXSHOT] 하이쿠 생성 완료")
+
+        # 이메일 발송
+        send_email_sixshot(email, name, haikus, shots, identity, last_msg)
+        return jsonify({"status": "success", "name": name}), 200
+
+    except Exception as e:
+        print(f"[SIXSHOT] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+def generate_sixshot_haiku(name, shots, identity, last_msg):
+    """식스샷 데이터로 하이쿠 7편 생성"""
+    shot_titles = {
+        1: "태어남 · 유년",
+        2: "청년의 시절",
+        3: "가장 빛났을 때",
+        4: "사랑했던 것들",
+        5: "발버둥쳤던 날",
+        6: "지금 이 순간",
+    }
+
+    shots_text = "\n".join([
+        f"SHOT {i} ({shot_titles.get(i, '')}) : {shots.get(i, '(없음)')}"
+        for i in range(1, 7)
+    ])
+
+    last_msg_text = f"\n누군가에게 남기는 한 줄: {last_msg}" if last_msg else ""
+
+    prompt = f"""당신은 한국의 깊은 감성을 지닌 하이쿠 시인입니다.
+아래는 한 사람의 인생을 담은 식스샷 데이터입니다.
+
+이름: {name}
+나는 이런 사람입니다: {identity}{last_msg_text}
+
+인생 6장면:
+{shots_text}
+
+다음 두 가지를 작성해주세요.
+
+1. [대표 하이쿠] - 이 사람의 인생 전체를 관통하는 하이쿠 1편
+   "나는 이런 사람입니다"와 "누군가에게 남기는 한 줄"을 중심으로.
+
+2. [장면별 하이쿠] - SHOT 1~6 각각 하이쿠 1편씩 (총 6편)
+   각 장면 설명의 핵심 감정이나 이미지를 포착해주세요.
+
+하이쿠 규칙:
+- 3행 구성 (한국어 특성상 음절보다 호흡과 여운을 중시)
+- 구체적인 이미지로 추상적인 감정을 담기
+- 꾸밈 없이, 진짜 그 사람의 언어로
+
+출력 형식 (정확히 이 형식으로):
+[대표]
+(1행)
+(2행)
+(3행)
+
+[SHOT1]
+(1행)
+(2행)
+(3행)
+
+[SHOT2]
+(1행)
+(2행)
+(3행)
+
+[SHOT3]
+(1행)
+(2행)
+(3행)
+
+[SHOT4]
+(1행)
+(2행)
+(3행)
+
+[SHOT5]
+(1행)
+(2행)
+(3행)
+
+[SHOT6]
+(1행)
+(2행)
+(3행)"""
+
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+    message = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=1500,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
+
+
+def send_email_sixshot(to_email, name, haikus_text, shots, identity, last_msg):
+    """식스샷 하이쿠 이메일 발송"""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    shot_titles = {
+        1: "태어남 · 유년",
+        2: "청년의 시절",
+        3: "가장 빛났을 때",
+        4: "사랑했던 것들",
+        5: "발버둥쳤던 날",
+        6: "지금 이 순간",
+    }
+
+    # 하이쿠 텍스트를 HTML로 변환
+    haiku_lines = haikus_text.strip().split("\n")
+    haiku_html = ""
+    current_section = ""
+    section_lines = []
+
+    for line in haiku_lines:
+        line = line.strip()
+        if line.startswith("[대표]"):
+            current_section = "대표"
+            section_lines = []
+        elif line.startswith("[SHOT"):
+            if current_section and section_lines:
+                haiku_html += _render_haiku_block(current_section, section_lines, shot_titles)
+            num = line.replace("[SHOT","").replace("]","").strip()
+            current_section = f"SHOT{num}"
+            section_lines = []
+        elif line:
+            section_lines.append(line)
+
+    if current_section and section_lines:
+        haiku_html += _render_haiku_block(current_section, section_lines, shot_titles)
+
+    last_msg_html = f"""
+    <div style="margin:32px auto;max-width:480px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
+        <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">누군가에게 남기는 한 줄</div>
+        <div style="font-size:16px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
+    </div>
+    """ if last_msg else ""
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif">
+<div style="max-width:600px;margin:0 auto;background:#fff">
+
+  <div style="background:#0f0d09;padding:48px 32px;text-align:center">
+    <div style="font-size:12px;color:rgba(200,169,110,.6);letter-spacing:.2em;margin-bottom:12px">HUMANDOCU · 식스샷</div>
+    <div style="font-family:Georgia,serif;font-size:28px;color:#f9f6f0;font-weight:300">{name}님의 인생 하이쿠</div>
+    <div style="margin-top:12px;font-size:14px;color:rgba(249,246,240,.5);font-style:italic">{identity}</div>
+  </div>
+
+  <div style="padding:40px 32px">
+    {haiku_html}
+    {last_msg_html}
+  </div>
+
+  <div style="padding:24px 32px;background:#f9f6f0;text-align:center;border-top:1px solid #e5dece">
+    <div style="font-size:12px;color:#9e8250">휴먼다큐로 만들었습니다 · <a href="https://humandocu.com" style="color:#9e8250">humandocu.com</a></div>
+  </div>
+
+</div>
+</body>
+</html>
+"""
+
+    gmail_user = "mongmong4i@gmail.com"
+    gmail_pw   = "nqkb ybbs mmgx vpjo"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"[휴먼다큐] {name}님의 인생 하이쿠가 완성되었습니다"
+    msg["From"]    = f"휴먼다큐 <{gmail_user}>"
+    msg["To"]      = to_email
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        s.login(gmail_user, gmail_pw)
+        s.sendmail(gmail_user, to_email, msg.as_string())
+    print(f"[SIXSHOT] 이메일 발송 완료 → {to_email}")
+
+
+def _render_haiku_block(section, lines, shot_titles):
+    if section == "대표":
+        title = "✦ 대표 하이쿠"
+        bg = "#0f0d09"
+        color = "#f9f6f0"
+        sub_color = "rgba(200,169,110,.6)"
+    else:
+        num = int(section.replace("SHOT","").strip())
+        title = f"SHOT {num:02d} · {shot_titles.get(num, '')}"
+        bg = "#faf7f2"
+        color = "#2d2a22"
+        sub_color = "#9e8250"
+
+    lines_html = "<br>".join(lines)
+    return f"""
+    <div style="margin:0 0 16px;padding:28px 24px;background:{bg};border-radius:4px;text-align:center">
+        <div style="font-size:11px;color:{sub_color};letter-spacing:.15em;margin-bottom:16px">{title}</div>
+        <div style="font-family:Georgia,serif;font-size:18px;color:{color};line-height:2;font-style:italic">{lines_html}</div>
+    </div>
+    """
+
+
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "휴먼다큐 베이직"}), 200
