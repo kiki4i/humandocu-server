@@ -1463,47 +1463,91 @@ def webhook_basic():
 
 @app.route("/webhook/advanced", methods=["POST"])
 def webhook_advanced():
+    """Tally 어드밴스드 웹훅 — 데이터를 Firebase에 임시 저장 후 결제 페이지 URL 반환"""
     payload = request.get_json(force=True)
+    try:
+        print("[ADVANCED] 웹훅 수신")
+        fields = parse_tally_advanced(payload)
+        print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
 
-    def process():
-        try:
-            print("[ADVANCED] 웹훅 수신")
-            fields = parse_tally_advanced(payload)
-            print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
+        deceased_name = fields.get("고인 성함", "").strip()
+        if not deceased_name:
+            return jsonify({"status": "error", "reason": "no_name"}), 400
 
-            deceased_name = fields.get("고인 성함", "").strip()
-            if not deceased_name:
-                return
+        # Firebase에 pending 상태로 임시 저장
+        import uuid, datetime
+        pending_id = uuid.uuid4().hex[:16]
+        _get_db().collection("advanced_pending").document(pending_id).set({
+            "fields": fields,
+            "deceased_name": deceased_name,
+            "status": "pending",
+            "created_at": datetime.datetime.utcnow().isoformat(),
+        })
+        print(f"[ADVANCED] pending 저장: {pending_id} / {deceased_name}")
 
-            title         = fields.get("직함/직책", "")
-            intro         = fields.get("고인 한줄 소개", "")
-            relationship  = fields.get("고인과 상주의 관계", "")
-            chief_name    = fields.get("상주 성함", "")
-            life_events   = fields.get("생애 주요 사건", "")
-            photo_url     = fields.get("고인 사진(영정)", "")
-            gender        = fields.get("성별", "")
-            memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
-            personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
-            bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
+        payment_url = f"https://humandocu-server-production.up.railway.app/payment/advanced?pending_id={pending_id}&name={deceased_name}"
+        return jsonify({"status": "ok", "payment_url": payment_url}), 200
+
+    except Exception as e:
+        print(f"[ADVANCED] 웹훅 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"status": "error"}), 500
+
+
+def _run_advanced_pipeline(pending_id):
+    """결제 완료 후 실제 어드밴스드 파이프라인 실행"""
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            print(f"[ADVANCED] pending 문서 없음: {pending_id}")
+            return
+        data = doc.to_dict()
+        if data.get("status") != "pending":
+            print(f"[ADVANCED] 이미 처리됨: {pending_id}")
+            return
+
+        # 상태 업데이트
+        _get_db().collection("advanced_pending").document(pending_id).update({"status": "processing"})
+
+        fields = data["fields"]
+        deceased_name = data["deceased_name"]
+
+        def process():
+            try:
+                print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
+
+                if not deceased_name:
+                    return
+
+                title         = fields.get("직함/직책", "")
+                intro         = fields.get("고인 한줄 소개", "")
+                relationship  = fields.get("고인과 상주의 관계", "")
+                chief_name    = fields.get("상주 성함", "")
+                life_events   = fields.get("생애 주요 사건", "")
+                photo_url     = fields.get("고인 사진(영정)", "")
+                gender        = fields.get("성별", "")
+                memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
+                personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
+                bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
                             fields.get(" 고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
-            last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
-            contact_email = fields.get("신청자 이메일", "")
+                last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
+                contact_email = fields.get("신청자 이메일", "")
 
-            print("[ADVANCED] Claude API 호출 - 버전A...")
-            one_liner_a, tribute_para_a = generate_tribute_advanced(
+                print("[ADVANCED] Claude API 호출 - 버전A...")
+                one_liner_a, tribute_para_a = generate_tribute_advanced(
                 deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"
-            )
-            print("[ADVANCED] Claude API 호출 - 버전B...")
-            one_liner_b, tribute_para_b = generate_tribute_advanced(
+                )
+                print("[ADVANCED] Claude API 호출 - 버전B...")
+                one_liner_b, tribute_para_b = generate_tribute_advanced(
                 deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="B"
-            )
-            print(f"[ADVANCED] 추모글A: {one_liner_a}")
-            print(f"[ADVANCED] 추모글B: {one_liner_b}")
+                )
+                print(f"[ADVANCED] 추모글A: {one_liner_a}")
+                print(f"[ADVANCED] 추모글B: {one_liner_b}")
 
-            admin_pw      = "".join(str(secrets.randbelow(10)) for _ in range(6))
-            admin_pw_hash = bcrypt.hashpw(admin_pw.encode(), bcrypt.gensalt()).decode()
+                admin_pw      = "".join(str(secrets.randbelow(10)) for _ in range(6))
+                admin_pw_hash = bcrypt.hashpw(admin_pw.encode(), bcrypt.gensalt()).decode()
 
-            firebase_save_advanced(deceased_name, {
+                firebase_save_advanced(deceased_name, {
                 "생년월일": fields.get("생년월일", ""),
                 "별세일":   fields.get("별세일", ""),
                 "한줄평":   one_liner_a,
@@ -1511,35 +1555,39 @@ def webhook_advanced():
                 "상주 성함": chief_name,
                 "신청자 이메일": contact_email,
                 "admin_password": admin_pw_hash,
-            })
+                })
 
-            filename   = "adv-" + safe_filename(deceased_name)
-            filename_b = "adv-" + safe_filename(deceased_name) + "-b"
-            html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
-            html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
-            pages_url = upload_to_github(filename,   html_a)
-            memorial_html = build_html_memorial(deceased_name, fields, {
+                filename   = "adv-" + safe_filename(deceased_name)
+                filename_b = "adv-" + safe_filename(deceased_name) + "-b"
+                html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+                html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
+                pages_url = upload_to_github(filename,   html_a)
+                memorial_html = build_html_memorial(deceased_name, fields, {
                 "생년월일": fields.get("생년월일", ""),
                 "별세일": fields.get("별세일", ""),
                 "한줄평": one_liner_a,
                 "고인 소개": intro,
-            }, life_events, photo_url)
-            memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
-            upload_to_github(memorial_filename, memorial_html)
-            _         = upload_to_github(filename_b, html_b)
-            print(f"[ADVANCED] Pages URL: {pages_url}")
+                }, life_events, photo_url)
+                memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
+                upload_to_github(memorial_filename, memorial_html)
+                _         = upload_to_github(filename_b, html_b)
+                print(f"[ADVANCED] Pages URL: {pages_url}")
 
-            if contact_email:
-                send_email_advanced(contact_email, deceased_name, pages_url)
-                send_email_admin_password(contact_email, deceased_name, admin_pw)
+                if contact_email:
+                    send_email_advanced(contact_email, deceased_name, pages_url)
+                    send_email_admin_password(contact_email, deceased_name, admin_pw)
 
-        except Exception as e:
-            print(f"[ADVANCED] 오류: {e}")
-            import traceback; traceback.print_exc()
+            except Exception as e:
+                print(f"[ADVANCED] 파이프라인 오류: {e}")
+                import traceback; traceback.print_exc()
+                _get_db().collection("advanced_pending").document(pending_id).update({"status": "error"})
 
-    import threading
-    threading.Thread(target=process).start()
-    return jsonify({"status": "received"}), 200
+        import threading
+        threading.Thread(target=process, daemon=True).start()
+
+    except Exception as e:
+        print(f"[ADVANCED] _run_advanced_pipeline 오류: {e}")
+        import traceback; traceback.print_exc()
 
 
 @app.route("/webhook/sixshot", methods=["POST"])
@@ -1843,8 +1891,10 @@ def payment_advanced_page():
     # 실제 폼 데이터는 결제 성공 후 webhook/advanced에서 처리
     # → Tally "리디렉션 URL"에 ?amount=29000 붙여서 넘김
 
-    amount = request.args.get("amount", "29000")
-    label  = "어드밴스드 부고 페이지" if amount == "29000" else "프리미엄 부고 페이지"
+    amount     = request.args.get("amount", "29000")
+    pending_id = request.args.get("pending_id", "")
+    name       = request.args.get("name", "")
+    label      = "어드밴스드 부고 페이지"
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -1876,6 +1926,7 @@ def payment_advanced_page():
   <div class="header">
     <div class="header-sub">HUMANDOCU</div>
     <div class="header-title">{label}</div>
+    {f'<div style="font-size:14px;color:rgba(249,246,240,.5);margin-top:8px">{name}님</div>' if name else ""}
   </div>
   <div class="body">
     <div class="amount-box">
@@ -1923,7 +1974,7 @@ async function startPayment() {{
       const verify = await fetch('/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
-        body: JSON.stringify({{ paymentId: orderId, amount: {amount} }})
+        body: JSON.stringify({{ paymentId: orderId, amount: {amount}, pending_id: '{pending_id}' }})
       }});
       const result = await verify.json();
       if (result.ok) {{
@@ -1951,6 +2002,7 @@ def payment_verify():
     data = request.get_json(force=True)
     payment_id = data.get("paymentId", "")
     expected_amount = int(data.get("amount", 0))
+    pending_id_for_pipeline = data.get("pending_id", "")  # 파이프라인 실행용
 
     try:
         # 포트원 V2 API로 결제 조회
@@ -1966,6 +2018,11 @@ def payment_verify():
 
         if status == "PAID" and paid_amount == expected_amount:
             print(f"[PAYMENT] 검증 성공: {payment_id} / {paid_amount}원")
+            pending_id = data.get("pending_id", "")
+            if pending_id:
+                import threading
+                threading.Thread(target=_run_advanced_pipeline, args=(pending_id,), daemon=True).start()
+                print(f"[PAYMENT] 파이프라인 실행: {pending_id}")
             return jsonify({"ok": True})
         else:
             print(f"[PAYMENT] 검증 실패: status={status}, paid={paid_amount}, expected={expected_amount}")
