@@ -6,6 +6,7 @@ import re
 import urllib.parse
 import bcrypt
 import secrets
+import anthropic
 import firebase_admin
 from firebase_admin import credentials, firestore as fb_firestore
 from flask import Flask, request, jsonify
@@ -1688,7 +1689,6 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 (2행)
 (3행)"""
 
-    import anthropic
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     message = client.messages.create(
         model="claude-opus-4-5",
