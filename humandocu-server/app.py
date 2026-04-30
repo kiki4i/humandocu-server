@@ -1602,9 +1602,8 @@ def webhook_sixshot():
         import threading, uuid
         def process():
             try:
-                # 고유 doc_id 생성: 이름 + 난수 8자리
-                safe_name = name.replace(" ", "").replace("/", "")
-                doc_id = f"{safe_name}_{uuid.uuid4().hex[:8]}"
+                # doc_id = 순수 영문 UUID (한글 URL은 Railway 프록시가 404 처리)
+                doc_id = uuid.uuid4().hex[:12]
 
                 poems = generate_sixshot_haiku(name, shots, identity, last_msg)
                 print(f"[SIXSHOT] 시 생성 완료")
@@ -1722,85 +1721,60 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 
 def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None):
-    """식스샷 생애시 이메일 발송"""
-    shot_titles = {
-        1: "태어남 · 유년",
-        2: "청년의 시절",
-        3: "가장 빛났을 때",
-        4: "사랑했던 것들",
-        5: "발버둥쳤던 날",
-        6: "지금 이 순간",
-    }
+    """식스샷 알림 이메일 — 버튼 클릭 → 개인 페이지로 이동"""
 
-    # 시 텍스트를 HTML로 변환
-    haiku_lines = haikus_text.strip().split("\n")
-    haiku_html = ""
-    current_section = ""
-    section_lines = []
-
-    for line in haiku_lines:
-        line = line.strip()
-        if line.startswith("[대표]"):
-            current_section = "대표"
-            section_lines = []
-        elif line.startswith("[SHOT"):
-            if current_section and section_lines:
-                haiku_html += _render_haiku_block(current_section, section_lines, shot_titles)
-            num = line.replace("[SHOT","").replace("]","").strip()
-            current_section = f"SHOT{num}"
-            section_lines = []
-        elif line:
-            section_lines.append(line)
-
-    if current_section and section_lines:
-        haiku_html += _render_haiku_block(current_section, section_lines, shot_titles)
-
-    last_msg_html = f"""
-    <div style="margin:32px auto;max-width:480px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
+    last_msg_block = f"""
+      <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
         <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">누군가에게 남기는 한 줄</div>
-        <div style="font-size:16px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
-    </div>
-    """ if last_msg else ""
+        <div style="font-size:15px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
+      </div>""" if last_msg else ""
 
-    page_url_html = f"""
-    <div style="text-align:center;margin:32px 0">
-        <a href="{page_url}" style="display:inline-block;padding:14px 32px;background:#0f0d09;color:#f9f6f0;text-decoration:none;font-size:14px;letter-spacing:.1em;border-radius:2px">나의 인생 페이지 보기</a>
-        <div style="margin-top:12px;font-size:11px;color:#9e8250">{page_url}</div>
-    </div>
-    """ if page_url else ""
+    btn_block = f"""
+      <div style="text-align:center;margin:0 0 20px">
+        <a href="{page_url}"
+           style="display:inline-block;padding:16px 40px;background:#c8a96e;color:#0f0d09;
+                  text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.08em;border-radius:3px">
+          나의 식스샷 열기
+        </a>
+      </div>
+      <div style="text-align:center;margin-bottom:8px">
+        <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
+      </div>""" if page_url else ""
 
-    html = f"""
-<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="ko">
-<head><meta charset="UTF-8"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif">
-<div style="max-width:600px;margin:0 auto;background:#fff">
+<div style="max-width:560px;margin:0 auto;background:#fff">
 
-  <div style="background:#0f0d09;padding:48px 32px;text-align:center">
-    <div style="font-size:12px;color:rgba(200,169,110,.6);letter-spacing:.2em;margin-bottom:12px">HUMANDOCU · 식스샷</div>
-    <div style="font-family:Georgia,serif;font-size:28px;color:#f9f6f0;font-weight:300">{name}님의 인생 이야기</div>
-    <div style="margin-top:12px;font-size:14px;color:rgba(249,246,240,.5);font-style:italic">{identity}</div>
+  <div style="background:#0f0d09;padding:52px 36px;text-align:center">
+    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 식스샷</div>
+    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{name}님의<br>인생 이야기가<br>완성되었습니다</div>
+    <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
 
-  <div style="padding:40px 32px">
-    {haiku_html}
-    {last_msg_html}
-    {page_url_html}
+  <div style="padding:40px 36px">
+    <div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">
+      {name}님의 인생 6장면과 그 이야기를 담은<br>
+      개인 페이지가 만들어졌습니다.<br>
+      아래 버튼을 눌러 확인하세요.
+    </div>
+    {last_msg_block}
+    {btn_block}
   </div>
 
-  <div style="padding:24px 32px;background:#f9f6f0;text-align:center;border-top:1px solid #e5dece">
-    <div style="font-size:12px;color:#9e8250">휴먼다큐로 만들었습니다 · <a href="https://humandocu.com" style="color:#9e8250">humandocu.com</a></div>
+  <div style="padding:24px 36px;background:#f9f6f0;text-align:center;border-top:1px solid #e5dece">
+    <div style="font-size:11px;color:#9e8250">휴먼다큐로 만들었습니다 · <a href="https://humandocu.com" style="color:#9e8250;text-decoration:none">humandocu.com</a></div>
   </div>
 
 </div>
 </body>
-</html>
-"""
+</html>"""
 
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {name}님의 인생 이야기가 완성되었습니다", "html": html},
+              "subject": f"[휴먼다큐] {name}님의 식스샷이 완성되었습니다", "html": html},
         timeout=30)
     resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 → {to_email}")
