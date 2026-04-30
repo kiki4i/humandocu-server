@@ -1599,12 +1599,30 @@ def webhook_sixshot():
         print(f"[SIXSHOT] shots: {shots}")
         print(f"[SIXSHOT] identity: {identity}")
 
-        import threading
+        import threading, uuid
         def process():
             try:
-                haikus = generate_sixshot_haiku(name, shots, identity, last_msg)
+                # 고유 doc_id 생성: 이름 + 난수 8자리
+                safe_name = name.replace(" ", "").replace("/", "")
+                doc_id = f"{safe_name}_{uuid.uuid4().hex[:8]}"
+
+                poems = generate_sixshot_haiku(name, shots, identity, last_msg)
                 print(f"[SIXSHOT] 시 생성 완료")
-                send_email_sixshot(email, name, haikus, identity, last_msg)
+
+                # Firebase 저장
+                import datetime
+                firebase_save_sixshot(doc_id, {
+                    "name": name,
+                    "email": email,
+                    "identity": identity,
+                    "last_msg": last_msg,
+                    "shots": shots,
+                    "poems": poems,
+                    "created_at": datetime.datetime.utcnow().isoformat(),
+                })
+
+                page_url = f"https://humandocu-production.up.railway.app/sixshot/{doc_id}"
+                send_email_sixshot(email, name, poems, identity, last_msg, page_url)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
                 import traceback; traceback.print_exc()
@@ -1702,7 +1720,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
     return message.content[0].text
 
 
-def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
+def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None):
     """식스샷 생애시 이메일 발송"""
     shot_titles = {
         1: "태어남 · 유년",
@@ -1743,6 +1761,13 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
     </div>
     """ if last_msg else ""
 
+    page_url_html = f"""
+    <div style="text-align:center;margin:32px 0">
+        <a href="{page_url}" style="display:inline-block;padding:14px 32px;background:#0f0d09;color:#f9f6f0;text-decoration:none;font-size:14px;letter-spacing:.1em;border-radius:2px">나의 인생 페이지 보기</a>
+        <div style="margin-top:12px;font-size:11px;color:#9e8250">{page_url}</div>
+    </div>
+    """ if page_url else ""
+
     html = f"""
 <!DOCTYPE html>
 <html lang="ko">
@@ -1759,6 +1784,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
   <div style="padding:40px 32px">
     {haiku_html}
     {last_msg_html}
+    {page_url_html}
   </div>
 
   <div style="padding:24px 32px;background:#f9f6f0;text-align:center;border-top:1px solid #e5dece">
@@ -1799,6 +1825,135 @@ def _render_haiku_block(section, lines, shot_titles):
         <div style="font-family:Georgia,serif;font-size:18px;color:{color};line-height:2;font-style:italic">{lines_html}</div>
     </div>
     """
+
+
+@app.route("/sixshot/<doc_id>", methods=["GET"])
+def sixshot_page(doc_id):
+    """개인 식스샷 페이지 — Firebase에서 데이터 읽어 HTML 렌더링"""
+    data = firebase_get_sixshot(doc_id)
+    if data is None:
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
+
+    name     = data.get("name", "")
+    identity = data.get("identity", "")
+    last_msg = data.get("last_msg", "")
+    poems    = data.get("poems", "")
+    shots    = data.get("shots", {})
+    created  = data.get("created_at", "")[:10] if data.get("created_at") else ""
+
+    shot_titles = {
+        "1": "태어남 · 유년",
+        "2": "청년의 시절",
+        "3": "가장 빛났을 때",
+        "4": "사랑했던 것들",
+        "5": "발버둥쳤던 날",
+        "6": "지금 이 순간",
+    }
+
+    # 시 텍스트 → 섹션별 딕셔너리
+    poem_dict = {}
+    current_key = None
+    current_lines = []
+    for line in poems.strip().split("\n"):
+        line = line.strip()
+        if line.startswith("[대표]"):
+            current_key = "대표"
+            current_lines = []
+        elif line.startswith("[SHOT"):
+            if current_key:
+                poem_dict[current_key] = "\n".join(current_lines)
+            num = line.replace("[SHOT","").replace("]","").strip()
+            current_key = f"SHOT{num}"
+            current_lines = []
+        elif line:
+            current_lines.append(line)
+    if current_key:
+        poem_dict[current_key] = "\n".join(current_lines)
+
+    def poem_html(text):
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        return "".join(f'<div style="line-height:2;font-size:17px;color:#2d2a22;font-family:Georgia,serif">{l}</div>' for l in lines)
+
+    rep_poem = poem_dict.get("대표", "")
+
+    # 장면별 카드 HTML
+    scene_cards = ""
+    for i in range(1, 7):
+        key = str(i)
+        shot_text = shots.get(key, shots.get(i, ""))
+        shot_poem = poem_dict.get(f"SHOT{i}", "")
+        title = shot_titles.get(key, f"SHOT {i}")
+        scene_cards += f"""
+        <div style="margin-bottom:40px;padding:32px;background:#faf7f2;border-radius:4px">
+            <div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d} · {title}</div>
+            <div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:20px;font-style:italic">{shot_text}</div>
+            <div style="border-top:1px solid #e5dece;padding-top:20px">
+                {poem_html(shot_poem)}
+            </div>
+        </div>"""
+
+    last_msg_block = f"""
+        <div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
+            <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">누군가에게 남기는 한 줄</div>
+            <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
+        </div>""" if last_msg else ""
+
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{name}님의 인생 이야기 · 휴먼다큐</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ background: #f5f2eb; font-family: 'Noto Sans KR', sans-serif; color: #2d2a22; }}
+  .wrap {{ max-width: 680px; margin: 0 auto; background: #fff; }}
+  .hero {{ background: #0f0d09; padding: 64px 40px; text-align: center; }}
+  .hero-sub {{ font-size: 11px; color: rgba(200,169,110,.6); letter-spacing: .25em; margin-bottom: 16px; }}
+  .hero-name {{ font-family: Georgia, serif; font-size: 36px; color: #f9f6f0; font-weight: 300; margin-bottom: 12px; }}
+  .hero-identity {{ font-size: 15px; color: rgba(249,246,240,.5); font-style: italic; line-height: 1.8; }}
+  .section {{ padding: 48px 40px; }}
+  .section-label {{ font-size: 11px; color: #9e8250; letter-spacing: .2em; margin-bottom: 24px; }}
+  .rep-poem {{ padding: 32px; background: #0f0d09; border-radius: 4px; text-align: center; }}
+  .rep-poem div {{ color: #f9f6f0 !important; }}
+  .footer {{ padding: 24px 40px; background: #f9f6f0; text-align: center; border-top: 1px solid #e5dece; }}
+  .footer a {{ color: #9e8250; text-decoration: none; font-size: 12px; }}
+  @media (max-width: 600px) {{
+    .section {{ padding: 32px 20px; }}
+    .hero {{ padding: 48px 20px; }}
+  }}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-sub">HUMANDOCU · 식스샷</div>
+    <div class="hero-name">{name}</div>
+    <div class="hero-identity">{identity}</div>
+    {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
+  </div>
+
+  <div class="section">
+    <div class="section-label">✦ 인생을 담은 시</div>
+    <div class="rep-poem">{poem_html(rep_poem)}</div>
+    {last_msg_block}
+  </div>
+
+  <div class="section" style="padding-top:0">
+    <div class="section-label">인생 6장면</div>
+    {scene_cards}
+  </div>
+
+  <div class="footer">
+    <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
+  </div>
+
+</div>
+</body>
+</html>"""
+
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
 @app.route("/", methods=["GET"])
@@ -1906,6 +2061,31 @@ def firebase_save_advanced(deceased_name, data):
         print(f"[FIREBASE] 저장 성공: {deceased_name} → {list(data.keys())}")
     except Exception as e:
         print(f"[FIREBASE] 저장 오류: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────
+# 식스샷 Firestore 헬퍼 (Admin SDK)
+# ─────────────────────────────────────────────────────────────────
+
+def firebase_save_sixshot(doc_id, data):
+    """sixshot 컬렉션에 저장. doc_id = 이름_난수8자리"""
+    try:
+        _get_db().collection("sixshot").document(doc_id).set(data)
+        print(f"[SIXSHOT-FB] 저장 성공: {doc_id}")
+    except Exception as e:
+        print(f"[SIXSHOT-FB] 저장 오류: {e}")
+
+
+def firebase_get_sixshot(doc_id):
+    """sixshot 문서 조회"""
+    try:
+        doc = _get_db().collection("sixshot").document(doc_id).get()
+        if doc.exists:
+            return doc.to_dict() or {}
+        return None
+    except Exception as e:
+        print(f"[SIXSHOT-FB] 조회 오류: {e}")
+        return None
 
 
 # ─────────────────────────────────────────────────────────────────
