@@ -1887,13 +1887,24 @@ def payment_advanced_page():
       · 완성된 페이지는 신청 시 입력한 이메일로 발송됩니다.<br>
       · 문의: 031-539-9709
     </div>
-    <button class="btn" id="pay-btn" onclick="startPayment()">결제하기 (카드·계좌이체·간편결제)</button>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="method-btn active" id="btn-card" onclick="selectMethod('CARD',this)">💳 카드</button>
+      <button class="method-btn" id="btn-trans" onclick="selectMethod('TRANSFER',this)">🏦 계좌이체</button>
+    </div>
+    <button class="btn" id="pay-btn" onclick="startPayment()">결제하기</button>
     <div class="status" id="status"></div>
   </div>
 </div>
 
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
+let selectedMethod = 'CARD';
+function selectMethod(method, el) {{
+  selectedMethod = method;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}}
+
 async function startPayment() {{
   const btn = document.getElementById('pay-btn');
   const status = document.getElementById('status');
@@ -1910,6 +1921,7 @@ async function startPayment() {{
       orderName: '{label}',
       totalAmount: {amount},
       currency: 'KRW',
+      payMethod: selectedMethod,
     }});
 
     if (response.code) {{
