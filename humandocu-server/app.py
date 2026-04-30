@@ -1887,7 +1887,7 @@ def payment_advanced_page():
       · 완성된 페이지는 신청 시 입력한 이메일로 발송됩니다.<br>
       · 문의: 031-539-9709
     </div>
-    <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
+    <button class="btn" id="pay-btn" onclick="startPayment()">결제하기 (카드·계좌이체·간편결제)</button>
     <div class="status" id="status"></div>
   </div>
 </div>
@@ -1900,7 +1900,7 @@ async function startPayment() {{
   btn.disabled = true;
   status.textContent = '결제창을 여는 중...';
 
-  const orderId = 'hd-adv-' + Date.now();
+  const orderId = 'hdadv' + Date.now();
 
   try {{
     const response = await PortOne.requestPayment({{
@@ -1910,7 +1910,6 @@ async function startPayment() {{
       orderName: '{label}',
       totalAmount: {amount},
       currency: 'KRW',
-      payMethod: 'CARD',
     }});
 
     if (response.code) {{
