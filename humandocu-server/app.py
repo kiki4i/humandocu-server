@@ -1830,6 +1830,182 @@ def _render_haiku_block(section, lines, shot_titles):
     """
 
 
+
+# ─────────────────────────────────────────────────────────────────
+# 어드밴스드 결제 페이지
+# ─────────────────────────────────────────────────────────────────
+
+@app.route("/payment/advanced", methods=["GET"])
+def payment_advanced_page():
+    """Tally 폼 완료 후 리디렉션되는 결제 페이지"""
+    # Tally가 URL 파라미터로 폼 데이터를 넘겨주지 않으므로
+    # 세션 대신 query param으로 주문번호/금액만 받고,
+    # 실제 폼 데이터는 결제 성공 후 webhook/advanced에서 처리
+    # → Tally "리디렉션 URL"에 ?amount=29000 붙여서 넘김
+
+    amount = request.args.get("amount", "29000")
+    label  = "어드밴스드 부고 페이지" if amount == "29000" else "프리미엄 부고 페이지"
+
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>결제 · 휴먼다큐</title>
+<style>
+  * {{ box-sizing:border-box; margin:0; padding:0; }}
+  body {{ background:#f5f2eb; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }}
+  .card {{ background:#fff; max-width:440px; width:90%; border-radius:8px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); }}
+  .header {{ background:#0f0d09; padding:36px 32px; text-align:center; }}
+  .header-sub {{ font-size:11px; color:rgba(200,169,110,.6); letter-spacing:.2em; margin-bottom:10px; }}
+  .header-title {{ font-size:22px; color:#f9f6f0; font-weight:300; }}
+  .body {{ padding:32px; }}
+  .amount-box {{ background:#faf7f2; border-radius:4px; padding:20px 24px; text-align:center; margin-bottom:24px; }}
+  .amount-label {{ font-size:12px; color:#9e8250; margin-bottom:6px; }}
+  .amount-value {{ font-size:32px; font-weight:700; color:#0f0d09; }}
+  .amount-won {{ font-size:16px; font-weight:400; margin-left:2px; }}
+  .notice {{ font-size:12px; color:#9e8250; line-height:1.8; margin-bottom:28px; }}
+  .btn {{ width:100%; padding:16px; background:#c8a96e; border:none; border-radius:4px; font-size:16px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
+  .btn:hover {{ background:#b8994e; }}
+  .btn:disabled {{ background:#ccc; cursor:not-allowed; }}
+  .status {{ text-align:center; margin-top:16px; font-size:13px; color:#9e8250; min-height:20px; }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="header-sub">HUMANDOCU</div>
+    <div class="header-title">{label}</div>
+  </div>
+  <div class="body">
+    <div class="amount-box">
+      <div class="amount-label">결제 금액</div>
+      <div class="amount-value">{int(amount):,}<span class="amount-won">원</span></div>
+    </div>
+    <div class="notice">
+      · 결제 완료 후 부고 페이지 제작이 시작됩니다.<br>
+      · 완성된 페이지는 신청 시 입력한 이메일로 발송됩니다.<br>
+      · 문의: 031-539-9709
+    </div>
+    <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script>
+async function startPayment() {{
+  const btn = document.getElementById('pay-btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = '결제창을 여는 중...';
+
+  const orderId = 'hd-adv-' + Date.now();
+
+  try {{
+    const response = await PortOne.requestPayment({{
+      storeId: 'store-5ce1bce9-8b35-4b26-9bb8-b3fd9e2a0d5e',
+      channelKey: 'channel-key-43c17c4f-4acb-41ec-9c08-a1b59cf3ae12',
+      paymentId: orderId,
+      orderName: '{label}',
+      totalAmount: {amount},
+      currency: 'KRW',
+      payMethod: 'CARD',
+    }});
+
+    if (response.code) {{
+      status.textContent = '결제 실패: ' + (response.message || response.code);
+      btn.disabled = false;
+    }} else {{
+      status.textContent = '결제 완료! 페이지 제작을 시작합니다...';
+      // 결제 성공 → 서버에 검증 요청
+      const verify = await fetch('/payment/verify', {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify({{ paymentId: orderId, amount: {amount} }})
+      }});
+      const result = await verify.json();
+      if (result.ok) {{
+        window.location.href = '/payment/success';
+      }} else {{
+        status.textContent = '결제 검증 실패. 고객센터에 문의해주세요. (031-539-9709)';
+        btn.disabled = false;
+      }}
+    }}
+  }} catch(e) {{
+    status.textContent = '오류: ' + e.message;
+    btn.disabled = false;
+  }}
+}}
+</script>
+</body>
+</html>"""
+    return html, 200, {{"Content-Type": "text/html; charset=utf-8"}}
+
+
+@app.route("/payment/verify", methods=["POST"])
+def payment_verify():
+    """포트원 결제 검증 — 금액 위변조 방지"""
+    import requests as req
+    data = request.get_json(force=True)
+    payment_id = data.get("paymentId", "")
+    expected_amount = int(data.get("amount", 0))
+
+    try:
+        # 포트원 V2 API로 결제 조회
+        portone_secret = os.environ.get("PORTONE_SECRET", "")
+        r = req.get(
+            f"https://api.portone.io/payments/{payment_id}",
+            headers={"Authorization": f"PortOne {portone_secret}"},
+            timeout=10
+        )
+        payment = r.json()
+        paid_amount = payment.get("amount", {}).get("paid", 0)
+        status = payment.get("status", "")
+
+        if status == "PAID" and paid_amount == expected_amount:
+            print(f"[PAYMENT] 검증 성공: {payment_id} / {paid_amount}원")
+            return jsonify({"ok": True})
+        else:
+            print(f"[PAYMENT] 검증 실패: status={status}, paid={paid_amount}, expected={expected_amount}")
+            return jsonify({"ok": False, "reason": "amount_mismatch"})
+    except Exception as e:
+        print(f"[PAYMENT] 검증 오류: {e}")
+        return jsonify({"ok": False, "reason": str(e)})
+
+
+@app.route("/payment/success", methods=["GET"])
+def payment_success():
+    html = """<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>결제 완료 · 휴먼다큐</title>
+<style>
+  body{background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .card{background:#fff;max-width:440px;width:90%;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+  .header{background:#0f0d09;padding:36px 32px;text-align:center;}
+  .check{font-size:48px;margin-bottom:12px;}
+  .header-title{font-size:20px;color:#f9f6f0;font-weight:300;}
+  .body{padding:32px;text-align:center;}
+  .msg{font-size:15px;color:#6b6050;line-height:1.9;}
+  .sub{font-size:12px;color:#9e8250;margin-top:20px;line-height:1.8;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="check">✓</div>
+    <div class="header-title">결제가 완료되었습니다</div>
+  </div>
+  <div class="body">
+    <div class="msg">부고 페이지 제작이 시작되었습니다.<br>완성되면 입력하신 이메일로<br>발송해 드립니다.</div>
+    <div class="sub">제작 소요 시간: 약 10분 이내<br>문의: 031-539-9709</div>
+  </div>
+</div>
+</body>
+</html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
     """개인 식스샷 페이지 — Firebase에서 데이터 읽어 HTML 렌더링"""
