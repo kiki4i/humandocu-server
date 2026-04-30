@@ -1603,7 +1603,7 @@ def webhook_sixshot():
         def process():
             try:
                 haikus = generate_sixshot_haiku(name, shots, identity, last_msg)
-                print(f"[SIXSHOT] 하이쿠 생성 완료")
+                print(f"[SIXSHOT] 시 생성 완료")
                 send_email_sixshot(email, name, haikus, identity, last_msg)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
@@ -1618,7 +1618,7 @@ def webhook_sixshot():
 
 
 def generate_sixshot_haiku(name, shots, identity, last_msg):
-    """식스샷 데이터로 하이쿠 7편 생성"""
+    """식스샷 데이터로 짧은 생애시 7편 생성"""
     shot_titles = {
         1: "태어남 · 유년",
         2: "청년의 시절",
@@ -1635,7 +1635,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
     last_msg_text = f"\n누군가에게 남기는 한 줄: {last_msg}" if last_msg else ""
 
-    prompt = f"""당신은 한국의 깊은 감성을 지닌 하이쿠 시인입니다.
+    prompt = f"""당신은 한국의 깊은 감성을 지닌 시인입니다.
 아래는 한 사람의 인생을 담은 식스샷 데이터입니다.
 
 이름: {name}
@@ -1646,13 +1646,13 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 다음 두 가지를 작성해주세요.
 
-1. [대표 하이쿠] - 이 사람의 인생 전체를 관통하는 하이쿠 1편
+1. [대표 시] - 이 사람의 인생 전체를 관통하는 짧은 시 1편
    "나는 이런 사람입니다"와 "누군가에게 남기는 한 줄"을 중심으로.
 
-2. [장면별 하이쿠] - SHOT 1~6 각각 하이쿠 1편씩 (총 6편)
+2. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩 (총 6편)
    각 장면 설명의 핵심 감정이나 이미지를 포착해주세요.
 
-하이쿠 규칙:
+시 작성 규칙:
 - 3행 구성 (한국어 특성상 음절보다 호흡과 여운을 중시)
 - 구체적인 이미지로 추상적인 감정을 담기
 - 꾸밈 없이, 진짜 그 사람의 언어로
@@ -1703,7 +1703,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 
 def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
-    """식스샷 하이쿠 이메일 발송"""
+    """식스샷 생애시 이메일 발송"""
     shot_titles = {
         1: "태어남 · 유년",
         2: "청년의 시절",
@@ -1713,7 +1713,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
         6: "지금 이 순간",
     }
 
-    # 하이쿠 텍스트를 HTML로 변환
+    # 시 텍스트를 HTML로 변환
     haiku_lines = haikus_text.strip().split("\n")
     haiku_html = ""
     current_section = ""
@@ -1752,7 +1752,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
 
   <div style="background:#0f0d09;padding:48px 32px;text-align:center">
     <div style="font-size:12px;color:rgba(200,169,110,.6);letter-spacing:.2em;margin-bottom:12px">HUMANDOCU · 식스샷</div>
-    <div style="font-family:Georgia,serif;font-size:28px;color:#f9f6f0;font-weight:300">{name}님의 인생 하이쿠</div>
+    <div style="font-family:Georgia,serif;font-size:28px;color:#f9f6f0;font-weight:300">{name}님의 인생 이야기</div>
     <div style="margin-top:12px;font-size:14px;color:rgba(249,246,240,.5);font-style:italic">{identity}</div>
   </div>
 
@@ -1773,7 +1773,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {name}님의 인생 하이쿠가 완성되었습니다", "html": html},
+              "subject": f"[휴먼다큐] {name}님의 인생 이야기가 완성되었습니다", "html": html},
         timeout=30)
     resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 → {to_email}")
@@ -1781,7 +1781,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
 
 def _render_haiku_block(section, lines, shot_titles):
     if section == "대표":
-        title = "✦ 대표 하이쿠"
+        title = "✦ 인생을 담은 시"
         bg = "#0f0d09"
         color = "#f9f6f0"
         sub_color = "rgba(200,169,110,.6)"
