@@ -2065,7 +2065,7 @@ def payment_verify():
 def payment_success():
     pending_id = request.args.get("pending_id", "")
     # Tally 어드밴스드 폼 ID
-    tally_form_id = "QKdjJ1"
+    tally_form_id = "7RVAZa"
     tally_url = f"https://tally.so/r/{tally_form_id}?pending_id={pending_id}"
 
     html = f"""<!DOCTYPE html>
