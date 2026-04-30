@@ -1904,7 +1904,7 @@ async function startPayment() {{
 
   try {{
     const response = await PortOne.requestPayment({{
-      storeId: 'store-5ce1bce9-8b35-4b26-9bb8-b3fd9e2a0d5e',
+      storeId: 'store-6f48a0ad-9850-4ee0-81b1-c6b5ce1bce98',
       channelKey: 'channel-key-43c17c4f-4acb-41ec-9c08-a1b59cf3ae12',
       paymentId: orderId,
       orderName: '{label}',
