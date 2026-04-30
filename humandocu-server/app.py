@@ -1621,7 +1621,7 @@ def webhook_sixshot():
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
-                page_url = f"https://humandocu-production.up.railway.app/sixshot/{doc_id}"
+                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, name, poems, identity, last_msg, page_url)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
