@@ -560,6 +560,13 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
+        '</div>'
+        '<div style="margin:24px 16px 0;padding:20px;background:#faf7f2;border-radius:4px;text-align:center">'
+        '<p style="font-size:12px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">발인 다음날 · 답례장 신청</p>'
+        f'<a href="https://humandocu-server-production.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
+        'style="display:inline-block;background:#c8a96e;color:#0f0d09;padding:12px 24px;text-decoration:none;font-size:14px;font-weight:700;border-radius:4px;letter-spacing:.05em">'
+        '📋 답례장 신청하기 →</a>'
+        '<p style="font-size:11px;color:#9e8250;margin-top:8px">위 버튼을 누르시면 비밀번호 입력 후 신청 가능합니다</p>'
         '</div></div>'
         '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
         '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
@@ -2111,6 +2118,103 @@ def payment_success():
 </body>
 </html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+# ─────────────────────────────────────────────────────────────────
+# 답례장 비밀번호 검증 페이지
+# ─────────────────────────────────────────────────────────────────
+
+@app.route("/damnyejang/auth", methods=["GET", "POST"])
+def damnyejang_auth():
+    """어드밴스드 고객만 접근 — 6자리 비밀번호로 검증 후 답례장 Tally 폼으로 이동"""
+    deceased_name = request.args.get("name", "").strip()
+    tally_form_id = "68QAvO"
+
+    if request.method == "POST":
+        pw_input = request.form.get("password", "").strip()
+        name_input = request.form.get("name", "").strip() or deceased_name
+
+        if not name_input:
+            error = "고인 성함을 입력해주세요."
+            return _damnyejang_auth_html(name_input, error), 400
+
+        # Firebase에서 admin_password 조회
+        adv = firebase_get_advanced(name_input)
+        if not adv:
+            error = "등록된 어드밴스드 부고를 찾을 수 없습니다. 고인 성함을 다시 확인해주세요."
+            return _damnyejang_auth_html(name_input, error), 400
+
+        admin_hash = adv.get("admin_password", "")
+        if not admin_hash:
+            error = "비밀번호 정보가 없습니다. 고객센터에 문의해주세요. (031-539-9709)"
+            return _damnyejang_auth_html(name_input, error), 400
+
+        if not bcrypt.checkpw(pw_input.encode(), admin_hash.encode()):
+            error = "비밀번호가 일치하지 않습니다. 완성 이메일의 6자리 번호를 입력해주세요."
+            return _damnyejang_auth_html(name_input, error), 401
+
+        # 검증 성공 → 답례장 Tally 폼으로 이동
+        tally_url = f"https://tally.so/r/{tally_form_id}?name={urllib.parse.quote(name_input)}"
+        from flask import redirect
+        return redirect(tally_url)
+
+    return _damnyejang_auth_html(deceased_name, None), 200
+
+
+def _damnyejang_auth_html(name, error):
+    error_block = f'''
+    <div style="background:#fff0f0;border:1px solid #e88;border-radius:4px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c00">
+        {error}
+    </div>''' if error else ""
+
+    name_val = name or ""
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>답례장 신청 · 휴먼다큐</title>
+<style>
+  * {{ box-sizing:border-box; margin:0; padding:0; }}
+  body {{ background:#f5f2eb; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }}
+  .card {{ background:#fff; max-width:420px; width:90%; border-radius:8px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); }}
+  .header {{ background:#0f0d09; padding:40px 32px; text-align:center; }}
+  .header-sub {{ font-size:11px; color:rgba(200,169,110,.6); letter-spacing:.2em; margin-bottom:12px; }}
+  .header-title {{ font-size:22px; color:#f9f6f0; font-weight:300; }}
+  .body {{ padding:32px; }}
+  .desc {{ font-size:13px; color:#6b6050; line-height:1.9; margin-bottom:24px; }}
+  label {{ display:block; font-size:12px; color:#9e8250; margin-bottom:6px; letter-spacing:.05em; }}
+  input {{ width:100%; padding:12px 14px; border:1px solid #e5dece; border-radius:4px; font-size:15px; margin-bottom:16px; font-family:inherit; }}
+  input:focus {{ outline:none; border-color:#c8a96e; }}
+  .btn {{ width:100%; padding:14px; background:#c8a96e; border:none; border-radius:4px; font-size:15px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
+  .btn:hover {{ background:#b8994e; }}
+  .footer-note {{ font-size:11px; color:#9e8250; text-align:center; margin-top:16px; }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="header-sub">HUMANDOCU · 어드밴스드</div>
+    <div class="header-title">답례장 신청</div>
+  </div>
+  <div class="body">
+    {error_block}
+    <div class="desc">
+      어드밴스드 부고 완성 이메일에 포함된<br>
+      <strong>6자리 비밀번호</strong>를 입력해주세요.
+    </div>
+    <form method="POST" action="/damnyejang/auth">
+      <label>고인 성함</label>
+      <input type="text" name="name" value="{name_val}" placeholder="예: 홍길동" required>
+      <label>비밀번호 (6자리)</label>
+      <input type="text" name="password" placeholder="완성 이메일의 6자리 번호" maxlength="6" required inputmode="numeric">
+      <button type="submit" class="btn">확인 →</button>
+    </form>
+    <div class="footer-note">문의: 031-539-9709</div>
+  </div>
+</div>
+</body>
+</html>"""
 
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
