@@ -1888,7 +1888,7 @@ def sixshot_page(doc_id):
             img_block = (
                 '<div style="margin-bottom:0;overflow:hidden">'
                 f'<img src="{img_url}" alt="SHOT {i}" '
-                'style="width:100%;display:block;max-height:420px;object-fit:cover">'
+                'style="width:100%;display:block;height:auto">'
                 '</div>'
             )
         else:
