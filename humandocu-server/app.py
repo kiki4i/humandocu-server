@@ -1575,7 +1575,8 @@ def webhook_sixshot():
         except Exception as e:
             print(f"[SIXSHOT] all_fields 파싱 오류: {e}")
 
-        shots = {}
+        shots = {}        # {1: "설명텍스트", ...}
+        shot_images = {}  # {1: "https://tally.so/...", ...}
         shot_labels = [
             "사진01 · 태어남 · 유년",
             "사진02 · 청년의 시절",
@@ -1584,19 +1585,40 @@ def webhook_sixshot():
             "사진05 · 발버둥쳤던 날",
             "사진06 · 지금 이 순간",
         ]
+        # all_fields 재구성: FILE_UPLOAD URL도 별도로 추출
         shot_idx = 0
-        for lbl, val in all_fields:
-            if lbl in shot_labels:
-                shot_idx = shot_labels.index(lbl) + 1
-            elif lbl is None and shot_idx > 0 and val:
-                # label이 null인 텍스트 필드 = 사진 설명
-                shots[shot_idx] = val
-                shot_idx = 0
+        try:
+            for f in payload["data"]["fields"]:
+                lbl = f.get("label")
+                if lbl is not None: lbl = lbl.strip()
+                val = f.get("value", "")
+                ftype = f.get("type", "")
+                if lbl in shot_labels:
+                    idx = shot_labels.index(lbl) + 1
+                    shot_idx = idx
+                    # FILE_UPLOAD → URL 추출
+                    if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
+                        img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
+                        if img_url:
+                            shot_images[idx] = img_url
+                elif lbl is None and shot_idx > 0:
+                    # label=null 바로 다음 텍스트 필드 = 사진 설명
+                    text = ""
+                    if isinstance(val, list):
+                        text = val[0] if val else ""
+                    elif isinstance(val, str):
+                        text = val
+                    if text:
+                        shots[shot_idx] = str(text).strip()
+                    shot_idx = 0
+        except Exception as e:
+            print(f"[SIXSHOT] shots 파싱 오류: {e}")
 
         identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
         last_msg   = fields.get("메세지", "") or fields.get("메시지", "")
 
         print(f"[SIXSHOT] shots: {shots}")
+        print(f"[SIXSHOT] shot_images: { {k: v[:60]+'...' for k,v in shot_images.items()} }")
         print(f"[SIXSHOT] identity: {identity}")
 
         import threading, uuid
@@ -1611,12 +1633,14 @@ def webhook_sixshot():
                 # Firebase 저장 (Firestore는 딕셔너리 키를 str로만 허용)
                 import datetime
                 shots_str = {str(k): v for k, v in shots.items()}
+                images_str = {str(k): v for k, v in shot_images.items()}
                 firebase_save_sixshot(doc_id, {
                     "name": name,
                     "email": email,
                     "identity": identity,
                     "last_msg": last_msg,
                     "shots": shots_str,
+                    "shot_images": images_str,
                     "poems": poems,
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
@@ -1813,8 +1837,9 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_msg = data.get("last_msg", "")
     poems    = data.get("poems", "")
-    shots    = data.get("shots", {})
-    created  = data.get("created_at", "")[:10] if data.get("created_at") else ""
+    shots       = data.get("shots", {})
+    shot_images = data.get("shot_images", {})
+    created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
 
     shot_titles = {
         "1": "태어남 · 유년",
@@ -1858,14 +1883,27 @@ def sixshot_page(doc_id):
         shot_text = shots.get(key, shots.get(i, ""))
         shot_poem = poem_dict.get(f"SHOT{i}", "")
         title = shot_titles.get(key, f"SHOT {i}")
-        scene_cards += f"""
-        <div style="margin-bottom:40px;padding:32px;background:#faf7f2;border-radius:4px">
-            <div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d} · {title}</div>
-            <div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:20px;font-style:italic">{shot_text}</div>
-            <div style="border-top:1px solid #e5dece;padding-top:20px">
-                {poem_html(shot_poem)}
-            </div>
-        </div>"""
+        img_url = shot_images.get(key, "")
+        if img_url:
+            img_block = (
+                '<div style="margin-bottom:0;overflow:hidden">'
+                f'<img src="{img_url}" alt="SHOT {i}" '
+                'style="width:100%;display:block;max-height:420px;object-fit:cover">'
+                '</div>'
+            )
+        else:
+            img_block = ""
+        card_inner = (
+            f'<div style="padding:24px 28px">'
+            f'<div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d} · {title}</div>'
+            f'<div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:20px;font-style:italic">{shot_text}</div>'
+            f'<div style="border-top:1px solid #e5dece;padding-top:20px">{poem_html(shot_poem)}</div>'
+            f'</div>'
+        )
+        scene_cards += (
+            f'<div style="margin-bottom:40px;background:#faf7f2;border-radius:4px;overflow:hidden">'
+            f'{img_block}{card_inner}</div>'
+        )
 
     last_msg_block = f"""
         <div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
