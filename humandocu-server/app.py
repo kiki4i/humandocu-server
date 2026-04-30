@@ -1470,6 +1470,10 @@ def webhook_advanced():
         url_pending_id = request.args.get("pending_id", "")
         print("[ADVANCED] 웹훅 수신", f"pending_id={url_pending_id}" if url_pending_id else "")
         fields = parse_tally_advanced(payload)
+        # Tally hidden field로 넘어온 pending_id도 확인 (URL 파라미터 우선)
+        if not url_pending_id:
+            url_pending_id = fields.get("pending_id", "").strip()
+        print(f"[ADVANCED] 최종 pending_id: {url_pending_id}")
         print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
 
         deceased_name = fields.get("고인 성함", "").strip()
@@ -2062,7 +2066,7 @@ def payment_success():
     pending_id = request.args.get("pending_id", "")
     # Tally 어드밴스드 폼 ID
     tally_form_id = "QKdjJ1"
-    tally_url = f"https://tally.so/r/{tally_form_id}"
+    tally_url = f"https://tally.so/r/{tally_form_id}?pending_id={pending_id}"
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
