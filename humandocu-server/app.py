@@ -1599,13 +1599,17 @@ def webhook_sixshot():
         print(f"[SIXSHOT] shots: {shots}")
         print(f"[SIXSHOT] identity: {identity}")
 
-        # 하이쿠 생성
-        haikus = generate_sixshot_haiku(name, shots, identity, last_msg)
-        print(f"[SIXSHOT] 하이쿠 생성 완료")
-
-        # 이메일 발송
-        send_email_sixshot(email, name, haikus, shots, identity, last_msg)
-        return jsonify({"status": "success", "name": name}), 200
+        import threading
+        def process():
+            try:
+                haikus = generate_sixshot_haiku(name, shots, identity, last_msg)
+                print(f"[SIXSHOT] 하이쿠 생성 완료")
+                send_email_sixshot(email, name, haikus, identity, last_msg)
+            except Exception as e:
+                print(f"[SIXSHOT] 백그라운드 오류: {e}")
+                import traceback; traceback.print_exc()
+        threading.Thread(target=process, daemon=True).start()
+        return jsonify({"status": "processing", "name": name}), 200
 
     except Exception as e:
         print(f"[SIXSHOT] 오류: {e}")
@@ -1698,12 +1702,8 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
     return message.content[0].text
 
 
-def send_email_sixshot(to_email, name, haikus_text, shots, identity, last_msg):
+def send_email_sixshot(to_email, name, haikus_text, identity, last_msg):
     """식스샷 하이쿠 이메일 발송"""
-    import smtplib
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
     shot_titles = {
         1: "태어남 · 유년",
         2: "청년의 시절",
@@ -1770,18 +1770,12 @@ def send_email_sixshot(to_email, name, haikus_text, shots, identity, last_msg):
 </html>
 """
 
-    gmail_user = "mongmong4i@gmail.com"
-    gmail_pw   = "nqkb ybbs mmgx vpjo"
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[휴먼다큐] {name}님의 인생 하이쿠가 완성되었습니다"
-    msg["From"]    = f"휴먼다큐 <{gmail_user}>"
-    msg["To"]      = to_email
-    msg.attach(MIMEText(html, "html", "utf-8"))
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-        s.login(gmail_user, gmail_pw)
-        s.sendmail(gmail_user, to_email, msg.as_string())
+    resp = requests.post("https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+              "subject": f"[휴먼다큐] {name}님의 인생 하이쿠가 완성되었습니다", "html": html},
+        timeout=30)
+    resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 → {to_email}")
 
 
