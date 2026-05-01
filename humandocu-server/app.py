@@ -1692,6 +1692,8 @@ def webhook_sixshot():
 
         identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
         last_msg   = fields.get("메세지", "") or fields.get("메시지", "")
+        is_public_raw = fields.get("이 식스샷을 공개할까요?", "비공개")
+        is_public = "공개" in is_public_raw
 
         print(f"[SIXSHOT] shots: {shots}")
         print(f"[SIXSHOT] shot_images: { {k: v[:60]+'...' for k,v in shot_images.items()} }")
@@ -1718,6 +1720,7 @@ def webhook_sixshot():
                     "shots": shots_str,
                     "shot_images": images_str,
                     "poems": poems,
+                    "is_public": is_public,
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
