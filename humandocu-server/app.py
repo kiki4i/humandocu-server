@@ -3207,7 +3207,32 @@ def debug_set_admin_password():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+@app.route("/api/sixshot/random", methods=["GET"])
+def sixshot_random():
+    """공개된 식스샷 중 1개 랜덤 반환"""
+    try:
+        import random
+        docs = _get_db().collection("sixshot").where("is_public", "==", True).limit(20).get()
+        items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            items.append({
+                "doc_id": doc.id,
+                "name": d.get("name", ""),
+                "identity": d.get("identity", ""),
+                "shots": d.get("shots", {}),
+                "shot_images": d.get("shot_images", {}),
+                "poems": d.get("poems", ""),
+                "created_at": d.get("created_at", ""),
+            })
+        if not items:
+            return jsonify({"status": "empty"}), 200
+        picked = random.choice(items)
+        return jsonify({"status": "ok", "data": picked}), 200
+    except Exception as e:
+        print(f"[SIXSHOT_RANDOM] 오류: {e}")
+        return jsonify({"status": "error"}), 500
+        
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
