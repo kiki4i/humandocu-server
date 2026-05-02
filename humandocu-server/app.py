@@ -2381,28 +2381,10 @@ def sixshot_page(doc_id):
   </div>
 
 </div>
-'<script>function copyPageUrl() { var url = window.location.href;'
-...
-'}</script>'
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function() {
-      alert('링크가 복사됐어요!\n카톡·인스타·명함에 붙여 담으세요 😊');
-    });
-  } else {
-    var el = document.createElement('textarea');
-    el.value = url;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('링크가 복사됐어요!');
-  }
-}
-</body>
-</html>"""
-
+'<script>function copyPageUrl(){var url=window.location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){alert("링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요 😊");});}else{var el=document.createElement("textarea");el.value=url;document.body.appendChild(el);el.select();document.execCommand("copy");document.body.removeChild(el);alert("링크가 복사됐어요!");}}</script>'
+'</body></html>'
+    )
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
-
 
 @app.route("/", methods=["GET"])
 def health():
