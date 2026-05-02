@@ -1036,7 +1036,7 @@ def calc_age(birth_str, death_str):
         return None
 
 def build_life_timeline(life_events_str):
-    """생애 주요 사건 텍스트 빈칸 HTML 타임라인"""
+    """생애 주요 사건 텍스트 -> HTML 타임라인"""
     if not life_events_str: return ""
     lines = [l.strip() for l in life_events_str.replace('\r','').split('\n') if l.strip()]
     if not lines: return ""
@@ -2523,7 +2523,7 @@ def firebase_get_sixshot(doc_id):
 # ─────────────────────────────────────────────────────────────────
 
 def firebase_add_guestbook(deceased_name, author, message, password_hash):
-    """방명록 글 추가. 생성된 doc_id 반환, 실패 시 None"""
+    """방명록 글 추가 -> 생성된 doc_id 반환, 실패 시 None"""
     try:
         now = datetime.now(timezone.utc).isoformat()
         _, doc_ref = (_get_db()
@@ -2539,7 +2539,7 @@ def firebase_add_guestbook(deceased_name, author, message, password_hash):
 
 
 def firebase_get_guestbook(deceased_name):
-    """방명록 글 목록 빈칸 [{id, author, message, created_at}, ...] 최신순"""
+    """방명록 글 목록 -> [{id, author, message, created_at}, ...] 최신순"""
     try:
         docs = (_get_db()
                 .collection("advanced").document(deceased_name)
@@ -2561,7 +2561,7 @@ def firebase_get_guestbook(deceased_name):
 
 
 def firebase_delete_guestbook(deceased_name, doc_id):
-    """방명록 글 삭제 빈칸 True/False"""
+    """방명록 글 삭제 -> True/False"""
     try:
         (_get_db()
          .collection("advanced").document(deceased_name)
@@ -2574,7 +2574,7 @@ def firebase_delete_guestbook(deceased_name, doc_id):
 
 
 def firebase_get_guestbook_doc(deceased_name, doc_id):
-    """특정 방명록 문서 조회 (비밀번호 검증용) 빈칸 plain dict or None"""
+    """특정 방명록 문서 조회 (비밀번호 검증용) -> plain dict or None"""
     try:
         doc = (_get_db()
                .collection("advanced").document(deceased_name)
@@ -3181,7 +3181,7 @@ def debug_firebase_env():
 
 @app.route("/api/debug/advanced", methods=["GET"])
 def debug_advanced():
-    """GET /api/debug/advanced?name=고인이름 — Firestore advanced 문서 필드 확인"""
+    """GET /api/debug/advanced?name=고인이름 - Firestore advanced 문서 필드 확인"""
     name = request.args.get("name", "").strip()
     if not name:
         return jsonify({"error": "name 파라미터 필요"}), 400
@@ -3201,7 +3201,7 @@ def debug_advanced():
 
 @app.route("/api/debug/set-admin-password", methods=["POST"])
 def debug_set_admin_password():
-    """POST {name, admin_password} — 기존 부고에 관리자 비밀번호 수동 설정"""
+    """POST {name, admin_password} - 기존 부고에 관리자 비밀번호 수동 설정"""
     data = request.get_json(silent=True) or {}
     name     = (data.get("name", "") or "").strip()
     admin_pw = (data.get("admin_password", "") or "").strip()
