@@ -2523,7 +2523,7 @@ def firebase_get_sixshot(doc_id):
 # ─────────────────────────────────────────────────────────────────
 
 def firebase_add_guestbook(deceased_name, author, message, password_hash):
-    """방명록 글 추가 → 생성된 doc_id 반환, 실패 시 None"""
+    """방명록 글 추가. 생성된 doc_id 반환, 실패 시 None"""
     try:
         now = datetime.now(timezone.utc).isoformat()
         _, doc_ref = (_get_db()
