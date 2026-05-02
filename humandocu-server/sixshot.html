@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>식스샷 · 내 삶을 여섯 장으로 담습니다 · 휴먼다큐닷컴</title>
-<meta name="description" content="사진 6장과 짧은 이야기를 올리면 AI가 시로 다듬고, 당신을 한 문장으로 정의합니다. 링크 하나로 공유하세요.">
-<meta property="og:title" content="식스샷 · 내 삶을 여섯 장으로">
-<meta property="og:description" content="오늘 끝났는데, 덤으로 받은 하루. 여섯 장이야 — 네 삶을 기념해봐.">
+<title>필모그래피 · 내 삶을 여섯 장으로 · 휴먼다큐닷컴</title>
+<meta name="description" content="감독이 자신의 작품목록을 정리하듯, 내 삶을 6장으로 큐레이션하세요. 사진과 짧은 이야기를 올리면 AI가 시와 총평으로 완성합니다.">
+<meta property="og:title" content="필모그래피 · 내 삶을 여섯 장으로 · 휴먼다큐">
+<meta property="og:description" content="감독이 자신의 작품목록을 정리하듯, 내 삶을 6장으로 큐레이션하세요.">
 <meta property="og:url" content="https://humandocu.com/sixshot.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
@@ -45,12 +45,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .btn-primary{display:inline-block;background:var(--purple);color:#fff;font-size:14px;font-family:var(--sans);font-weight:400;padding:13px 40px;border-radius:var(--r);letter-spacing:.06em;cursor:pointer;border:none;transition:background .2s}
 .btn-primary:hover{background:#6030A0}
 .btn-hint{display:block;font-size:11px;color:#C0A0D8;font-family:var(--sans);font-weight:300;margin-top:10px}
-
-/* HAIKU */
-.haiku-sec{padding:64px 48px;text-align:center;background:var(--blue-lt);border-bottom:1px solid var(--blue-md)}
-.sec-label{font-size:10px;font-family:var(--sans);font-weight:300;letter-spacing:.16em;color:#90B8D8;margin-bottom:20px}
-.haiku-text{font-family:var(--serif);font-size:clamp(16px,2.2vw,22px);font-weight:300;color:#0A1A2A;line-height:2.8;letter-spacing:.1em;margin-bottom:22px}
-.haiku-body{font-size:13px;font-family:var(--sans);font-weight:300;color:#6090B0;line-height:2.3;max-width:480px;margin:0 auto}
 
 /* BRIDGE */
 .bridge-sec{padding:64px 48px;text-align:center;background:#fff;border-bottom:1px solid rgba(160,96,200,.12)}
@@ -108,6 +102,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .bottom-cta-text{font-family:var(--serif);font-size:clamp(18px,2.5vw,28px);font-weight:300;color:#1A0A2A;line-height:2;letter-spacing:.06em;margin-bottom:32px}
 .bottom-cta-text em{color:var(--purple);font-style:normal}
 
+/* FUNERAL (하단 - 메모리얼 맥락) */
+.funeral-sec{padding:56px 48px;text-align:center;background:#F8F5FC;border-bottom:1px solid rgba(160,96,200,.12)}
+.funeral-sec .bridge-opener{color:#3A2A4A}
+.funeral-sec .bridge-body{color:#6050A0}
+
 /* CONNECT */
 .connect-strip{padding:16px 48px;background:var(--blue-lt);display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--blue-md)}
 .connect-strip span{font-size:11px;font-family:var(--sans);font-weight:300;color:#90B8D0}
@@ -121,7 +120,7 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 .ft-links a{font-size:11px;color:#ccc;font-family:var(--sans);font-weight:300}
 @media(max-width:860px){
   .hero{padding:100px 24px 56px}
-  .haiku-sec,.bridge-sec,.how-sec,.sample-sec,.update-sec,.share-sec,.bottom-cta{padding:52px 24px}
+  .bridge-sec,.how-sec,.sample-sec,.update-sec,.share-sec,.bottom-cta,.funeral-sec{padding:52px 24px}
   .sample-photos{grid-template-columns:repeat(3,1fr)}
   .connect-strip{padding:14px 24px}
   footer{padding:16px 24px}
@@ -132,35 +131,20 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <!-- NAV -->
 <nav>
-  <div class="logo">휴먼다큐닷컴 <span>/ Six Shot</span></div>
+  <div class="logo">휴먼다큐닷컴 <span>/ 필모그래피</span></div>
   <a href="/" class="nav-back">← 처음으로</a>
 </nav>
 
 <!-- HERO -->
 <div class="hero">
-  <div class="kicker">SIX SHOT · 식스샷</div>
-  <h1>오늘 끝났는데, 덤으로 받은 하루.<br>여섯 장이야 — 네 삶을 기념해봐.</h1>
-  <p class="hero-sub">사진 6장과 짧은 이야기를 올리면<br>AI가 시로 다듬고, 당신을 한 문장으로 정의합니다.</p>
+  <div class="kicker">FILMOGRAPHY · 필모그래피</div>
+  <h1>감독이 자신의 작품을 정리하듯,<br>내 삶을 여섯 장으로 큐레이션하세요.</h1>
+  <p class="hero-sub">사진 6장과 짧은 이야기를 올리면<br>AI가 시로 다듬고, 당신만의 필모그래피 페이지를 완성합니다.</p>
   <a href="https://tally.so/r/ZjGpk0" target="_blank" class="btn-primary">지금 바로 시작하기 →</a>
   <span class="btn-hint">무료 · 3분이면 완성 · 언제든 수정 가능</span>
 </div>
 
-<!-- HAIKU -->
-<div class="haiku-sec">
-  <div class="sec-label">— 하이쿠 —</div>
-  <div class="haiku-text">
-    오늘 아침, 이미 간 줄 알았다<br>
-    덤으로 받은 하루 —<br>
-    여섯 장으로 네 삶을 꺼내봐
-  </div>
-  <div class="haiku-body">
-    원래는 오늘 아침 생이 마감될 예정이었습니다.<br>
-    그런데 신께서 왠지 몰라도 하루를 더 허락하셨습니다.<br>
-    사진 여섯 장으로 너의 삶을 정리해 보라고. 지금 바로.
-  </div>
-</div>
-
-<!-- BRIDGE -->
+<!-- BRIDGE : 필모그래피 개념 -->
 <div class="bridge-sec">
   <div class="bridge-opener">필모그래피란,<br>나의 삶을 <em>내가 직접 편집하는 것</em>입니다.</div>
   <div class="bridge-divider"></div>
@@ -173,12 +157,11 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
     AI가 시와 한 줄 총평으로 다듬어 드립니다.<br>
     완성된 필모그래피는 링크 하나로 언제 어디서나 꺼내볼 수 있어요.
   </div>
-  <a href="/index.html#pricing" class="bridge-link">부고·메모리얼 서비스와도 연결됩니다</a>
 </div>
 
 <!-- HOW -->
 <div class="how-sec">
-  <div class="sec-label" style="text-align:center">이렇게 됩니다</div>
+  <div class="sec-label" style="text-align:center;color:#9070A8;font-size:10px;letter-spacing:.16em;margin-bottom:24px">이렇게 됩니다</div>
   <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
@@ -243,12 +226,12 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <!-- UPDATE -->
 <div class="update-sec">
-  <p><strong>언제든 수정할 수 있습니다.</strong><br>삶은 계속되니까요. 오늘의 나와 1년 후의 나는 다릅니다.<br>식스샷은 함께 자랍니다.</p>
+  <p><strong>언제든 수정할 수 있습니다.</strong><br>삶은 계속되니까요. 오늘의 나와 1년 후의 나는 다릅니다.<br>필모그래피는 함께 자랍니다.</p>
 </div>
 
 <!-- SHARE -->
 <div class="share-sec">
-  <div class="sec-label" style="text-align:center">이런 곳에 쓰세요</div>
+  <div class="sec-label" style="text-align:center;font-size:10px;letter-spacing:.16em;color:#9070A8">이런 곳에 쓰세요</div>
   <div class="share-badges">
     <div class="badge">카카오톡 프로필</div>
     <div class="badge">인스타 바이오 링크</div>
@@ -259,12 +242,23 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   </div>
 </div>
 
-<!-- FUNERAL COPY (장례식장 맥락 — 페이지 하단) -->
-<div class="bridge-sec" style="background:#F8F5FC">
+<!-- BOTTOM CTA -->
+<div class="bottom-cta">
+  <div class="bottom-cta-text">
+    지금 이 순간도<br>
+    <em>당신의 여섯 장 중 하나입니다.</em><br>
+    기념해 보세요.
+  </div>
+  <a href="https://tally.so/r/ZjGpk0" target="_blank" class="btn-primary">나의 필모그래피 만들기 →</a>
+  <span class="btn-hint">무료 · 3분이면 완성 · 언제든 수정 가능</span>
+</div>
+
+<!-- FUNERAL COPY (메모리얼 맥락 — 페이지 맨 아래) -->
+<div class="funeral-sec">
   <div class="bridge-opener">사진은 남습니다.<br>당신이 고르든, <em>남이 고르든.</em></div>
   <div class="bridge-divider"></div>
   <div class="bridge-hook">
-    당신이 직접 고르지 않으면, <strong>남이 고릅니다.</strong>
+    당신이 직접 고르지 않으면,<br><strong>남이 고릅니다.</strong>
   </div>
   <div class="bridge-body">
     장례식장 한켠에서 가족이 허둥지둥 고르는 사진 말고,<br>
@@ -273,20 +267,9 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   </div>
 </div>
 
-<!-- BOTTOM CTA -->
-<div class="bottom-cta">
-  <div class="bottom-cta-text">
-    지금 이 순간도<br>
-    <em>당신의 여섯 장 중 하나입니다.</em><br>
-    기념해 보세요.
-  </div>
-  <a href="https://tally.so/r/ZjGpk0" target="_blank" class="btn-primary">나의 식스샷 만들기 →</a>
-  <span class="btn-hint">무료 · 3분이면 완성 · 언제든 수정 가능</span>
-</div>
-
 <!-- CONNECT -->
 <div class="connect-strip">
-  <span>식스샷에서 남긴 이야기가 메모리얼로 이어집니다</span>
+  <span>필모그래피에서 남긴 이야기가 메모리얼로 이어집니다</span>
   <div class="connect-dot"></div>
   <a href="/index.html#pricing">메모리얼 서비스 보기 →</a>
 </div>
