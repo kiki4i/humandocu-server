@@ -1470,7 +1470,7 @@ def webhook_basic():
 
 @app.route("/webhook/advanced", methods=["POST"])
 def webhook_advanced():
-    """Tally 어드밴스드 웹훅 — 데이터를 Firebase에 임시 저장 후 결제 페이지 URL 반환"""
+    """Tally 어드밴스드 웹훅 - 데이터를 Firebase에 임시 저장 후 결제 페이지 URL 반환"""
     payload = request.get_json(force=True)
     try:
         # URL 쿼리 파라미터로 pending_id가 오면 기존 문서에 필드 업데이트
@@ -1831,7 +1831,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 
 def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None):
-    """식스샷 알림 이메일 — 버튼 클릭 빈칸 개인 페이지로 이동"""
+    """식스샷 알림 이메일 - 버튼 클릭 시 개인 페이지로 이동"""
 
     last_msg_block = f"""
       <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
@@ -1884,7 +1884,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {name}님의 식스샷이 완성되었습니다", "html": html},
+              "subject": f"[휴먼다큐] {name}님의 필모그래피가 도착했습니다", "html": html},
         timeout=30)
     resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 빈칸 {to_email}")
@@ -1919,7 +1919,7 @@ def _render_haiku_block(section, lines, shot_titles):
 
 @app.route("/payment/advanced", methods=["GET"])
 def payment_advanced_page():
-    """어드밴스드 결제 페이지 — pending_id 미리 생성 후 결제 빈칸 Tally 폼 순서"""
+    """어드밴스드 결제 페이지 - pending_id 미리 생성 후 결제 Tally 폼 순서"""
     import uuid, datetime
 
     # pending_id가 없으면 새로 생성해서 Firebase에 placeholder 저장
@@ -2039,7 +2039,7 @@ async function startPayment() {{
 
 @app.route("/payment/verify", methods=["POST"])
 def payment_verify():
-    """포트원 결제 검증 — 금액 위변조 방지"""
+    """포트원 결제 검증 - 금액 위변조 방지"""
     import requests as req
     data = request.get_json(force=True)
     payment_id = data.get("paymentId", "")
@@ -2132,7 +2132,7 @@ def payment_success():
 
 @app.route("/damnyejang/auth", methods=["GET", "POST"])
 def damnyejang_auth():
-    """어드밴스드 고객만 접근 — 6자리 비밀번호로 검증 후 답례장 Tally 폼으로 이동"""
+    """어드밴스드 고객만 접근 - 6자리 비밀번호로 검증 후 답례장 Tally 폼으로 이동"""
     deceased_name = request.args.get("name", "").strip()
     tally_form_id = "68QAvO"
 
@@ -2224,7 +2224,7 @@ def _damnyejang_auth_html(name, error):
 
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
-    """개인 식스샷 페이지 — Firebase에서 데이터 읽어 HTML 렌더링"""
+    """개인 식스샷 페이지 - Firebase에서 데이터 읽어 HTML 렌더링"""
     data = firebase_get_sixshot(doc_id)
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
