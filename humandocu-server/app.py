@@ -565,7 +565,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<p style="font-size:12px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">발인 다음날 · 답례장 신청</p>'
         f'<a href="https://humandocu-server-production.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
         'style="display:inline-block;background:#c8a96e;color:#0f0d09;padding:12px 24px;text-decoration:none;font-size:14px;font-weight:700;border-radius:4px;letter-spacing:.05em">'
-        '📋 답례장 신청하기 →</a>'
+        '📋 답례장 신청하기 빈칸</a>'
         '<p style="font-size:11px;color:#9e8250;margin-top:8px">위 버튼을 누르시면 비밀번호 입력 후 신청 가능합니다</p>'
         '</div></div>'
         '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
@@ -800,7 +800,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         print(f"[KAKAO] 조건 체크: lat type={type(lat)}, bool(lat)={bool(lat) if lat is not None else False}")
         addr_text = funeral_addr if funeral_addr else funeral_place
         addr_copy = funeral_addr if funeral_addr else funeral_place
-        # 전화번호 정규화: +82-31-xxx → 031-xxx
+        # 전화번호 정규화: +82-31-xxx 빈칸 031-xxx
         tel_normalized = ""
         if funeral_tel:
             t = funeral_tel.strip()
@@ -1036,7 +1036,7 @@ def calc_age(birth_str, death_str):
         return None
 
 def build_life_timeline(life_events_str):
-    """생애 주요 사건 텍스트 → HTML 타임라인"""
+    """생애 주요 사건 텍스트 빈칸 HTML 타임라인"""
     if not life_events_str: return ""
     lines = [l.strip() for l in life_events_str.replace('\r','').split('\n') if l.strip()]
     if not lines: return ""
@@ -1240,7 +1240,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         f'<a href="{memorial_url}" style="display:inline-flex;align-items:center;gap:8px;'
         'background:#c8a96e;border:1px solid #c8a96e;'
         'color:#1a1a2e;font-size:13px;font-weight:700;letter-spacing:2px;padding:13px 32px;'
-        'border-radius:4px;text-decoration:none;">메모리얼 페이지 방문하기 →</a>'
+        'border-radius:4px;text-decoration:none;">메모리얼 페이지 방문하기 빈칸</a>'
         '</div>'
     )
 
@@ -1490,7 +1490,7 @@ def webhook_advanced():
         # Firebase에 데이터 저장
         import uuid, datetime
         if url_pending_id:
-            # 결제 완료 후 Tally 폼 제출 → 기존 pending 문서에 필드 업데이트
+            # 결제 완료 후 Tally 폼 제출 빈칸 기존 pending 문서에 필드 업데이트
             pending_id = url_pending_id
             _get_db().collection("advanced_pending").document(pending_id).update({
                 "fields": fields,
@@ -1673,7 +1673,7 @@ def webhook_sixshot():
                 if lbl in shot_labels:
                     idx = shot_labels.index(lbl) + 1
                     shot_idx = idx
-                    # FILE_UPLOAD → URL 추출
+                    # FILE_UPLOAD 빈칸 URL 추출
                     if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
                         img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
                         if img_url:
@@ -1831,7 +1831,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 
 def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None):
-    """식스샷 알림 이메일 — 버튼 클릭 → 개인 페이지로 이동"""
+    """식스샷 알림 이메일 — 버튼 클릭 빈칸 개인 페이지로 이동"""
 
     last_msg_block = f"""
       <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
@@ -1887,7 +1887,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
               "subject": f"[휴먼다큐] {name}님의 식스샷이 완성되었습니다", "html": html},
         timeout=30)
     resp.raise_for_status()
-    print(f"[SIXSHOT] 이메일 발송 완료 → {to_email}")
+    print(f"[SIXSHOT] 이메일 발송 완료 빈칸 {to_email}")
 
 
 def _render_haiku_block(section, lines, shot_titles):
@@ -1919,7 +1919,7 @@ def _render_haiku_block(section, lines, shot_titles):
 
 @app.route("/payment/advanced", methods=["GET"])
 def payment_advanced_page():
-    """어드밴스드 결제 페이지 — pending_id 미리 생성 후 결제 → Tally 폼 순서"""
+    """어드밴스드 결제 페이지 — pending_id 미리 생성 후 결제 빈칸 Tally 폼 순서"""
     import uuid, datetime
 
     # pending_id가 없으면 새로 생성해서 Firebase에 placeholder 저장
@@ -2012,7 +2012,7 @@ async function startPayment() {{
       btn.disabled = false;
     }} else {{
       status.textContent = '결제 완료! 페이지 제작을 시작합니다...';
-      // 결제 성공 → 서버에 검증 요청
+      // 결제 성공 빈칸 서버에 검증 요청
       const verify = await fetch('/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
@@ -2110,13 +2110,13 @@ def payment_success():
       입력이 완료되면 약 10분 이내에<br>
       이메일로 발송해 드립니다.
     </div>
-    <a href="{tally_url}" class="btn">부고 정보 입력하기 →</a>
+    <a href="{tally_url}" class="btn">부고 정보 입력하기 빈칸</a>
     <div class="sub">문의: 031-539-9709</div>
     <div class="pid">주문번호: {pending_id}</div>
   </div>
 </div>
 <script>
-  // pending_id를 localStorage에 저장 → Tally 완료 후 webhook에서 사용
+  // pending_id를 localStorage에 저장 빈칸 Tally 완료 후 webhook에서 사용
   if ('{pending_id}') {{
     localStorage.setItem('hd_pending_id', '{pending_id}');
   }}
@@ -2159,7 +2159,7 @@ def damnyejang_auth():
             error = "비밀번호가 일치하지 않습니다. 완성 이메일의 6자리 번호를 입력해주세요."
             return _damnyejang_auth_html(name_input, error), 401
 
-        # 검증 성공 → 답례장 Tally 폼으로 이동
+        # 검증 성공 빈칸 답례장 Tally 폼으로 이동
         tally_url = f"https://tally.so/r/{tally_form_id}?name={urllib.parse.quote(name_input)}"
         from flask import redirect
         return redirect(tally_url)
@@ -2214,7 +2214,7 @@ def _damnyejang_auth_html(name, error):
       <input type="text" name="name" value="{name_val}" placeholder="예: 홍길동" required>
       <label>비밀번호 (6자리)</label>
       <input type="text" name="password" placeholder="완성 이메일의 6자리 번호" maxlength="6" required inputmode="numeric">
-      <button type="submit" class="btn">확인 →</button>
+      <button type="submit" class="btn">확인 빈칸</button>
     </form>
     <div class="footer-note">문의: 031-539-9709</div>
   </div>
@@ -2246,7 +2246,7 @@ def sixshot_page(doc_id):
         "6": "지금 이 순간",
     }
 
-    # 시 텍스트 → 섹션별 딕셔너리
+    # 시 텍스트 빈칸 섹션별 딕셔너리
     poem_dict = {}
     current_key = None
     current_lines = []
@@ -2452,7 +2452,7 @@ def test_basic():
 
 
 # ─────────────────────────────────────────────────────────────────
-# Firebase Admin SDK 초기화 (서비스 계정 → 보안 규칙 우회)
+# Firebase Admin SDK 초기화 (서비스 계정 빈칸 보안 규칙 우회)
 # ─────────────────────────────────────────────────────────────────
 _fb_db = None
 
@@ -2476,7 +2476,7 @@ def firebase_get_advanced(deceased_name):
         doc = _get_db().collection("advanced").document(deceased_name).get()
         if doc.exists:
             data = doc.to_dict() or {}
-            print(f"[FIREBASE] 조회 성공: {deceased_name} → {list(data.keys())}")
+            print(f"[FIREBASE] 조회 성공: {deceased_name} 빈칸 {list(data.keys())}")
             return data
         print(f"[FIREBASE] 문서 없음: {deceased_name}")
         return {}
@@ -2488,7 +2488,7 @@ def firebase_get_advanced(deceased_name):
 def firebase_save_advanced(deceased_name, data):
     try:
         _get_db().collection("advanced").document(deceased_name).set(data, merge=True)
-        print(f"[FIREBASE] 저장 성공: {deceased_name} → {list(data.keys())}")
+        print(f"[FIREBASE] 저장 성공: {deceased_name} 빈칸 {list(data.keys())}")
     except Exception as e:
         print(f"[FIREBASE] 저장 오류: {e}")
 
@@ -2539,7 +2539,7 @@ def firebase_add_guestbook(deceased_name, author, message, password_hash):
 
 
 def firebase_get_guestbook(deceased_name):
-    """방명록 글 목록 → [{id, author, message, created_at}, ...] 최신순"""
+    """방명록 글 목록 빈칸 [{id, author, message, created_at}, ...] 최신순"""
     try:
         docs = (_get_db()
                 .collection("advanced").document(deceased_name)
@@ -2561,7 +2561,7 @@ def firebase_get_guestbook(deceased_name):
 
 
 def firebase_delete_guestbook(deceased_name, doc_id):
-    """방명록 글 삭제 → True/False"""
+    """방명록 글 삭제 빈칸 True/False"""
     try:
         (_get_db()
          .collection("advanced").document(deceased_name)
@@ -2574,7 +2574,7 @@ def firebase_delete_guestbook(deceased_name, doc_id):
 
 
 def firebase_get_guestbook_doc(deceased_name, doc_id):
-    """특정 방명록 문서 조회 (비밀번호 검증용) → plain dict or None"""
+    """특정 방명록 문서 조회 (비밀번호 검증용) 빈칸 plain dict or None"""
     try:
         doc = (_get_db()
                .collection("advanced").document(deceased_name)
@@ -2698,7 +2698,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
 
     # 장례 사진
     # Tally에서 캡션 라벨이 "장례사진1설명" 또는 placeholder 텍스트로 잡힐 수 있음
-    # → 여러 패턴 시도 + 폴백으로 fields 순서 기반 파싱
+    # 빈칸 여러 패턴 시도 + 폴백으로 fields 순서 기반 파싱
     photo_items = []
     for i in range(1, 6):
         photo_url = d_fields.get(f"장례사진{i}", "")
@@ -2890,7 +2890,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         + f'<a href="{memorial_url}" style="display:block;margin:22px 0 0;padding:14px 0;'
           'border:1.5px solid #c8a87a;font-size:13px;color:#2c2c2c;letter-spacing:2px;'
           'background:#fff9f2;text-align:center;text-decoration:none;font-weight:500;border-radius:4px;">'
-          '메모리얼 페이지 방문하기 →</a>\n'
+          '메모리얼 페이지 방문하기 빈칸</a>\n'
         + '</div>\n\n'
 
         # ── 3. 장례 사진 (조건부)
@@ -3092,7 +3092,7 @@ def delete_guestbook(doc_id):
     if fields is None:
         return jsonify({"error": "존재하지 않는 글"}), 404
 
-    # 작성자 비밀번호 확인 (Admin SDK → plain dict)
+    # 작성자 비밀번호 확인 (Admin SDK 빈칸 plain dict)
     author_hash = fields.get("password_hash", "")
     author_ok = bool(author_hash and bcrypt.checkpw(password.encode(), author_hash.encode()))
     print(f"[DELETE] author_ok={author_ok}, has_author_hash={bool(author_hash)}")
