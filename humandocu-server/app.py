@@ -1858,17 +1858,17 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
 <div style="max-width:560px;margin:0 auto;background:#fff">
 
   <div style="background:#0f0d09;padding:52px 36px;text-align:center">
-    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 식스샷</div>
+    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 필모그래피</div>
     <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{name}님의<br>필모그래피가<br>도착했습니다</div>
     <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
 
   <div style="padding:40px 36px">
-    '<div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">'
-    f'    사진 6장면과 그 이야기를 담은<br>'
-    '    나만의 필모그래피 페이지가 완성됐어요.<br>'
-    '    아래 버튼을 눌러 확인하세요.'
-    '</div>'
+    <div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">
+      사진 6장면과 그 이야기를 담은<br>
+      나만의 필모그래피 페이지가 완성됐어요.<br>
+      아래 버튼을 눌러 확인하세요.
+    </div>
     {last_msg_block}
     {btn_block}
   </div>
@@ -2355,6 +2355,7 @@ def sixshot_page(doc_id):
   <div class="hero">
     <div class="hero-sub">HUMANDOCU · 필모그래피</div>
     <div class="hero-name">{name}</div>
+    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{name}님의 필모그래피</div>
     <div class="hero-identity">{identity}</div>
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
@@ -2380,10 +2381,26 @@ def sixshot_page(doc_id):
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
   </div>
 
-</div>"""
-'<script>function copyPageUrl(){var url=window.location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){alert("링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요 😊");});}else{var el=document.createElement("textarea");el.value=url;document.body.appendChild(el);el.select();document.execCommand("copy");document.body.removeChild(el);alert("링크가 복사됐어요!");}}</script>'
-'</body></html>'
-    )
+</div>
+<script>
+function copyPageUrl(){{
+  var url = window.location.href;
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(url).then(function() {{
+      alert("링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요");
+    }});
+  }} else {{
+    var el = document.createElement("textarea");
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+    alert("링크가 복사됐어요!");
+  }}
+}}
+</script>
+</body></html>""")
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 @app.route("/", methods=["GET"])

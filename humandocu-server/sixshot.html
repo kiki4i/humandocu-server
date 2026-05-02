@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>식스샷 · 내 삶을 여섯 장으로 담습니다 · 휴먼다큐닷컴</title>
+<meta name="description" content="사진 6장과 짧은 이야기를 올리면 AI가 시로 다듬고, 당신을 한 문장으로 정의합니다. 링크 하나로 공유하세요.">
+<meta property="og:title" content="식스샷 · 내 삶을 여섯 장으로">
+<meta property="og:description" content="오늘 끝났는데, 덤으로 받은 하루. 여섯 장이야 — 네 삶을 기념해봐.">
+<meta property="og:url" content="https://humandocu.com/sixshot.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --serif:'Cormorant Garamond','Noto Serif KR',Georgia,serif;
+  --sans:'Noto Sans KR',sans-serif;
+  --r:4px;
+  --pink:#C060A0;
+  --pink-lt:#FDF0F8;
+  --pink-md:#F0C0E0;
+  --blue:#4090C0;
+  --blue-lt:#F0F8FF;
+  --blue-md:#B0D4F0;
+  --purple:#8040B8;
+  --purple-lt:#F5E8FF;
+  --purple-md:#D0A0F0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:#fff;color:#111;font-family:var(--sans);font-weight:300;line-height:1.9;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(160,96,200,.12)}
+.logo{font-family:var(--serif);font-size:14px;font-weight:300;color:#888;letter-spacing:.08em}
+.logo span{color:var(--purple);font-weight:400}
+.nav-back{font-size:12px;color:var(--purple);font-family:var(--sans);font-weight:300;cursor:pointer}
+@media(max-width:860px){nav{padding:12px 20px}}
+
+/* HERO */
+.hero{padding:120px 48px 72px;text-align:center;background:#fff;border-bottom:1px solid rgba(160,96,200,.12)}
+.kicker{display:inline-block;font-size:10px;font-family:var(--sans);font-weight:500;letter-spacing:.2em;color:var(--purple);background:var(--purple-lt);padding:4px 16px;border-radius:20px;margin-bottom:24px}
+.hero h1{font-family:var(--serif);font-size:clamp(22px,3.5vw,38px);font-weight:300;color:#1A0A2A;line-height:1.85;letter-spacing:.06em;margin-bottom:20px}
+.hero-sub{font-size:13px;font-family:var(--sans);font-weight:300;color:#9070A8;line-height:2.2;margin-bottom:36px}
+.btn-primary{display:inline-block;background:var(--purple);color:#fff;font-size:14px;font-family:var(--sans);font-weight:400;padding:13px 40px;border-radius:var(--r);letter-spacing:.06em;cursor:pointer;border:none;transition:background .2s}
+.btn-primary:hover{background:#6030A0}
+.btn-hint{display:block;font-size:11px;color:#C0A0D8;font-family:var(--sans);font-weight:300;margin-top:10px}
+
+/* HAIKU */
+.haiku-sec{padding:64px 48px;text-align:center;background:var(--blue-lt);border-bottom:1px solid var(--blue-md)}
+.sec-label{font-size:10px;font-family:var(--sans);font-weight:300;letter-spacing:.16em;color:#90B8D8;margin-bottom:20px}
+.haiku-text{font-family:var(--serif);font-size:clamp(16px,2.2vw,22px);font-weight:300;color:#0A1A2A;line-height:2.8;letter-spacing:.1em;margin-bottom:22px}
+.haiku-body{font-size:13px;font-family:var(--sans);font-weight:300;color:#6090B0;line-height:2.3;max-width:480px;margin:0 auto}
+
+/* BRIDGE */
+.bridge-sec{padding:64px 48px;text-align:center;background:#fff;border-bottom:1px solid rgba(160,96,200,.12)}
+.bridge-opener{font-family:var(--serif);font-size:clamp(16px,2vw,22px);font-weight:300;color:#2A1A3A;line-height:2.3;letter-spacing:.06em;margin-bottom:28px}
+.bridge-opener em{color:var(--purple);font-style:normal;font-weight:400}
+.bridge-divider{width:28px;height:1px;background:var(--purple-md);margin:0 auto 28px}
+.bridge-hook{font-family:var(--serif);font-size:clamp(17px,2.2vw,24px);font-weight:400;color:#1A0A2A;line-height:2;letter-spacing:.05em;margin-bottom:16px}
+.bridge-hook strong{color:var(--purple)}
+.bridge-body{font-size:13px;font-family:var(--sans);font-weight:300;color:#7858A0;line-height:2.3;margin-bottom:28px;max-width:520px;margin-left:auto;margin-right:auto}
+.bridge-link{display:inline-block;font-size:12px;font-family:var(--sans);font-weight:300;color:var(--blue);background:var(--blue-lt);padding:8px 22px;border-radius:20px;border:1px solid var(--blue-md);letter-spacing:.04em}
+
+/* HOW */
+.how-sec{padding:64px 48px;background:#FDFAFF;border-bottom:1px solid rgba(160,96,200,.12)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;max-width:800px;margin-left:auto;margin-right:auto}
+.step{text-align:center;padding:24px 14px;background:#fff;border-radius:var(--r);border:1px solid rgba(160,96,200,.15)}
+.step-num{font-size:22px;font-family:var(--serif);font-weight:300;color:var(--purple-md);margin-bottom:10px}
+.step-title{font-size:12px;font-family:var(--sans);font-weight:500;color:#2A1A3A;margin-bottom:6px}
+.step-desc{font-size:11px;font-family:var(--sans);font-weight:300;color:#9070A8;line-height:1.8}
+@media(max-width:860px){.steps{grid-template-columns:1fr 1fr}}
+
+/* SAMPLE */
+.sample-sec{padding:64px 48px;background:var(--blue-lt);border-bottom:1px solid var(--blue-md)}
+.sample-card{max-width:680px;margin:24px auto 0;border:1px solid var(--blue-md);border-radius:8px;overflow:hidden;background:#fff}
+.sample-header{padding:22px 28px;border-bottom:1px solid #E0F0FF;display:flex;align-items:center;gap:14px}
+.sample-avatar{width:44px;height:44px;border-radius:50%;background:#E8F4FF;border:1px solid var(--blue-md);display:flex;align-items:center;justify-content:center;font-size:16px;font-family:var(--serif);color:var(--blue);font-weight:400;flex-shrink:0}
+.sample-name{font-family:var(--serif);font-size:16px;font-weight:400;color:#0A1A2A;margin-bottom:3px}
+.sample-meta{font-size:11px;font-family:var(--sans);font-weight:300;color:#90B8D0}
+.sample-photos{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:16px 28px;border-bottom:1px solid #E0F0FF}
+.sample-photo{aspect-ratio:1;border-radius:5px;border:1px solid #C8E4F8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:16px}
+.photo-cap{font-size:8px;font-family:var(--sans);font-weight:300;color:#A0B8C8;text-align:center;padding:0 3px;line-height:1.5}
+.ph1{background:#FFF0F8}.ph2{background:#F0F8FF}.ph3{background:#F8F0FF}
+.ph4{background:#F0FFF8}.ph5{background:#FFF8F0}.ph6{background:#F8F0F8}
+.sample-poem-wrap{padding:22px 28px;border-bottom:1px solid #E0F0FF}
+.sample-poem-label{font-size:10px;font-family:var(--sans);font-weight:300;letter-spacing:.12em;color:#90B8D0;margin-bottom:10px}
+.sample-poem{font-family:var(--serif);font-size:14px;font-weight:300;color:#1A2A3A;line-height:2.8;letter-spacing:.06em}
+.sample-summary-wrap{padding:18px 28px;border-bottom:1px solid #E0F0FF}
+.sample-summary-label{font-size:10px;font-family:var(--sans);font-weight:300;letter-spacing:.12em;color:#90B8D0;margin-bottom:8px}
+.sample-summary{font-family:var(--serif);font-size:15px;font-weight:400;color:var(--blue);line-height:1.9}
+.sample-link-box{margin:16px 28px;background:var(--blue-lt);border:1px solid var(--blue-md);border-radius:var(--r);padding:9px 16px;display:flex;justify-content:space-between;align-items:center}
+.sample-link-url{font-size:11px;font-family:monospace;color:var(--blue)}
+.sample-link-copy{font-size:10px;font-family:var(--sans);font-weight:400;color:var(--blue);cursor:pointer}
+
+/* UPDATE */
+.update-sec{padding:32px 48px;text-align:center;background:#fff;border-bottom:1px solid rgba(160,96,200,.12)}
+.update-sec p{font-size:13px;font-family:var(--sans);font-weight:300;color:#9070A8;line-height:2}
+.update-sec strong{color:var(--purple);font-weight:500}
+
+/* SHARE */
+.share-sec{padding:48px 48px;text-align:center;background:#FDFAFF;border-bottom:1px solid rgba(160,96,200,.12)}
+.share-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.badge{font-size:11px;font-family:var(--sans);font-weight:300;color:var(--purple);background:var(--purple-lt);padding:7px 18px;border-radius:20px;border:1px solid var(--purple-md)}
+
+/* BOTTOM CTA */
+.bottom-cta{padding:72px 48px;text-align:center;background:linear-gradient(180deg,#FDFAFF 0%,var(--blue-lt) 100%);border-bottom:1px solid var(--blue-md)}
+.bottom-cta-text{font-family:var(--serif);font-size:clamp(18px,2.5vw,28px);font-weight:300;color:#1A0A2A;line-height:2;letter-spacing:.06em;margin-bottom:32px}
+.bottom-cta-text em{color:var(--purple);font-style:normal}
+
+/* CONNECT */
+.connect-strip{padding:16px 48px;background:var(--blue-lt);display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--blue-md)}
+.connect-strip span{font-size:11px;font-family:var(--sans);font-weight:300;color:#90B8D0}
+.connect-strip a{font-size:11px;font-family:var(--sans);font-weight:300;color:var(--blue);text-decoration:underline}
+.connect-dot{width:3px;height:3px;border-radius:50%;background:var(--blue-md)}
+
+/* FOOTER */
+footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:center;background:#FAFAFA;border-top:1px solid rgba(24,22,15,.07);flex-wrap:wrap;gap:10px}
+.ft-logo{font-size:12px;font-family:var(--serif);font-weight:300;color:#bbb}
+.ft-links{display:flex;gap:16px}
+.ft-links a{font-size:11px;color:#ccc;font-family:var(--sans);font-weight:300}
+@media(max-width:860px){
+  .hero{padding:100px 24px 56px}
+  .haiku-sec,.bridge-sec,.how-sec,.sample-sec,.update-sec,.share-sec,.bottom-cta{padding:52px 24px}
+  .sample-photos{grid-template-columns:repeat(3,1fr)}
+  .connect-strip{padding:14px 24px}
+  footer{padding:16px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">휴먼다큐닷컴 <span>/ Six Shot</span></div>
+  <a href="/" class="nav-back">← 처음으로</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="kicker">SIX SHOT · 식스샷</div>
+  <h1>오늘 끝났는데, 덤으로 받은 하루.<br>여섯 장이야 — 네 삶을 기념해봐.</h1>
+  <p class="hero-sub">사진 6장과 짧은 이야기를 올리면<br>AI가 시로 다듬고, 당신을 한 문장으로 정의합니다.</p>
+  <a href="https://tally.so/r/ZjGpk0" target="_blank" class="btn-primary">지금 바로 시작하기 →</a>
+  <span class="btn-hint">무료 · 3분이면 완성 · 언제든 수정 가능</span>
+</div>
+
+<!-- HAIKU -->
+<div class="haiku-sec">
+  <div class="sec-label">— 하이쿠 —</div>
+  <div class="haiku-text">
+    오늘 아침, 이미 간 줄 알았다<br>
+    덤으로 받은 하루 —<br>
+    여섯 장으로 네 삶을 꺼내봐
+  </div>
+  <div class="haiku-body">
+    원래는 오늘 아침 생이 마감될 예정이었습니다.<br>
+    그런데 신께서 왠지 몰라도 하루를 더 허락하셨습니다.<br>
+    사진 여섯 장으로 너의 삶을 정리해 보라고. 지금 바로.
+  </div>
+</div>
+
+<!-- BRIDGE -->
+<div class="bridge-sec">
+  <div class="bridge-opener">필모그래피란,<br>나의 삶을 <em>내가 직접 편집하는 것</em>입니다.</div>
+  <div class="bridge-divider"></div>
+  <div class="bridge-hook">
+    영화에는 감독이 있고,<br>
+    당신의 인생에는 <strong>당신</strong>이 있습니다.
+  </div>
+  <div class="bridge-body">
+    사진 6장을 고르고, 각 장면에 짧은 이야기를 붙이면<br>
+    AI가 시와 한 줄 총평으로 다듬어 드립니다.<br>
+    완성된 필모그래피는 링크 하나로 언제 어디서나 꺼내볼 수 있어요.
+  </div>
+  <a href="/index.html#pricing" class="bridge-link">부고·메모리얼 서비스와도 연결됩니다</a>
+</div>
+
+<!-- HOW -->
+<div class="how-sec">
+  <div class="sec-label" style="text-align:center">이렇게 됩니다</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">사진 6장 올리기</div>
+      <div class="step-desc">내 삶에서 가장<br>의미있는 순간들</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">한 줄 설명</div>
+      <div class="step-desc">각 사진마다<br>짧게 써주세요</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">AI가 다듬기</div>
+      <div class="step-desc">시와 총평으로<br>당신을 정의합니다</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">링크로 공유</div>
+      <div class="step-desc">카톡·인스타·명함에<br>담으세요</div>
+    </div>
+  </div>
+</div>
+
+<!-- SAMPLE -->
+<div class="sample-sec">
+  <div class="sec-label" style="text-align:center;color:#90B8D0">완성하면 이렇게 됩니다 — 샘플</div>
+  <div class="sample-card">
+    <div class="sample-header">
+      <div class="sample-avatar">재</div>
+      <div>
+        <div class="sample-name">정재우, 46세</div>
+        <div class="sample-meta">창업자 · 수원 · 2025년 봄</div>
+      </div>
+    </div>
+    <div class="sample-photos">
+      <div class="sample-photo ph1">🌱<div class="photo-cap">유년<br>소년기</div></div>
+      <div class="sample-photo ph2">📚<div class="photo-cap">학창<br>시절</div></div>
+      <div class="sample-photo ph3">🔥<div class="photo-cap">청년기<br>삶의 절정</div></div>
+      <div class="sample-photo ph4">❤️<div class="photo-cap">내가 가장<br>사랑하는 것</div></div>
+      <div class="sample-photo ph5">☀️<div class="photo-cap">그냥<br>좋았던 날</div></div>
+      <div class="sample-photo ph6">🌸<div class="photo-cap">화양<br>연화</div></div>
+    </div>
+    <div class="sample-poem-wrap">
+      <div class="sample-poem-label">AI가 다듬은 시</div>
+      <div class="sample-poem">
+        혼자였기 때문에 멀리 볼 수 있었고<br>
+        느렸기 때문에 더 많이 보았다<br>
+        실패한 날들이 쌓여 — 지금의 내가 되었다
+      </div>
+    </div>
+    <div class="sample-summary-wrap">
+      <div class="sample-summary-label">총평 — 당신은 이런 사람입니다</div>
+      <div class="sample-summary">"포기를 모르는 사람이 아니라, 포기해도 다시 시작하는 사람."</div>
+    </div>
+    <div class="sample-link-box">
+      <span class="sample-link-url">humandocu.com/sixshot/jaewoo</span>
+      <span class="sample-link-copy">링크 복사</span>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE -->
+<div class="update-sec">
+  <p><strong>언제든 수정할 수 있습니다.</strong><br>삶은 계속되니까요. 오늘의 나와 1년 후의 나는 다릅니다.<br>식스샷은 함께 자랍니다.</p>
+</div>
+
+<!-- SHARE -->
+<div class="share-sec">
+  <div class="sec-label" style="text-align:center">이런 곳에 쓰세요</div>
+  <div class="share-badges">
+    <div class="badge">카카오톡 프로필</div>
+    <div class="badge">인스타 바이오 링크</div>
+    <div class="badge">디지털 명함</div>
+    <div class="badge">자기소개</div>
+    <div class="badge">연말 회고</div>
+    <div class="badge">생일 기념</div>
+  </div>
+</div>
+
+<!-- FUNERAL COPY (장례식장 맥락 — 페이지 하단) -->
+<div class="bridge-sec" style="background:#F8F5FC">
+  <div class="bridge-opener">사진은 남습니다.<br>당신이 고르든, <em>남이 고르든.</em></div>
+  <div class="bridge-divider"></div>
+  <div class="bridge-hook">
+    당신이 직접 고르지 않으면, <strong>남이 고릅니다.</strong>
+  </div>
+  <div class="bridge-body">
+    장례식장 한켠에서 가족이 허둥지둥 고르는 사진 말고,<br>
+    지금 내가 직접 골라두는 것.<br>
+    그게 가족에게 줄 수 있는 마지막 선물입니다.
+  </div>
+</div>
+
+<!-- BOTTOM CTA -->
+<div class="bottom-cta">
+  <div class="bottom-cta-text">
+    지금 이 순간도<br>
+    <em>당신의 여섯 장 중 하나입니다.</em><br>
+    기념해 보세요.
+  </div>
+  <a href="https://tally.so/r/ZjGpk0" target="_blank" class="btn-primary">나의 식스샷 만들기 →</a>
+  <span class="btn-hint">무료 · 3분이면 완성 · 언제든 수정 가능</span>
+</div>
+
+<!-- CONNECT -->
+<div class="connect-strip">
+  <span>식스샷에서 남긴 이야기가 메모리얼로 이어집니다</span>
+  <div class="connect-dot"></div>
+  <a href="/index.html#pricing">메모리얼 서비스 보기 →</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-logo">휴먼다큐닷컴</div>
+  <div class="ft-links">
+    <a href="/terms.html">이용약관</a>
+    <a href="/privacy.html">개인정보처리방침</a>
+    <a href="tel:031-539-9709">031-539-9709</a>
+  </div>
+</footer>
+
+</body>
+</html>
