@@ -1627,6 +1627,7 @@ def webhook_sixshot():
         print("[SIXSHOT] 파싱:", json.dumps(fields, ensure_ascii=False))
 
         name  = fields.get("이름", "").strip()
+        nickname = fields.get("닉네임", "").strip() or name
         email = fields.get("이메일", "").strip()
         if not name or not email:
             return jsonify({"error": "이름/이메일 없음"}), 400
@@ -1706,7 +1707,7 @@ def webhook_sixshot():
                 # doc_id = 순수 영문 UUID (한글 URL은 Railway 프록시가 404 처리)
                 doc_id = uuid.uuid4().hex[:12]
 
-                poems = generate_sixshot_haiku(name, shots, identity, last_msg)
+                poems = generate_sixshot_haiku(nickname, shots, identity, last_msg)
                 print(f"[SIXSHOT] 시 생성 완료")
 
                 # Firebase 저장 (Firestore는 딕셔너리 키를 str로만 허용)
@@ -1715,6 +1716,7 @@ def webhook_sixshot():
                 images_str = {str(k): v for k, v in shot_images.items()}
                 firebase_save_sixshot(doc_id, {
                     "name": name,
+                    "nickname": nickname,
                     "email": email,
                     "identity": identity,
                     "last_msg": last_msg,
@@ -1726,7 +1728,7 @@ def webhook_sixshot():
                 })
 
                 page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
-                send_email_sixshot(email, name, poems, identity, last_msg, page_url)
+                send_email_sixshot(email, nickname, poems, identity, last_msg, page_url)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
                 import traceback; traceback.print_exc()
@@ -1857,16 +1859,16 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
 
   <div style="background:#0f0d09;padding:52px 36px;text-align:center">
     <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 식스샷</div>
-    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{name}님의<br>인생 이야기가<br>완성되었습니다</div>
+    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{name}님의<br>필모그래피가<br>도착했습니다</div>
     <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
 
   <div style="padding:40px 36px">
-    <div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">
-      {name}님의 인생 6장면과 그 이야기를 담은<br>
-      개인 페이지가 만들어졌습니다.<br>
-      아래 버튼을 눌러 확인하세요.
-    </div>
+    '<div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">'
+    f'    사진 6장면과 그 이야기를 담은<br>'
+    '    나만의 필모그래피 페이지가 완성됐어요.<br>'
+    '    아래 버튼을 눌러 확인하세요.'
+    '</div>'
     {last_msg_block}
     {btn_block}
   </div>
@@ -2227,7 +2229,7 @@ def sixshot_page(doc_id):
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
 
-    name     = data.get("name", "")
+    name     = data.get("nickname", "") or data.get("name", "")
     identity = data.get("identity", "")
     last_msg = data.get("last_msg", "")
     poems    = data.get("poems", "")
@@ -2351,7 +2353,7 @@ def sixshot_page(doc_id):
 <div class="wrap">
 
   <div class="hero">
-    <div class="hero-sub">HUMANDOCU · 식스샷</div>
+    <div class="hero-sub">HUMANDOCU · 필모그래피</div>
     <div class="hero-name">{name}</div>
     <div class="hero-identity">{identity}</div>
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
@@ -2368,11 +2370,34 @@ def sixshot_page(doc_id):
     {scene_cards}
   </div>
 
+  <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
+    <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
+    <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
+    <button onclick="copyPageUrl()" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit">링크 복사하기</button>
+    <div style="font-size:11px;color:#c8a96e;margin-top:8px">복사하여 카톡·인스타·명함 등에 붙여 담으세요</div>
+  </div>
   <div class="footer">
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
   </div>
 
 </div>
+'<script>function copyPageUrl() { var url = window.location.href;'
+...
+'}</script>'
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      alert('링크가 복사됐어요!\n카톡·인스타·명함에 붙여 담으세요 😊');
+    });
+  } else {
+    var el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('링크가 복사됐어요!');
+  }
+}
 </body>
 </html>"""
 
