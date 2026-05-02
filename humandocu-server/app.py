@@ -2316,7 +2316,7 @@ def sixshot_page(doc_id):
             <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
         </div>""" if last_msg else ""
 
-    html = f"""<!DOCTYPE html>
+    html = (f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -2380,7 +2380,7 @@ def sixshot_page(doc_id):
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
   </div>
 
-</div>
+</div>"""
 '<script>function copyPageUrl(){var url=window.location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){alert("링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요 😊");});}else{var el=document.createElement("textarea");el.value=url;document.body.appendChild(el);el.select();document.execCommand("copy");document.body.removeChild(el);alert("링크가 복사됐어요!");}}</script>'
 '</body></html>'
     )
