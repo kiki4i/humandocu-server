@@ -2614,31 +2614,27 @@ function switchVer(v) {{
             "_si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
             "var _bgm=document.getElementById('bgm-ss');"
-            "var _bgmStarted=false;"
-            "function startBgm(){"
-            "if(!_bgmStarted){_bgmStarted=true;_bgm.play().catch(function(){});}"
+            "var _timer=null;"
+            "var _playing=false;"
+            "function togglePlay(){"
+            "var btn=document.getElementById('bgm-btn-ss');"
+            "if(!_playing){"
+            "_playing=true;"
+            "_bgm.play().catch(function(){});"
+            "_timer=setInterval(nxSl,3500);"
+            "btn.textContent='⏸ 멈춤';"
+            "}else{"
+            "_playing=false;"
+            "_bgm.pause();"
+            "clearInterval(_timer);"
+            "btn.textContent='▶ 재생';"
             "}"
-            "function toggleBgm(){"
-            "if(_bgm.paused){_bgm.play().catch(function(){});document.getElementById('bgm-btn-ss').textContent='🔊 음악';}"
-            "else{_bgm.pause();document.getElementById('bgm-btn-ss').textContent='▶ 재생';}"
             "}"
-            "var _ssDiv=document.getElementById('ss-wrap');"
-            "var _slStarted=false;"
-            "var _obs=new IntersectionObserver(function(entries){"
-            "if(entries[0].isIntersecting&&!_slStarted){"
-            "_slStarted=true;"
-            "setInterval(nxSl,3500);"
-            "startBgm();"
-            "}"
-            "},{threshold:0.3});"
-            "_obs.observe(_ssDiv);"
-            "document.addEventListener('touchstart',startBgm,{once:true});"
-            "document.addEventListener('click',startBgm,{once:true});"
         )
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
-            '<button id="bgm-btn-ss" onclick="toggleBgm()" style="position:absolute;top:16px;right:20px;'
+            '<button id="bgm-btn-ss" onclick="togglePlay()" style="position:absolute;top:16px;right:20px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
             'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">▶ 재생</button>'
             + slides_html
