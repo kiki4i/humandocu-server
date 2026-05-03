@@ -2613,30 +2613,34 @@ function switchVer(v) {{
             "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
             "_si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
-            "var _timer=null;"
             "var _bgm=document.getElementById('bgm-ss');"
+            "var _bgmStarted=false;"
+            "function startBgm(){"
+            "if(!_bgmStarted){_bgmStarted=true;_bgm.play().catch(function(){});}"
+            "}"
             "function toggleBgm(){"
-            "_bgm.muted=!_bgm.muted;"
-            "var btn=document.getElementById('bgm-btn-ss');"
-            "btn.textContent=_bgm.muted?'🔇 음소거':'🔊 음악';"
+            "if(_bgm.paused){_bgm.play().catch(function(){});document.getElementById('bgm-btn-ss').textContent='🔊 음악';}"
+            "else{_bgm.pause();document.getElementById('bgm-btn-ss').textContent='▶ 재생';}"
             "}"
             "var _ssDiv=document.getElementById('ss-wrap');"
-            "var _started=false;"
+            "var _slStarted=false;"
             "var _obs=new IntersectionObserver(function(entries){"
-            "if(entries[0].isIntersecting&&!_started){"
-            "_started=true;"
-            "_bgm.play().catch(function(){});"
-            "_timer=setInterval(nxSl,3500);"
+            "if(entries[0].isIntersecting&&!_slStarted){"
+            "_slStarted=true;"
+            "setInterval(nxSl,3500);"
+            "startBgm();"
             "}"
             "},{threshold:0.3});"
             "_obs.observe(_ssDiv);"
+            "document.addEventListener('touchstart',startBgm,{once:true});"
+            "document.addEventListener('click',startBgm,{once:true});"
         )
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
             '<button id="bgm-btn-ss" onclick="toggleBgm()" style="position:absolute;top:16px;right:20px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
-            'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
+            'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">▶ 재생</button>'
             + slides_html
             + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
             + f'<script>{slideshow_js}</script>'
