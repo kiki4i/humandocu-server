@@ -2596,8 +2596,8 @@ function switchVer(v) {{
             subtitle = poem_lines[i] if i < len(poem_lines) else ""
             slides_html += (
                 f'<div class="sl" style="display:{display};text-align:center">'
-                f'<img src="{url}" style="width:100%;max-height:400px;object-fit:cover;display:block;">'
-                + (f'<div style="font-size:14px;color:#f5e8c8;margin-top:14px;line-height:1.9;font-family:Georgia,serif;letter-spacing:.04em">{subtitle}</div>' if subtitle else '')
+                f'<img src="{url}" style="width:100%;max-height:500px;object-fit:contain;display:block;background:#0f0d09;">'
+                + (f'<div style="font-size:14px;color:#f5e8c8;margin-top:14px;line-height:1.9;font-family:Georgia,serif;letter-spacing:.04em;padding:0 20px">{subtitle}</div>' if subtitle else '')
                 + '</div>'
             )
             dots_html += (
@@ -2628,7 +2628,6 @@ function switchVer(v) {{
             '<button id="bgm-btn-ss" onclick="toggleBgm()" style="position:absolute;top:16px;right:20px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
             'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
-            '<div style="font-size:10px;letter-spacing:.25em;color:rgba(200,169,110,0.5);margin-bottom:20px;text-align:center">사 진 슬 라 이 드</div>'
             + slides_html
             + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
             + f'<script>{slideshow_js}</script>'
