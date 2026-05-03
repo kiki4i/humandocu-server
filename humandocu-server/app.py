@@ -10,7 +10,7 @@ import anthropic
 import firebase_admin
 from firebase_admin import credentials, firestore as fb_firestore
 from flask import Flask, request, jsonify
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 app = Flask(__name__)
 
@@ -1917,6 +1917,115 @@ def _render_haiku_block(section, lines, shot_titles):
 # 어드밴스드 결제 페이지
 # ─────────────────────────────────────────────────────────────────
 
+@app.route("/payment/sixshot", methods=["GET"])
+def payment_sixshot_page():
+    amount = "5000"
+    label  = "식스샷 1년 무제한 열람"
+
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>결제 · 식스샷 · 휴먼다큐</title>
+<style>
+  * {{ box-sizing:border-box; margin:0; padding:0; }}
+  body {{ background:#f5f2eb; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }}
+  .card {{ background:#fff; max-width:440px; width:90%; border-radius:8px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); }}
+  .header {{ background:#0f0d09; padding:36px 32px; text-align:center; }}
+  .header-sub {{ font-size:11px; color:rgba(200,169,110,.6); letter-spacing:.2em; margin-bottom:10px; }}
+  .header-title {{ font-size:22px; color:#f9f6f0; font-weight:300; }}
+  .body {{ padding:32px; }}
+  .amount-box {{ background:#faf7f2; border-radius:4px; padding:20px 24px; text-align:center; margin-bottom:24px; }}
+  .amount-label {{ font-size:12px; color:#9e8250; margin-bottom:6px; }}
+  .amount-value {{ font-size:32px; font-weight:700; color:#0f0d09; }}
+  .amount-won {{ font-size:16px; font-weight:400; margin-left:2px; }}
+  .notice {{ font-size:12px; color:#9e8250; line-height:1.8; margin-bottom:28px; }}
+  .btn {{ width:100%; padding:16px; background:#c8a96e; border:none; border-radius:4px; font-size:16px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
+  .btn:hover {{ background:#b8994e; }}
+  .btn:disabled {{ background:#ccc; cursor:not-allowed; }}
+  .status {{ text-align:center; margin-top:16px; font-size:13px; color:#9e8250; min-height:20px; }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="header-sub">HUMANDOCU · 식스샷</div>
+    <div class="header-title">{label}</div>
+  </div>
+  <div class="body">
+    <div class="amount-box">
+      <div class="amount-label">결제 금액</div>
+      <div class="amount-value">{int(amount):,}<span class="amount-won">원</span></div>
+    </div>
+    <div class="notice">
+      · 결제 완료 후 1년간 식스샷을 무제한으로 열람할 수 있습니다.<br>
+      · 결제 후 바로 적용되며 별도 가입이 필요 없습니다.<br>
+      · 문의: 031-539-9709
+    </div>
+    <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script>
+async function startPayment() {{
+  const btn = document.getElementById('pay-btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = '결제창을 여는 중...';
+
+  const orderId = 'hdss' + Date.now();
+
+  try {{
+    const response = await PortOne.requestPayment({{
+      storeId: 'store-6f48a0ad-9850-4ee0-81b1-c6b5ce1bce98',
+      channelKey: 'channel-key-43c17c4f-4acb-41ec-9c08-a1b59cf3ae12',
+      paymentId: orderId,
+      orderName: '{label}',
+      totalAmount: {amount},
+      currency: 'KRW',
+      payMethod: 'CARD',
+    }});
+
+    if (response.code) {{
+      status.textContent = '결제 실패: ' + (response.message || response.code);
+      btn.disabled = false;
+    }} else {{
+      status.textContent = '결제 완료! 잠시만 기다려주세요...';
+      const verify = await fetch('/payment/verify', {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify({{ paymentId: orderId, amount: {amount} }})
+      }});
+      const result = await verify.json();
+      if (result.ok) {{
+        window.location.href = '/payment/sixshot/success';
+      }} else {{
+        status.textContent = '결제 검증 실패. 고객센터에 문의해주세요. (031-539-9709)';
+        btn.disabled = false;
+      }}
+    }}
+  }} catch(e) {{
+    status.textContent = '오류: ' + e.message;
+    btn.disabled = false;
+  }}
+}}
+</script>
+</body>
+</html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.route("/payment/sixshot/success", methods=["GET"])
+def payment_sixshot_success():
+    token = secrets.token_urlsafe(32)
+    firebase_save_sixshot_token(token)
+    from flask import redirect
+    return redirect(f"https://kiki4i.github.io/humandocu/sixshot.html?token={token}")
+
+
 @app.route("/payment/advanced", methods=["GET"])
 def payment_advanced_page():
     """어드밴스드 결제 페이지 - pending_id 미리 생성 후 결제 Tally 폼 순서"""
@@ -2522,6 +2631,21 @@ def firebase_save_sixshot(doc_id, data):
         print(f"[SIXSHOT-FB] 저장 성공: {doc_id}")
     except Exception as e:
         print(f"[SIXSHOT-FB] 저장 오류: {e}")
+
+
+def firebase_save_sixshot_token(token):
+    """sixshot_tokens 컬렉션에 열람 토큰 저장 (1년 유효)"""
+    try:
+        now = datetime.now(timezone.utc)
+        expires = now + timedelta(days=365)
+        _get_db().collection("sixshot_tokens").document(token).set({
+            "token": token,
+            "created_at": now.isoformat(),
+            "expires_at": expires.isoformat(),
+        })
+        print(f"[SIXSHOT-TOKEN] 토큰 저장: {token[:8]}...")
+    except Exception as e:
+        print(f"[SIXSHOT-TOKEN] 저장 오류: {e}")
 
 
 def firebase_get_sixshot(doc_id):
