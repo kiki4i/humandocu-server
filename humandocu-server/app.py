@@ -2316,7 +2316,7 @@ def sixshot_page(doc_id):
             <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
         </div>""" if last_msg else ""
 
-    html = (f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -2335,7 +2335,8 @@ def sixshot_page(doc_id):
   .wrap {{ max-width: 680px; margin: 0 auto; background: #fff; }}
   .hero {{ background: #0f0d09; padding: 64px 40px; text-align: center; }}
   .hero-sub {{ font-size: 11px; color: rgba(200,169,110,.6); letter-spacing: .25em; margin-bottom: 16px; }}
-  .hero-name {{ font-family: Georgia, serif; font-size: 36px; color: #f9f6f0; font-weight: 300; margin-bottom: 12px; }}
+  .hero-name {{ font-family: Georgia, serif; font-size: 36px; color: #f9f6f0; font-weight: 300; margin-bottom: 8px; }}
+  .hero-tagline {{ font-size: 13px; color: rgba(200,169,110,.7); letter-spacing: .05em; margin-bottom: 16px; }}
   .hero-identity {{ font-size: 15px; color: rgba(249,246,240,.5); font-style: italic; line-height: 1.8; }}
   .section {{ padding: 48px 40px; }}
   .section-label {{ font-size: 11px; color: #9e8250; letter-spacing: .2em; margin-bottom: 24px; }}
@@ -2400,7 +2401,7 @@ function copyPageUrl(){{
   }}
 }}
 </script>
-</body></html>""")
+</body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 @app.route("/", methods=["GET"])
