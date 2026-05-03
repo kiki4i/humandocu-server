@@ -2514,9 +2514,14 @@ def sixshot_page(doc_id):
     ver_script = ""
     if rep_poem2:
         rep_poem2_escaped = poem_html(rep_poem2).replace("'", "\\'").replace('"', '&quot;')
-        ver_toggle_html = '''<div style="display:flex;justify-content:center;gap:8px;margin-top:14px">
-  <button onclick="switchVer(1)" id="ver1-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:#c8a96e;color:#0f0d09;cursor:pointer;letter-spacing:.05em">버전 1</button>
-  <button onclick="switchVer(2)" id="ver2-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:transparent;color:#c8a96e;cursor:pointer;letter-spacing:.05em">버전 2</button>
+        ver_toggle_html = '''<div style="margin-top:16px;text-align:center">
+  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px">
+    <button onclick="switchVer(1)" id="ver1-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:#c8a96e;color:#0f0d09;cursor:pointer;letter-spacing:.05em">버전 1</button>
+    <button onclick="switchVer(2)" id="ver2-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:transparent;color:#c8a96e;cursor:pointer;letter-spacing:.05em">버전 2</button>
+  </div>
+  <div id="ver-desc" style="font-size:10px;color:rgba(200,169,110,.5);letter-spacing:.04em;line-height:1.7">
+    버전 1 · 시적, 은유적 — 마음에 걸리는 여운<br>버전 2 · 담담하고 직접적 — 꾸밈 없이 꽂히는 문장
+  </div>
 </div>'''
         ver_script = f"""
 <script>
