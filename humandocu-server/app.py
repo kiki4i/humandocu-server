@@ -2613,17 +2613,26 @@ function switchVer(v) {{
             "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
             "_si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
-            "setInterval(nxSl,3500);"
+            "var _timer=null;"
             "var _bgm=document.getElementById('bgm-ss');"
             "function toggleBgm(){"
             "_bgm.muted=!_bgm.muted;"
             "var btn=document.getElementById('bgm-btn-ss');"
             "btn.textContent=_bgm.muted?'🔇 음소거':'🔊 음악';"
             "}"
-            "document.addEventListener('click',function(){if(_bgm.paused)_bgm.play();},{once:true});"
+            "var _ssDiv=document.getElementById('ss-wrap');"
+            "var _started=false;"
+            "var _obs=new IntersectionObserver(function(entries){"
+            "if(entries[0].isIntersecting&&!_started){"
+            "_started=true;"
+            "_bgm.play().catch(function(){});"
+            "_timer=setInterval(nxSl,3500);"
+            "}"
+            "},{threshold:0.3});"
+            "_obs.observe(_ssDiv);"
         )
         slideshow_section = (
-            '<div style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
+            '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
             '<button id="bgm-btn-ss" onclick="toggleBgm()" style="position:absolute;top:16px;right:20px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
