@@ -2001,7 +2001,7 @@ async function startPayment() {{
       }});
       const result = await verify.json();
       if (result.ok) {{
-        window.location.href = '/payment/sixshot/success';
+        window.location.href = '/payment/sixshot/success?paymentId=' + encodeURIComponent(orderId);
       }} else {{
         status.textContent = '결제 검증 실패. 고객센터에 문의해주세요. (031-539-9709)';
         btn.disabled = false;
@@ -2022,8 +2022,70 @@ async function startPayment() {{
 def payment_sixshot_success():
     token = secrets.token_urlsafe(32)
     firebase_save_sixshot_token(token)
+
+    # 결제 정보에서 고객 이메일 조회 후 발송
+    payment_id = request.args.get("paymentId", "")
+    _send_sixshot_token_email(payment_id, token)
+
     from flask import redirect
     return redirect(f"https://kiki4i.github.io/humandocu/sixshot.html?token={token}")
+
+
+def _send_sixshot_token_email(payment_id, token):
+    """포트원에서 고객 이메일 조회 후 식스샷 열람권 토큰 이메일 발송. 실패해도 무시."""
+    try:
+        to_email = ""
+        if payment_id:
+            portone_secret = os.environ.get("PORTONE_SECRET", "")
+            r = requests.get(
+                f"https://api.portone.io/payments/{payment_id}",
+                headers={"Authorization": f"PortOne {portone_secret}"},
+                timeout=10
+            )
+            payment = r.json()
+            to_email = (payment.get("customer", {}) or {}).get("email", "")
+
+        if not to_email:
+            print("[SIXSHOT-EMAIL] 고객 이메일 없음 - 발송 생략")
+            return
+
+        page_url = f"https://kiki4i.github.io/humandocu/sixshot.html?token={token}"
+        html_body = (
+            '<div style="max-width:560px;margin:0 auto;background:#fff;font-family:\'Noto Sans KR\',sans-serif">'
+            '<div style="background:#0f0d09;padding:48px 36px;text-align:center">'
+            '<div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 식스샷</div>'
+            '<div style="font-family:Georgia,serif;font-size:28px;color:#f9f6f0;font-weight:300;margin-bottom:8px">열람권이 발급되었습니다</div>'
+            '</div>'
+            '<div style="padding:40px 36px">'
+            '<div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">'
+            '아래 링크를 저장해두시면<br>어느 기기에서든 식스샷을 열람하실 수 있습니다.'
+            '</div>'
+            f'<div style="text-align:center;margin-bottom:28px"><a href="{page_url}" style="display:inline-block;background:#c8a96e;color:#1a1208;font-size:15px;font-weight:700;padding:14px 36px;border-radius:4px;text-decoration:none;letter-spacing:.04em">식스샷 열람하기 →</a></div>'
+            f'<div style="background:#faf7f2;border-radius:4px;padding:14px 18px;word-break:break-all;font-size:11px;color:#9e8250;margin-bottom:28px">{page_url}</div>'
+            '<div style="font-size:12px;color:#9e8250;line-height:1.9">'
+            '· 링크 유효기간: 1년<br>'
+            '· 링크를 분실하면 재발급이 불가합니다. 북마크나 메모에 저장해두세요.<br>'
+            '· 문의: 031-539-9709'
+            '</div>'
+            '</div>'
+            '<div style="background:#faf7f2;padding:20px 36px;text-align:center;font-size:11px;color:#c8a96e">'
+            '<a href="https://humandocu.com" style="color:#c8a96e;text-decoration:none">humandocu.com</a>'
+            '</div></div>'
+        )
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "from": "휴먼다큐 <noreply@humandocu.com>",
+                "to": [to_email],
+                "subject": "식스샷 열람권이 발급되었습니다",
+                "html": html_body,
+            },
+            timeout=30
+        )
+        print(f"[SIXSHOT-EMAIL] 발송 완료: {to_email} / status={resp.status_code}")
+    except Exception as e:
+        print(f"[SIXSHOT-EMAIL] 발송 실패 (무시): {e}")
 
 
 @app.route("/payment/advanced", methods=["GET"])
