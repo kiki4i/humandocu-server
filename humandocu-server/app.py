@@ -2627,13 +2627,14 @@ function switchVer(v) {{
     <div class="section-label">✦ 인생을 담은 시</div>
     <div class="rep-poem" id="rep-poem-box">{poem_html(rep_poem)}</div>
     {ver_toggle_html}
-    {last_msg_block}
   </div>
 
   <div class="section" style="padding-top:0">
     <div class="section-label">인생 6장면</div>
     {scene_cards}
   </div>
+
+  {last_msg_block}
 
   <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
     <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
