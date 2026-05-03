@@ -1941,6 +1941,8 @@ def payment_sixshot_page():
   .amount-value {{ font-size:32px; font-weight:700; color:#0f0d09; }}
   .amount-won {{ font-size:16px; font-weight:400; margin-left:2px; }}
   .notice {{ font-size:12px; color:#9e8250; line-height:1.8; margin-bottom:28px; }}
+  .email-input {{ width:100%; padding:13px 14px; border:1px solid #e0d4b8; border-radius:4px; font-size:14px; font-family:inherit; color:#0f0d09; background:#faf7f2; margin-bottom:16px; box-sizing:border-box; }}
+  .email-input:focus {{ outline:none; border-color:#c8a96e; }}
   .btn {{ width:100%; padding:16px; background:#c8a96e; border:none; border-radius:4px; font-size:16px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
   .btn:hover {{ background:#b8994e; }}
   .btn:disabled {{ background:#ccc; cursor:not-allowed; }}
@@ -1963,6 +1965,7 @@ def payment_sixshot_page():
       · 결제 후 바로 적용되며 별도 가입이 필요 없습니다.<br>
       · 문의: 031-539-9709
     </div>
+    <input class="email-input" type="email" id="user-email" placeholder="열람 링크를 받을 이메일">
     <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
     <div class="status" id="status"></div>
   </div>
@@ -1971,6 +1974,11 @@ def payment_sixshot_page():
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
 async function startPayment() {{
+  const email = document.getElementById('user-email').value.trim();
+  if (!email) {{
+    alert('이메일을 입력해주세요');
+    return;
+  }}
   const btn = document.getElementById('pay-btn');
   const status = document.getElementById('status');
   btn.disabled = true;
@@ -1987,6 +1995,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: 'CARD',
+      customer: {{ email: email }},
     }});
 
     if (response.code) {{
