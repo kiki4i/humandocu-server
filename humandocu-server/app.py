@@ -2582,6 +2582,59 @@ function switchVer(v) {{
             <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
         </div>""" if last_msg else ""
 
+    # 슬라이드쇼 섹션 생성
+    slide_imgs = [shot_images.get(str(i)) for i in range(1, 7) if shot_images.get(str(i))]
+    slideshow_section = ""
+    if len(slide_imgs) > 0:
+        slides_html = ""
+        dots_html = ""
+        for i, url in enumerate(slide_imgs):
+            display = "block" if i == 0 else "none"
+            dot_bg = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
+            # 각 사진에 해당 총평 시행 자막
+            poem_lines = [l for l in rep_poem.split("\n") if l.strip()]
+            subtitle = poem_lines[i] if i < len(poem_lines) else ""
+            slides_html += (
+                f'<div class="sl" style="display:{display};text-align:center">'
+                f'<img src="{url}" style="width:100%;max-height:400px;object-fit:cover;display:block;">'
+                + (f'<div style="font-size:14px;color:#f5e8c8;margin-top:14px;line-height:1.9;font-family:Georgia,serif;letter-spacing:.04em">{subtitle}</div>' if subtitle else '')
+                + '</div>'
+            )
+            dots_html += (
+                f'<span class="dt" onclick="goSl({i})" '
+                f'style="display:inline-block;width:8px;height:8px;border-radius:50%;'
+                f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
+            )
+        n_total = len(slide_imgs)
+        slideshow_js = (
+            f"var _si=0,_st={n_total};"
+            "function goSl(n){"
+            "document.querySelectorAll('.sl').forEach(function(e,i){e.style.display=i===n?'block':'none';});"
+            "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
+            "_si=n;}"
+            "function nxSl(){goSl((_si+1)%_st);}"
+            "setInterval(nxSl,3500);"
+            "var _bgm=document.getElementById('bgm-ss');"
+            "function toggleBgm(){"
+            "_bgm.muted=!_bgm.muted;"
+            "var btn=document.getElementById('bgm-btn-ss');"
+            "btn.textContent=_bgm.muted?'🔇 음소거':'🔊 음악';"
+            "}"
+            "document.addEventListener('click',function(){if(_bgm.paused)_bgm.play();},{once:true});"
+        )
+        slideshow_section = (
+            '<div style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
+            '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
+            '<button id="bgm-btn-ss" onclick="toggleBgm()" style="position:absolute;top:16px;right:20px;'
+            'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
+            'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
+            '<div style="font-size:10px;letter-spacing:.25em;color:rgba(200,169,110,0.5);margin-bottom:20px;text-align:center">사 진 슬 라 이 드</div>'
+            + slides_html
+            + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
+            + f'<script>{slideshow_js}</script>'
+            + '</div>'
+        )
+
     html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -2639,6 +2692,8 @@ function switchVer(v) {{
   </div>
 
   {last_msg_block}
+
+  {slideshow_section}
 
   <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
     <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
