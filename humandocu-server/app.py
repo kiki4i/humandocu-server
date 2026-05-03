@@ -1768,16 +1768,21 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 인생 6장면:
 {shots_text}
 
-다음 두 가지를 작성해주세요.
+다음 세 가지를 작성해주세요.
 
-1. [대표 시] - 이 사람의 인생 전체를 관통하는 짧은 시 1편
+1. [대표 시] - 이 사람의 인생 전체를 관통하는 짧은 시 1편 (시적·은유적 톤)
    아래 세 가지를 모두 종합해서 써주세요.
    - "나는 이런 사람입니다": 그 사람이 스스로 정의한 정체성
    - 인생 6장면 전체: 어떤 삶을 살았는지, 무엇을 사랑했는지, 어떤 순간들이 있었는지
    - "누군가에게 남기는 한 줄": 그 사람이 가장 하고 싶은 말
    세 가지가 녹아든, 이 사람만의 시여야 합니다.
 
-2. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩 (총 6편)
+2. [대표2 시] - 동일한 인생을 산문체·직접적 톤으로 3행
+   시적 표현, 은유, 비유 없이 담담하고 직접적으로.
+   예: '이 사람은 그냥 살았다. 그런데 그 삶이 꽤 괜찮았다.' 같은 톤.
+   꾸밈 없이 말하는데 오히려 더 세게 꽂히는 느낌.
+
+3. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩 (총 6편)
    각 장면 설명의 핵심 감정이나 이미지를 포착해주세요.
 
 시 작성 규칙:
@@ -1787,6 +1792,11 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
 출력 형식 (정확히 이 형식으로):
 [대표]
+(1행)
+(2행)
+(3행)
+
+[대표2]
 (1행)
 (2행)
 (3행)
@@ -1824,7 +1834,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     message = client.messages.create(
         model="claude-opus-4-5",
-        max_tokens=1500,
+        max_tokens=1800,
         messages=[{"role": "user", "content": prompt}]
     )
     return message.content[0].text
@@ -2432,7 +2442,12 @@ def sixshot_page(doc_id):
     current_lines = []
     for line in poems.strip().split("\n"):
         line = line.strip()
-        if line.startswith("[대표]"):
+        if line.startswith("[대표2]"):
+            if current_key:
+                poem_dict[current_key] = "\n".join(current_lines)
+            current_key = "대표2"
+            current_lines = []
+        elif line.startswith("[대표]"):
             current_key = "대표"
             current_lines = []
         elif line.startswith("[SHOT"):
