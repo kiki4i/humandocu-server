@@ -2586,18 +2586,39 @@ function switchVer(v) {{
     slide_imgs = [shot_images.get(str(i)) for i in range(1, 7) if shot_images.get(str(i))]
     slideshow_section = ""
     if len(slide_imgs) > 0:
+        # 총평 줄 분리
+        poem1_lines = [l for l in rep_poem.split("\n") if l.strip()]
+        poem2_lines = [l for l in rep_poem2.split("\n") if l.strip()] if rep_poem2 else []
+
+        # 슬라이드 목록 구성: (이미지URL, 자막)
+        slide_list = []
+        for i, url in enumerate(slide_imgs):
+            idx = i  # 0~5
+            if idx < 3:
+                subtitle = poem1_lines[idx] if idx < len(poem1_lines) else ""
+            else:
+                subtitle = poem2_lines[idx - 3] if (idx - 3) < len(poem2_lines) else ""
+            slide_list.append((url, subtitle))
+
+        # 6번 사진 한 번 더 + To. 메시지
+        if len(slide_imgs) >= 6:
+            last_url = slide_imgs[5]
+            to_msg = ""
+            if last_to and last_msg:
+                to_msg = f"To. {last_to}<br>{last_msg}"
+            elif last_msg:
+                to_msg = last_msg
+            slide_list.append((last_url, to_msg))
+
         slides_html = ""
         dots_html = ""
-        for i, url in enumerate(slide_imgs):
+        for i, (url, subtitle) in enumerate(slide_list):
             display = "block" if i == 0 else "none"
             dot_bg = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
-            # 각 사진에 해당 총평 시행 자막
-            poem_lines = [l for l in rep_poem.split("\n") if l.strip()]
-            subtitle = poem_lines[i] if i < len(poem_lines) else ""
             slides_html += (
                 f'<div class="sl" style="display:{display};text-align:center">'
                 f'<img src="{url}" style="width:100%;max-height:500px;object-fit:contain;display:block;background:#0f0d09;">'
-                + (f'<div style="font-size:14px;color:#f5e8c8;margin-top:14px;line-height:1.9;font-family:Georgia,serif;letter-spacing:.04em;padding:0 20px">{subtitle}</div>' if subtitle else '')
+                + (f'<div style="font-size:15px;color:#f5e8c8;margin-top:16px;line-height:2;font-family:Georgia,serif;letter-spacing:.04em;padding:0 24px">{subtitle}</div>' if subtitle else '')
                 + '</div>'
             )
             dots_html += (
@@ -2605,7 +2626,7 @@ function switchVer(v) {{
                 f'style="display:inline-block;width:8px;height:8px;border-radius:50%;'
                 f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
             )
-        n_total = len(slide_imgs)
+        n_total = len(slide_list)
         slideshow_js = (
             f"var _si=0,_st={n_total};"
             "function goSl(n){"
