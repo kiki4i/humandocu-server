@@ -1692,6 +1692,7 @@ def webhook_sixshot():
             print(f"[SIXSHOT] shots 파싱 오류: {e}")
 
         identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
+        last_to    = fields.get("대상", "") or fields.get("도슨이", "")
         last_msg   = fields.get("메세지", "") or fields.get("메시지", "")
         is_public_raw = fields.get("이 식스샷을 공개할까요?", "")
         is_public_text = fields.get("이 식스샷을 공개할까요? (공개 — 다른 사람들도 내 이야기를 볼 수 있어요)", "")
@@ -1719,6 +1720,7 @@ def webhook_sixshot():
                     "nickname": nickname,
                     "email": email,
                     "identity": identity,
+                    "last_to": last_to,
                     "last_msg": last_msg,
                     "shots": shots_str,
                     "shot_images": images_str,
@@ -2421,6 +2423,7 @@ def sixshot_page(doc_id):
 
     name     = data.get("nickname", "") or data.get("name", "")
     identity = data.get("identity", "")
+    last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
     poems    = data.get("poems", "")
     shots       = data.get("shots", {})
@@ -2572,9 +2575,10 @@ function switchVer(v) {{
             f'{img_block}{card_inner}</div>'
         )
 
+    to_label = f"To. {last_to}" if last_to else "누군가에게 남기는 한 줄"
     last_msg_block = f"""
         <div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
-            <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">누군가에게 남기는 한 줄</div>
+            <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">{to_label}</div>
             <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
         </div>""" if last_msg else ""
 
