@@ -2474,7 +2474,69 @@ def sixshot_page(doc_id):
         lines = [l for l in text.strip().split("\n") if l.strip()]
         return "".join(f'<div style="line-height:2;font-size:17px;color:#2d2a22;font-family:Georgia,serif">{l}</div>' for l in lines)
 
+    # poems가 줄바꿈 없이 한 줄로 저장된 경우 재파싱
+    if "\n" not in poems and "[" in poems:
+        import re as _re
+        poems_norm = poems.replace("[", "\n[")
+        current_key2 = None
+        current_lines2 = []
+        for line in poems_norm.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("[대표2]"):
+                if current_key2:
+                    poem_dict[current_key2] = "\n".join(current_lines2)
+                current_key2 = "대표2"
+                current_lines2 = [line[len("[대표2]"):].strip()] if line[len("[대표2]"):].strip() else []
+            elif line.startswith("[대표]"):
+                if current_key2:
+                    poem_dict[current_key2] = "\n".join(current_lines2)
+                current_key2 = "대표"
+                current_lines2 = [line[len("[대표]"):].strip()] if line[len("[대표]"):].strip() else []
+            elif line.startswith("[SHOT"):
+                if current_key2:
+                    poem_dict[current_key2] = "\n".join(current_lines2)
+                m = _re.match(r'\[SHOT(\d+)\](.*)', line)
+                if m:
+                    current_key2 = f"SHOT{m.group(1)}"
+                    current_lines2 = [m.group(2).strip()] if m.group(2).strip() else []
+            elif line:
+                current_lines2.append(line)
+        if current_key2:
+            poem_dict[current_key2] = "\n".join(current_lines2)
+
     rep_poem = poem_dict.get("대표", "")
+    rep_poem2 = poem_dict.get("대표2", "")
+
+    # 버전 토글 버튼 (대표2 있을 때만)
+    ver_toggle_html = ""
+    ver_script = ""
+    if rep_poem2:
+        rep_poem2_escaped = poem_html(rep_poem2).replace("'", "\\'").replace('"', '&quot;')
+        ver_toggle_html = '''<div style="display:flex;justify-content:center;gap:8px;margin-top:14px">
+  <button onclick="switchVer(1)" id="ver1-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:#c8a96e;color:#0f0d09;cursor:pointer;letter-spacing:.05em">버전 1</button>
+  <button onclick="switchVer(2)" id="ver2-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:transparent;color:#c8a96e;cursor:pointer;letter-spacing:.05em">버전 2</button>
+</div>'''
+        ver_script = f"""
+<script>
+var _ver1 = document.getElementById('rep-poem-box').innerHTML;
+var _ver2 = '{rep_poem2_escaped}';
+function switchVer(v) {{
+  var box = document.getElementById('rep-poem-box');
+  var b1 = document.getElementById('ver1-btn');
+  var b2 = document.getElementById('ver2-btn');
+  if (v === 1) {{
+    box.innerHTML = _ver1;
+    b1.style.background = '#c8a96e'; b1.style.color = '#0f0d09';
+    b2.style.background = 'transparent'; b2.style.color = '#c8a96e';
+  }} else {{
+    box.innerHTML = _ver2;
+    b2.style.background = '#c8a96e'; b2.style.color = '#0f0d09';
+    b1.style.background = 'transparent'; b1.style.color = '#c8a96e';
+  }}
+}}
+</script>"""
 
     # 장면별 카드 HTML
     scene_cards = ""
@@ -2558,7 +2620,8 @@ def sixshot_page(doc_id):
 
   <div class="section">
     <div class="section-label">✦ 인생을 담은 시</div>
-    <div class="rep-poem">{poem_html(rep_poem)}</div>
+    <div class="rep-poem" id="rep-poem-box">{poem_html(rep_poem)}</div>
+    {ver_toggle_html}
     {last_msg_block}
   </div>
 
@@ -2596,6 +2659,7 @@ function copyPageUrl(){{
   }}
 }}
 </script>
+{ver_script}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
