@@ -2210,7 +2210,6 @@ def payment_sixshot_page():
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_KAKAOPAY',this)">카카오페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_NAVERPAY',this)">네이버페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_TOSSPAY',this)">토스페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_SAMSUNGPAY',this)">삼성페이</button>
         </div>
       </div>
     </div>
@@ -2447,7 +2446,6 @@ def payment_advanced_page():
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_KAKAOPAY',this)">카카오페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_NAVERPAY',this)">네이버페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_TOSSPAY',this)">토스페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_SAMSUNGPAY',this)">삼성페이</button>
         </div>
       </div>
     </div>
