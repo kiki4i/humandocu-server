@@ -1828,7 +1828,7 @@ def webhook_today():
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
                 page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
-                send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url)
+                send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today")
             except Exception as e:
                 print(f"[TODAY] 백그라운드 오류: {e}")
                 import traceback; traceback.print_exc()
@@ -2025,7 +2025,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
     return message.content[0].text
 
 
-def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None):
+def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None, type="sixshot"):
     """식스샷 알림 이메일 - 버튼 클릭 시 개인 페이지로 이동"""
 
     last_msg_block = f"""
@@ -2053,16 +2053,14 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
 <div style="max-width:560px;margin:0 auto;background:#fff">
 
   <div style="background:#0f0d09;padding:52px 36px;text-align:center">
-    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">HUMANDOCU · 필모그래피</div>
-    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{name}님의<br>필모그래피가<br>도착했습니다</div>
+    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">{"HUMANDOCU · 투.필" if type == "today" else "HUMANDOCU · 필모그래피"}</div>
+    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{"투데이 필모그래피" if type == "today" else f"{name}님의<br>필모그래피가"}<br>{"도착했어요 ✦" if type == "today" else "도착했습니다"}</div>
     <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
 
   <div style="padding:40px 36px">
     <div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">
-      사진 6장면과 그 이야기를 담은<br>
-      나만의 필모그래피 페이지가 완성됐어요.<br>
-      아래 버튼을 눌러 확인하세요.
+      {"오늘 하루를 담은 6장의 사진,<br>AI가 오늘의 당신을 시로 남겼어요.<br>아래 버튼을 눌러 확인하세요." if type == "today" else "사진 6장면과 그 이야기를 담은<br>나만의 필모그래피 페이지가 완성됐어요.<br>아래 버튼을 눌러 확인하세요."}
     </div>
     {last_msg_block}
     {btn_block}
@@ -2079,7 +2077,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {name}님의 필모그래피가 도착했습니다", "html": html},
+              "subject": f"[휴먼다큐] {'오늘의 투.필이 도착했어요 ✦' if type == 'today' else f'{name}님의 필모그래피가 도착했습니다'}", "html": html},
         timeout=30)
     resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 빈칸 {to_email}")
@@ -2649,8 +2647,20 @@ def sixshot_page(doc_id):
     shots       = data.get("shots", {})
     shot_images = data.get("shot_images", {})
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
+    page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
+
+    # 타입별 섹션 제목
+    poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
+    scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
 
     shot_titles = {
+        "1": "SHOT 1",
+        "2": "SHOT 2",
+        "3": "SHOT 3",
+        "4": "SHOT 4",
+        "5": "SHOT 5",
+        "6": "SHOT 6",
+    } if page_type == "today" else {
         "1": "태어남 · 유년",
         "2": "청년의 시절",
         "3": "가장 빛났을 때",
@@ -2930,13 +2940,13 @@ function switchVer(v) {{
   </div>
 
   <div class="section">
-    <div class="section-label">✦ 인생을 담은 시</div>
+    <div class="section-label">{poem_section_title}</div>
     <div class="rep-poem" id="rep-poem-box">{poem_html(rep_poem)}</div>
     {ver_toggle_html}
   </div>
 
   <div class="section" style="padding-top:0">
-    <div class="section-label">인생 6장면</div>
+    <div class="section-label">{scene_section_title}</div>
     {scene_cards}
   </div>
 
