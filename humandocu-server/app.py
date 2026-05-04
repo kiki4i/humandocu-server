@@ -2201,9 +2201,17 @@ def payment_sixshot_page():
     <div class="method-wrap">
       <div class="method-label">결제 수단 선택</div>
       <div class="method-btns">
-        <button class="method-btn active" onclick="selectMethod('CARD', this)">💳 신용카드</button>
-        <button class="method-btn" onclick="selectMethod('TRANSFER', this)">🏦 계좌이체</button>
-        <button class="method-btn" onclick="selectMethod('EASY_PAY', this)">📱 간편결제</button>
+        <button class="method-btn active" onclick="selectMethod('CARD','',this)">💳 신용카드</button>
+        <button class="method-btn" onclick="selectMethod('TRANSFER','',this)">🏦 계좌이체</button>
+        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제 ▾</button>
+      </div>
+      <div id="easy-pay-wrap" style="display:none;margin-top:8px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','TOSSPAY',this)">토스페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','SAMSUNGPAY',this)">삼성페이</button>
+        </div>
       </div>
     </div>
     <input class="email-input" type="email" id="user-email" placeholder="열람 링크를 받을 이메일">
@@ -2215,8 +2223,16 @@ def payment_sixshot_page():
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
 let selectedMethod = 'CARD';
-function selectMethod(method, el) {{
+let selectedProvider = '';
+function selectMethod(method, provider, el) {{
   selectedMethod = method;
+  selectedProvider = provider;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}}
+function toggleEasyPay(el) {{
+  const wrap = document.getElementById('easy-pay-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'grid' : 'none';
   document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
 }}
@@ -2242,6 +2258,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
+      ...(selectedProvider ? {{ easyPayProvider: selectedProvider }} : {{}}),
       customer: {{ email: email }},
     }});
 
@@ -2415,9 +2432,17 @@ def payment_advanced_page():
     <div class="method-wrap">
       <div class="method-label">결제 수단 선택</div>
       <div class="method-btns">
-        <button class="method-btn active" onclick="selectMethod('CARD', this)">💳 신용카드</button>
-        <button class="method-btn" onclick="selectMethod('TRANSFER', this)">🏦 계좌이체</button>
-        <button class="method-btn" onclick="selectMethod('EASY_PAY', this)">📱 간편결제</button>
+        <button class="method-btn active" onclick="selectMethod('CARD','',this)">💳 신용카드</button>
+        <button class="method-btn" onclick="selectMethod('TRANSFER','',this)">🏦 계좌이체</button>
+        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제 ▾</button>
+      </div>
+      <div id="easy-pay-wrap" style="display:none;margin-top:8px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','TOSSPAY',this)">토스페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','SAMSUNGPAY',this)">삼성페이</button>
+        </div>
       </div>
     </div>
     <button class="btn" id="pay-btn" onclick="startPayment()">결제하기</button>
@@ -2428,8 +2453,16 @@ def payment_advanced_page():
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
 let selectedMethod = 'CARD';
-function selectMethod(method, el) {{
+let selectedProvider = '';
+function selectMethod(method, provider, el) {{
   selectedMethod = method;
+  selectedProvider = provider;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}}
+function toggleEasyPay(el) {{
+  const wrap = document.getElementById('easy-pay-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'grid' : 'none';
   document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
 }}
@@ -2450,6 +2483,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
+      ...(selectedProvider ? {{ easyPayProvider: selectedProvider }} : {{}}),
     }});
 
     if (response.code) {{
