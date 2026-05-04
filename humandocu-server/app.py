@@ -2058,16 +2058,27 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <div style="font-size:15px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
       </div>""" if last_msg else ""
 
+    edit_url = f"https://tally.so/r/Bz8LbR" if type == "today" else "https://tally.so/r/ZjGpk0"
+    open_label = "나의 투.필 열기" if type == "today" else "나의 식스샷 열기"
+
     btn_block = f"""
       <div style="text-align:center;margin:0 0 20px">
         <a href="{page_url}"
            style="display:inline-block;padding:16px 40px;background:#c8a96e;color:#0f0d09;
                   text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.08em;border-radius:3px">
-          나의 식스샷 열기
+          {open_label}
         </a>
       </div>
       <div style="text-align:center;margin-bottom:8px">
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
+      </div>
+      <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #e5dece">
+        <a href="{edit_url}"
+           style="display:inline-block;padding:10px 28px;background:#fff;border:1px solid #e0d4b8;
+                  color:#9e8250;text-decoration:none;font-size:13px;border-radius:20px;letter-spacing:.04em">
+          수정하기 →
+        </a>
+        <div style="font-size:11px;color:#bbb;margin-top:8px">사진 6장을 다시 올리면 새 버전이 생성됩니다</div>
       </div>""" if page_url else ""
 
     html = f"""<!DOCTYPE html>
@@ -2983,10 +2994,6 @@ function switchVer(v) {{
     <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
     <button onclick="copyPageUrl()" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit">링크 복사하기</button>
     <div style="font-size:11px;color:#c8a96e;margin-top:8px">복사하여 카톡·인스타·명함 등에 붙여 담으세요</div>
-    <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e5dece">
-      <a href="{'https://tally.so/r/Bz8LbR' if page_type == 'today' else 'https://tally.so/r/ZjGpk0'}" target="_blank" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #e5dece;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit;text-decoration:none">수정하기 →</a>
-      <div style="font-size:11px;color:#bbb;margin-top:8px">사진 6장을 다시 올리면 새 버전이 생성됩니다</div>
-    </div>
   </div>
   <div class="footer">
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
