@@ -1750,7 +1750,183 @@ def webhook_sixshot():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/webhook/today", methods=["POST"])
+def webhook_today():
+    """오늘의 식스샷 — 투데이 필모그래피 웹훅"""
+    try:
+        payload = request.get_json(force=True)
+        print("[TODAY] 웹훅 수신")
+        fields = parse_tally(payload)
+        print("[TODAY] 파싱:", json.dumps(fields, ensure_ascii=False)[:300])
+
+        name = fields.get("이름", "").strip()
+        nickname = (
+            fields.get("닉네임", "").strip() or
+            fields.get("Nickname", "").strip() or
+            name
+        )
+        email = fields.get("이메일", "").strip()
+        if not name or not email:
+            return jsonify({"error": "이름/이메일 없음"}), 400
+
+        # 사진 라벨 (투.필 폼 기준)
+        shot_labels = ["사진 01", "사진 02", "사진 03", "사진 04", "사진 05", "사진 06"]
+        shots = {}
+        shot_images = {}
+        shot_idx = 0
+
+        try:
+            for f in payload["data"]["fields"]:
+                lbl = f.get("label")
+                if lbl is not None: lbl = lbl.strip()
+                val = f.get("value", "")
+                ftype = f.get("type", "")
+                if lbl in shot_labels:
+                    shot_idx = shot_labels.index(lbl) + 1
+                    if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
+                        img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
+                        if img_url:
+                            shot_images[shot_idx] = img_url
+                elif lbl == "사진 설명 한줄" and shot_idx > 0:
+                    text = val[0] if isinstance(val, list) else val
+                    if text:
+                        shots[shot_idx] = str(text).strip()
+                    shot_idx = 0
+        except Exception as e:
+            print(f"[TODAY] shots 파싱 오류: {e}")
+
+        today_one = fields.get("오늘 하루를 한 문장으로", "")
+        last_to   = fields.get("대상", "")
+        last_msg  = fields.get("메세지", "") or fields.get("메시지", "")
+        is_public_raw = fields.get("공개 여부", "")
+        is_public = "공개" in is_public_raw
+
+        print(f"[TODAY] shots:{shots}, today_one:{today_one}")
+
+        import threading, uuid
+        def process():
+            try:
+                doc_id = "td" + uuid.uuid4().hex[:10]
+                poems = generate_today_haiku(nickname, shots, today_one, last_msg)
+                print(f"[TODAY] 시 생성 완료")
+
+                import datetime
+                shots_str  = {str(k): v for k, v in shots.items()}
+                images_str = {str(k): v for k, v in shot_images.items()}
+                firebase_save_sixshot(doc_id, {
+                    "name": name,
+                    "nickname": nickname,
+                    "email": email,
+                    "identity": today_one,
+                    "last_to": last_to,
+                    "last_msg": last_msg,
+                    "shots": shots_str,
+                    "shot_images": images_str,
+                    "poems": poems,
+                    "is_public": is_public,
+                    "type": "today",
+                    "created_at": datetime.datetime.utcnow().isoformat(),
+                })
+                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+                send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url)
+            except Exception as e:
+                print(f"[TODAY] 백그라운드 오류: {e}")
+                import traceback; traceback.print_exc()
+        threading.Thread(target=process, daemon=True).start()
+        return jsonify({"status": "processing", "name": name}), 200
+
+    except Exception as e:
+        print(f"[TODAY] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+def generate_today_haiku(name, shots, today_one, last_msg):
+    """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
+    shots_text = "\n".join([
+        f"SHOT {i} : {shots.get(i, '(없음)')}"
+        for i in range(1, 7)
+    ])
+    last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
+
+    prompt = f"""당신은 일상의 순간을 포착하는 감각적인 시인입니다.
+아래는 오늘 하루를 담은 사진 6장과 짧은 설명들입니다.
+
+닉네임: {name}
+오늘 하루를 한 문장으로: {today_one}{last_msg_text}
+
+오늘의 6장면:
+{shots_text}
+
+다음을 작성해주세요.
+
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+
+3. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩
+   일상의 작은 순간들 — 밥, 하늘, 사람, 풍경 — 그 안의 감각을 포착해주세요.
+
+시 작성 규칙:
+- 3행 구성
+- 거창한 의미 부여 금지 — 그냥 오늘이면 충분
+- 읽으면 "맞아, 오늘 그랬지" 하는 느낌
+
+출력 형식 (정확히 이 형식으로):
+[대표]
+(1행)
+(2행)
+(3행)
+
+[대표2]
+(1행)
+(2행)
+(3행)
+
+[SHOT1]
+(1행)
+(2행)
+(3행)
+
+[SHOT2]
+(1행)
+(2행)
+(3행)
+
+[SHOT3]
+(1행)
+(2행)
+(3행)
+
+[SHOT4]
+(1행)
+(2행)
+(3행)
+
+[SHOT5]
+(1행)
+(2행)
+(3행)
+
+[SHOT6]
+(1행)
+(2행)
+(3행)"""
+
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+    message = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=1800,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
+
+
 def generate_sixshot_haiku(name, shots, identity, last_msg):
+    """식스샷 데이터로 짧은 생애시 7편 생성"""
     """식스샷 데이터로 짧은 생애시 7편 생성"""
     shot_titles = {
         1: "유년 · 소년기",
