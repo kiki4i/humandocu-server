@@ -1960,6 +1960,11 @@ def payment_sixshot_page():
   .amount-value {{ font-size:32px; font-weight:700; color:#0f0d09; }}
   .amount-won {{ font-size:16px; font-weight:400; margin-left:2px; }}
   .notice {{ font-size:12px; color:#9e8250; line-height:1.8; margin-bottom:28px; }}
+  .method-wrap {{ margin-bottom:16px; }}
+  .method-label {{ font-size:11px; color:#9e8250; letter-spacing:.08em; margin-bottom:8px; }}
+  .method-btns {{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }}
+  .method-btn {{ padding:10px 4px; border:1px solid #e0d4b8; border-radius:4px; font-size:12px; font-family:inherit; color:#6b5c3e; background:#faf7f2; cursor:pointer; text-align:center; transition:all .2s; }}
+  .method-btn.active {{ border-color:#c8a96e; background:#fff8ec; color:#0f0d09; font-weight:600; }}
   .email-input {{ width:100%; padding:13px 14px; border:1px solid #e0d4b8; border-radius:4px; font-size:14px; font-family:inherit; color:#0f0d09; background:#faf7f2; margin-bottom:16px; box-sizing:border-box; }}
   .email-input:focus {{ outline:none; border-color:#c8a96e; }}
   .btn {{ width:100%; padding:16px; background:#c8a96e; border:none; border-radius:4px; font-size:16px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
@@ -1984,14 +1989,28 @@ def payment_sixshot_page():
       · 결제 후 바로 적용되며 별도 가입이 필요 없습니다.<br>
       · 문의: 031-539-9709
     </div>
+    <div class="method-wrap">
+      <div class="method-label">결제 수단 선택</div>
+      <div class="method-btns">
+        <button class="method-btn active" onclick="selectMethod('CARD', this)">💳 신용카드</button>
+        <button class="method-btn" onclick="selectMethod('TRANSFER', this)">🏦 계좌이체</button>
+        <button class="method-btn" onclick="selectMethod('EASY_PAY', this)">📱 간편결제</button>
+      </div>
+    </div>
     <input class="email-input" type="email" id="user-email" placeholder="열람 링크를 받을 이메일">
-    <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
+    <button class="btn" id="pay-btn" onclick="startPayment()">결제하기</button>
     <div class="status" id="status"></div>
   </div>
 </div>
 
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
+let selectedMethod = 'CARD';
+function selectMethod(method, el) {{
+  selectedMethod = method;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}}
 async function startPayment() {{
   const email = document.getElementById('user-email').value.trim();
   if (!email) {{
@@ -2013,7 +2032,7 @@ async function startPayment() {{
       orderName: '{label}',
       totalAmount: {amount},
       currency: 'KRW',
-      payMethod: 'CARD',
+      payMethod: selectedMethod,
       customer: {{ email: email }},
     }});
 
@@ -2156,6 +2175,11 @@ def payment_advanced_page():
   .amount-value {{ font-size:32px; font-weight:700; color:#0f0d09; }}
   .amount-won {{ font-size:16px; font-weight:400; margin-left:2px; }}
   .notice {{ font-size:12px; color:#9e8250; line-height:1.8; margin-bottom:28px; }}
+  .method-wrap {{ margin-bottom:16px; }}
+  .method-label {{ font-size:11px; color:#9e8250; letter-spacing:.08em; margin-bottom:8px; }}
+  .method-btns {{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }}
+  .method-btn {{ padding:10px 4px; border:1px solid #e0d4b8; border-radius:4px; font-size:12px; font-family:inherit; color:#6b5c3e; background:#faf7f2; cursor:pointer; text-align:center; transition:all .2s; }}
+  .method-btn.active {{ border-color:#c8a96e; background:#fff8ec; color:#0f0d09; font-weight:600; }}
   .btn {{ width:100%; padding:16px; background:#c8a96e; border:none; border-radius:4px; font-size:16px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
   .btn:hover {{ background:#b8994e; }}
   .btn:disabled {{ background:#ccc; cursor:not-allowed; }}
@@ -2179,14 +2203,27 @@ def payment_advanced_page():
       · 완성된 페이지는 신청 시 입력한 이메일로 발송됩니다.<br>
       · 문의: 031-539-9709
     </div>
-    <button class="btn" id="pay-btn" onclick="startPayment()">카드 결제하기</button>
+    <div class="method-wrap">
+      <div class="method-label">결제 수단 선택</div>
+      <div class="method-btns">
+        <button class="method-btn active" onclick="selectMethod('CARD', this)">💳 신용카드</button>
+        <button class="method-btn" onclick="selectMethod('TRANSFER', this)">🏦 계좌이체</button>
+        <button class="method-btn" onclick="selectMethod('EASY_PAY', this)">📱 간편결제</button>
+      </div>
+    </div>
+    <button class="btn" id="pay-btn" onclick="startPayment()">결제하기</button>
     <div class="status" id="status"></div>
   </div>
 </div>
 
 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script>
-const selectedMethod = 'CARD';
+let selectedMethod = 'CARD';
+function selectMethod(method, el) {{
+  selectedMethod = method;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}}
 async function startPayment() {{
   const btn = document.getElementById('pay-btn');
   const status = document.getElementById('status');
