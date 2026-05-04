@@ -3855,13 +3855,20 @@ def debug_set_admin_password():
 
 @app.route("/api/sixshot/random", methods=["GET"])
 def sixshot_random():
-    """공개된 식스샷 중 1개 랜덤 반환"""
+    """공개된 식스샷 중 1개 랜덤 반환. ?type=today 또는 ?type=sixshot 필터 가능"""
     try:
         import random
-        docs = _get_db().collection("sixshot").where("is_public", "==", True).limit(20).get()
+        filter_type = request.args.get("type", "")  # "today" or "sixshot" or ""
+        docs = _get_db().collection("sixshot").where("is_public", "==", True).limit(50).get()
         items = []
         for doc in docs:
             d = doc.to_dict() or {}
+            doc_type = d.get("type", "sixshot")
+            # 타입 필터
+            if filter_type == "today" and doc_type != "today":
+                continue
+            if filter_type == "sixshot" and doc_type == "today":
+                continue
             items.append({
                 "doc_id": doc.id,
                 "name": d.get("nickname", "") or d.get("name", ""),
@@ -3869,6 +3876,7 @@ def sixshot_random():
                 "shots": d.get("shots", {}),
                 "shot_images": d.get("shot_images", {}),
                 "poems": d.get("poems", ""),
+                "type": doc_type,
                 "created_at": d.get("created_at", ""),
             })
         if not items:
