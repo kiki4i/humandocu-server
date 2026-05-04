@@ -1712,13 +1712,24 @@ def webhook_sixshot():
         import threading, uuid
         def process():
             try:
-                # doc_id = 순수 영문 UUID (한글 URL은 Railway 프록시가 404 처리)
                 doc_id = uuid.uuid4().hex[:12]
-
                 poems = generate_sixshot_haiku(nickname, shots, identity, last_msg)
                 print(f"[SIXSHOT] 시 생성 완료")
 
-                # Firebase 저장 (Firestore는 딕셔너리 키를 str로만 허용)
+                # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
+                try:
+                    db = _get_db()
+                    old_docs = db.collection("sixshot")\
+                        .where("email", "==", email)\
+                        .where("is_public", "==", True).get()
+                    for old_doc in old_docs:
+                        d = old_doc.to_dict() or {}
+                        if d.get("type", "sixshot") != "today":
+                            db.collection("sixshot").document(old_doc.id).update({"is_public": False})
+                            print(f"[SIXSHOT] 기존 공개 doc 비공개 처리: {old_doc.id}")
+                except Exception as e:
+                    print(f"[SIXSHOT] 기존 doc 비공개 처리 오류: {e}")
+
                 import datetime
                 shots_str = {str(k): v for k, v in shots.items()}
                 images_str = {str(k): v for k, v in shot_images.items()}
@@ -1809,6 +1820,19 @@ def webhook_today():
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 poems = generate_today_haiku(nickname, shots, today_one, last_msg)
                 print(f"[TODAY] 시 생성 완료")
+
+                # 같은 이메일의 기존 공개 투.필 비공개 처리
+                try:
+                    db = _get_db()
+                    old_docs = db.collection("sixshot")\
+                        .where("email", "==", email)\
+                        .where("type", "==", "today")\
+                        .where("is_public", "==", True).get()
+                    for old_doc in old_docs:
+                        db.collection("sixshot").document(old_doc.id).update({"is_public": False})
+                        print(f"[TODAY] 기존 공개 doc 비공개 처리: {old_doc.id}")
+                except Exception as e:
+                    print(f"[TODAY] 기존 doc 비공개 처리 오류: {e}")
 
                 import datetime
                 shots_str  = {str(k): v for k, v in shots.items()}
