@@ -208,7 +208,7 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
     return one_liner, tribute_para
 
 def _build_guestbook_section(deceased_name):
-    _api = "https://humandocu-server-production.up.railway.app"
+    _api = "https://humandocu-server-production-428d.up.railway.app"
     safe_name = (deceased_name
         .replace('&', '&amp;').replace('"', '&quot;')
         .replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;'))
@@ -563,7 +563,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '</div>'
         '<div style="margin:24px 16px 0;padding:20px;background:#faf7f2;border-radius:4px;text-align:center">'
         '<p style="font-size:12px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">발인 다음날 · 답례장 신청</p>'
-        f'<a href="https://humandocu-server-production.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
+        f'<a href="https://humandocu-server-production-428d.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
         'style="display:inline-block;background:#c8a96e;color:#0f0d09;padding:12px 24px;text-decoration:none;font-size:14px;font-weight:700;border-radius:4px;letter-spacing:.05em">'
         '📋 답례장 신청하기 빈칸</a>'
         '<p style="font-size:11px;color:#9e8250;margin-top:8px">위 버튼을 누르시면 비밀번호 입력 후 신청 가능합니다</p>'
@@ -1513,7 +1513,7 @@ def webhook_advanced():
                 "created_at": datetime.datetime.utcnow().isoformat(),
             })
             print(f"[ADVANCED] pending 저장: {pending_id} / {deceased_name}")
-            payment_url = f"https://humandocu-server-production.up.railway.app/payment/advanced?pending_id={pending_id}"
+            payment_url = f"https://humandocu-server-production-428d.up.railway.app/payment/advanced?pending_id={pending_id}"
             return jsonify({"status": "ok", "payment_url": payment_url}), 200
 
     except Exception as e:
@@ -1747,7 +1747,7 @@ def webhook_sixshot():
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
-                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+                page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, nickname, poems, identity, last_msg, page_url)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
@@ -1860,7 +1860,7 @@ def webhook_today():
                     "type": "today",
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
-                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+                page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today")
             except Exception as e:
                 print(f"[TODAY] 백그라운드 오류: {e}")
@@ -2789,7 +2789,7 @@ def sixshot_page(doc_id):
             og_image = shot_images[k]
             break
     og_desc = f"6장으로 정리한 {name}님의 인생 이야기 · 휴먼다큐 식스샷(Six Shot)"
-    page_url_self = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+    page_url_self = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
 
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
