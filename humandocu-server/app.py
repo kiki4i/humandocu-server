@@ -1807,12 +1807,21 @@ def webhook_today():
             print(f"[TODAY] shots 파싱 오류: {e}")
 
         today_one = fields.get("오늘 하루를 한 문장으로", "")
-        last_to   = fields.get("대상", "")
-        last_msg  = fields.get("메세지", "") or fields.get("메시지", "")
+        last_to   = (
+            fields.get("대상", "") or
+            fields.get("누군가에게 한 마디", "") or
+            fields.get("누군가에게 한마디", "")
+        )
+        last_msg  = (
+            fields.get("메세지..", "") or
+            fields.get("메세지", "") or
+            fields.get("메시지", "") or
+            fields.get("메시지..", "")
+        )
         is_public_raw = fields.get("공개 여부", "")
         is_public = "공개" in is_public_raw
 
-        print(f"[TODAY] shots:{shots}, today_one:{today_one}")
+        print(f"[TODAY] last_to:{last_to}, last_msg:{last_msg}, today_one:{today_one}")
 
         import threading, uuid
         def process():
