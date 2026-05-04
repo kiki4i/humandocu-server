@@ -3641,7 +3641,7 @@ def sixshot_random():
             d = doc.to_dict() or {}
             items.append({
                 "doc_id": doc.id,
-                "name": d.get("name", ""),
+                "name": d.get("nickname", "") or d.get("name", ""),
                 "identity": d.get("identity", ""),
                 "shots": d.get("shots", {}),
                 "shot_images": d.get("shot_images", {}),
