@@ -2207,10 +2207,10 @@ def payment_sixshot_page():
       </div>
       <div id="easy-pay-wrap" style="display:none;margin-top:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','TOSSPAY',this)">토스페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','SAMSUNGPAY',this)">삼성페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_KAKAOPAY',this)">카카오페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_NAVERPAY',this)">네이버페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_TOSSPAY',this)">토스페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_SAMSUNGPAY',this)">삼성페이</button>
         </div>
       </div>
     </div>
@@ -2264,7 +2264,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
-      easyPayProvider: selectedProvider || undefined,
+      ...(selectedProvider ? {{easyPay: {{easyPayProvider: selectedProvider}}}} : {{}}),
       customer: {{ email: email }},
     }});
 
@@ -2444,10 +2444,10 @@ def payment_advanced_page():
       </div>
       <div id="easy-pay-wrap" style="display:none;margin-top:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','TOSSPAY',this)">토스페이</button>
-          <button class="method-btn" onclick="selectMethod('EASY_PAY','SAMSUNGPAY',this)">삼성페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_KAKAOPAY',this)">카카오페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_NAVERPAY',this)">네이버페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_TOSSPAY',this)">토스페이</button>
+          <button class="method-btn" onclick="selectMethod('EASY_PAY','EASY_PAY_PROVIDER_SAMSUNGPAY',this)">삼성페이</button>
         </div>
       </div>
     </div>
@@ -2495,7 +2495,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
-      easyPayProvider: selectedProvider || undefined,
+      ...(selectedProvider ? {{easyPay: {{easyPayProvider: selectedProvider}}}} : {{}}),
     }});
 
     if (response.code) {{
