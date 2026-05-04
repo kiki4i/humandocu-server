@@ -2911,6 +2911,28 @@ def firebase_get_sixshot(doc_id):
         return None
 
 
+@app.route("/admin/migrate-nickname", methods=["GET"])
+def migrate_nickname():
+    """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
+    try:
+        db = _get_db()
+        docs = db.collection("sixshot").stream()
+        updated = []
+        skipped = []
+        for doc in docs:
+            d = doc.to_dict()
+            if not d.get("nickname"):
+                name = d.get("name", "")
+                if name:
+                    db.collection("sixshot").document(doc.id).update({"nickname": name})
+                    updated.append({"id": doc.id, "name": name})
+            else:
+                skipped.append(doc.id)
+        return jsonify({"updated": updated, "skipped_count": len(skipped)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────────
 # 방명록 Firestore 헬퍼 (Admin SDK)
 # ─────────────────────────────────────────────────────────────────
