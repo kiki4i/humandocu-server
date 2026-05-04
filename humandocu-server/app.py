@@ -2203,9 +2203,9 @@ def payment_sixshot_page():
       <div class="method-btns">
         <button class="method-btn active" onclick="selectMethod('CARD','',this)">💳 신용카드</button>
         <button class="method-btn" onclick="selectMethod('TRANSFER','',this)">🏦 계좌이체</button>
-        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제 ▾</button>
+        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제</button>
       </div>
-      <div id="easy-pay-wrap" style="display:none;margin-top:8px;display:none">
+      <div id="easy-pay-wrap" style="display:none;margin-top:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
@@ -2232,9 +2232,15 @@ function selectMethod(method, provider, el) {{
 }}
 function toggleEasyPay(el) {{
   const wrap = document.getElementById('easy-pay-wrap');
-  wrap.style.display = wrap.style.display === 'none' ? 'grid' : 'none';
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'grid';
   document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  if (!isOpen) {{
+    // 기본으로 카카오페이 선택
+    const first = wrap.querySelector('.method-btn');
+    if (first) first.click();
+  }}
 }}
 async function startPayment() {{
   const email = document.getElementById('user-email').value.trim();
@@ -2434,9 +2440,9 @@ def payment_advanced_page():
       <div class="method-btns">
         <button class="method-btn active" onclick="selectMethod('CARD','',this)">💳 신용카드</button>
         <button class="method-btn" onclick="selectMethod('TRANSFER','',this)">🏦 계좌이체</button>
-        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제 ▾</button>
+        <button class="method-btn" onclick="toggleEasyPay(this)">📱 간편결제</button>
       </div>
-      <div id="easy-pay-wrap" style="display:none;margin-top:8px;display:none">
+      <div id="easy-pay-wrap" style="display:none;margin-top:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <button class="method-btn" onclick="selectMethod('EASY_PAY','KAKAOPAY',this)">카카오페이</button>
           <button class="method-btn" onclick="selectMethod('EASY_PAY','NAVERPAY',this)">네이버페이</button>
@@ -2462,9 +2468,15 @@ function selectMethod(method, provider, el) {{
 }}
 function toggleEasyPay(el) {{
   const wrap = document.getElementById('easy-pay-wrap');
-  wrap.style.display = wrap.style.display === 'none' ? 'grid' : 'none';
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'grid';
   document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  if (!isOpen) {{
+    // 기본으로 카카오페이 선택
+    const first = wrap.querySelector('.method-btn');
+    if (first) first.click();
+  }}
 }}
 async function startPayment() {{
   const btn = document.getElementById('pay-btn');
