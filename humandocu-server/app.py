@@ -1626,8 +1626,15 @@ def webhook_sixshot():
         fields = parse_tally(payload)
         print("[SIXSHOT] 파싱:", json.dumps(fields, ensure_ascii=False))
 
-        name  = fields.get("이름", "").strip()
-        nickname = fields.get("닉네임", "").strip() or name
+        name     = fields.get("이름", "").strip()
+        nickname = (
+            fields.get("닉네임", "").strip() or
+            fields.get("닉 네임", "").strip() or
+            fields.get("Nickname", "").strip() or
+            fields.get("nickname", "").strip() or
+            name
+        )
+        print(f"[SIXSHOT] name={name}, nickname={nickname}, fields_keys={list(fields.keys())[:10]}")
         email = fields.get("이메일", "").strip()
         if not name or not email:
             return jsonify({"error": "이름/이메일 없음"}), 400
