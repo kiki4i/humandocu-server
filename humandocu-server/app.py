@@ -2264,7 +2264,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
-      ...(selectedProvider ? {{ easyPayProvider: selectedProvider }} : {{}}),
+      easyPayProvider: selectedProvider || undefined,
       customer: {{ email: email }},
     }});
 
@@ -2495,7 +2495,7 @@ async function startPayment() {{
       totalAmount: {amount},
       currency: 'KRW',
       payMethod: selectedMethod,
-      ...(selectedProvider ? {{ easyPayProvider: selectedProvider }} : {{}}),
+      easyPayProvider: selectedProvider || undefined,
     }});
 
     if (response.code) {{
