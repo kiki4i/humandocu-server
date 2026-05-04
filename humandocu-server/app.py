@@ -2964,9 +2964,9 @@ function switchVer(v) {{
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
-            '<button id="bgm-btn-ss" onclick="togglePlay()" style="position:absolute;top:16px;right:20px;'
-            'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
-            'padding:5px 14px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">▶ 재생</button>'
+            '<button id="bgm-btn-ss" onclick="togglePlay()" style="position:absolute;top:16px;right:16px;'
+            'background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.4);border-radius:24px;'
+            'padding:10px 24px;font-size:15px;color:#c8a96e;cursor:pointer;letter-spacing:.06em;font-family:inherit;font-weight:500">▶ 재생</button>'
             + slides_html
             + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
             + f'<script>{slideshow_js}</script>'
