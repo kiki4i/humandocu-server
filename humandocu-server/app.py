@@ -2748,11 +2748,17 @@ def my_filmography(name):
         for doc in docs:
             d = doc.to_dict() or {}
             imgs = d.get("shot_images", {})
+            created = (d.get("created_at", "") or "")
+            date_label = created[:10] if created else ""
+            time_label = created[11:16] if len(created) > 15 else ""
             items.append({
                 "doc_id": doc.id,
+                "name": name,
                 "nickname": d.get("nickname", "") or name,
                 "identity": d.get("identity", ""),
-                "created_at": (d.get("created_at", "") or "")[:10],
+                "created_at": created,
+                "date_label": date_label,
+                "time_label": time_label,
                 "type": d.get("type", "sixshot"),
                 "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
             })
@@ -2762,9 +2768,9 @@ def my_filmography(name):
 
         cards_html = ""
         for item in items:
-            date_label = item["created_at"] or ""
-            type_label = "투.필" if item["type"] == "today" else "식스샷"
+            type_label = "투.필" if item["type"] == "today" else "인생 식스샷"
             type_color = "#C8870A" if item["type"] == "today" else "#C8A96E"
+            time_str = f" {item['time_label']}" if item['time_label'] else ""
             photos_html = "".join([
                 f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
                 for url in item["imgs"][:3]
@@ -2774,9 +2780,10 @@ def my_filmography(name):
    style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none;transition:box-shadow .2s"
    onmouseover="this.style.boxShadow='0 4px 16px rgba(200,169,110,.2)'"
    onmouseout="this.style.boxShadow='none'">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
     <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px;letter-spacing:.06em">{type_label}</span>
-    <span style="font-size:12px;color:#9e8250">{date_label}</span>
+    <span style="font-size:12px;color:#9e8250">{item['date_label']}{time_str}</span>
+    <span style="font-size:12px;color:#C8A96E;font-style:italic">{item['nickname']}</span>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:10px">{photos_html}</div>
   <div style="font-size:14px;color:#2d2a22;line-height:1.7">{item['identity']}</div>
