@@ -2742,23 +2742,23 @@ def my_filmography(name):
         docs = _get_db().collection("sixshot")\
             .where("name", "==", name)\
             .where("is_public", "==", True)\
-            .order_by("created_at", direction="DESCENDING")\
             .limit(50).get()
 
         items = []
         for doc in docs:
             d = doc.to_dict() or {}
             imgs = d.get("shot_images", {})
-            thumb = imgs.get("1", "") or imgs.get("6", "")
             items.append({
                 "doc_id": doc.id,
                 "nickname": d.get("nickname", "") or name,
                 "identity": d.get("identity", ""),
                 "created_at": (d.get("created_at", "") or "")[:10],
                 "type": d.get("type", "sixshot"),
-                "thumb": thumb,
                 "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
             })
+
+        # Python에서 날짜 역순 정렬
+        items.sort(key=lambda x: x["created_at"], reverse=True)
 
         cards_html = ""
         for item in items:
