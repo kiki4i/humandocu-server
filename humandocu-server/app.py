@@ -2972,7 +2972,7 @@ function switchVer(v) {{
         )
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
-            '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
+            '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
             '<button id="bgm-btn-ss" onclick="togglePlay()" style="'
             'position:absolute;top:14px;right:14px;'
             'background:rgba(200,169,110,0.92);'
