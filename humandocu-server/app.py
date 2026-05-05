@@ -2735,6 +2735,103 @@ def _damnyejang_auth_html(name, error):
 </body>
 </html>"""
 
+@app.route("/my/<name>", methods=["GET"])
+def my_filmography(name):
+    """이름으로 모아보기 — 공개 투.필 목록"""
+    try:
+        docs = _get_db().collection("sixshot")\
+            .where("name", "==", name)\
+            .where("is_public", "==", True)\
+            .order_by("created_at", direction="DESCENDING")\
+            .limit(50).get()
+
+        items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            thumb = imgs.get("1", "") or imgs.get("6", "")
+            items.append({
+                "doc_id": doc.id,
+                "nickname": d.get("nickname", "") or name,
+                "identity": d.get("identity", ""),
+                "created_at": (d.get("created_at", "") or "")[:10],
+                "type": d.get("type", "sixshot"),
+                "thumb": thumb,
+                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
+            })
+
+        cards_html = ""
+        for item in items:
+            date_label = item["created_at"] or ""
+            type_label = "투.필" if item["type"] == "today" else "식스샷"
+            type_color = "#C8870A" if item["type"] == "today" else "#C8A96E"
+            photos_html = "".join([
+                f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+                for url in item["imgs"][:3]
+            ])
+            cards_html += f"""
+<a href="https://humandocu-server-production-428d.up.railway.app/sixshot/{item['doc_id']}"
+   style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none;transition:box-shadow .2s"
+   onmouseover="this.style.boxShadow='0 4px 16px rgba(200,169,110,.2)'"
+   onmouseout="this.style.boxShadow='none'">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px;letter-spacing:.06em">{type_label}</span>
+    <span style="font-size:12px;color:#9e8250">{date_label}</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">{photos_html}</div>
+  <div style="font-size:14px;color:#2d2a22;line-height:1.7">{item['identity']}</div>
+</a>"""
+
+        empty_html = "" if items else """
+<div style="text-align:center;padding:60px 24px;color:#9e8250;font-size:14px;line-height:2">
+  아직 공개된 기록이 없어요<br>
+  <span style="font-size:12px;opacity:.6">투.필이나 식스샷을 공개로 올리면 여기에 모여요</span>
+</div>"""
+
+        html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{name}님의 필모그래피 · 휴먼다큐</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}}
+nav{{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(249,246,240,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,169,110,.2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}}
+.logo{{font-family:'Noto Serif KR',serif;font-size:14px;color:#1A1208;text-decoration:none}}
+.logo span{{color:#C8A96E}}
+.wrap{{max-width:600px;margin:0 auto;padding:88px 24px 60px}}
+.header{{text-align:center;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid rgba(200,169,110,.2)}}
+.avatar{{width:64px;height:64px;border-radius:50%;background:#C8A96E;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif KR',serif;font-size:24px;color:#0f0d09;margin:0 auto 16px}}
+.name{{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:300;margin-bottom:6px}}
+.count{{font-size:13px;color:#9e8250}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">휴먼다큐<span>닷컴</span></a>
+  <span style="font-size:12px;color:#9e8250">{name}님의 기록</span>
+</nav>
+<div class="wrap">
+  <div class="header">
+    <div class="avatar">{name[0] if name else '?'}</div>
+    <div class="name">{name}</div>
+    <div class="count">총 {len(items)}개의 기록</div>
+  </div>
+  {cards_html}
+  {empty_html}
+</div>
+</body>
+</html>"""
+        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+    except Exception as e:
+        print(f"[MY] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>오류가 발생했어요</h2>", 500
+
+
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
     """개인 식스샷 페이지 - Firebase에서 데이터 읽어 HTML 렌더링"""
@@ -3071,6 +3168,12 @@ function switchVer(v) {{
     <button onclick="copyPageUrl()" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit">링크 복사하기</button>
     <div style="font-size:12px;color:#c8a96e;margin-top:10px;line-height:1.8">
       {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "복사하여 카톡·인스타·명함 등에 붙여 담으세요"}
+    </div>
+    <div style="margin-top:16px">
+      <a href="https://humandocu-server-production-428d.up.railway.app/my/{data.get('name','')}"
+         style="display:inline-block;padding:8px 20px;background:transparent;border:1px solid rgba(200,169,110,.3);border-radius:20px;font-size:12px;color:#c8a96e;text-decoration:none;font-family:inherit">
+        나의 모든 기록 보기 →
+      </a>
     </div>
   </div>
   <div class="footer">
