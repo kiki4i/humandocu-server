@@ -2308,10 +2308,25 @@ async function startPayment() {{
 @app.route("/payment/sixshot/success", methods=["GET"])
 def payment_sixshot_success():
     token = secrets.token_urlsafe(32)
-    firebase_save_sixshot_token(token)
-
-    # 결제 정보에서 고객 이메일 조회 후 발송
     payment_id = request.args.get("paymentId", "")
+
+    # 이메일 먼저 조회
+    customer_email = ""
+    if payment_id:
+        try:
+            portone_secret = os.environ.get("PORTONE_SECRET", "")
+            r = requests.get(
+                f"https://api.portone.io/payments/{payment_id}",
+                headers={"Authorization": f"PortOne {portone_secret}"},
+                timeout=10
+            )
+            payment = r.json()
+            customer_email = (payment.get("customer", {}) or {}).get("email", "")
+        except Exception as e:
+            print(f"[SIXSHOT-SUCCESS] 이메일 조회 오류: {e}")
+
+    # 이메일 포함해서 토큰 저장
+    firebase_save_sixshot_token(token, email=customer_email.lower().strip())
     _send_sixshot_token_email(payment_id, token)
 
     from flask import redirect
@@ -3203,19 +3218,50 @@ def firebase_save_sixshot(doc_id, data):
         print(f"[SIXSHOT-FB] 저장 오류: {e}")
 
 
-def firebase_save_sixshot_token(token):
+def firebase_save_sixshot_token(token, email=""):
     """sixshot_tokens 컬렉션에 열람 토큰 저장 (1년 유효)"""
     try:
         now = datetime.now(timezone.utc)
         expires = now + timedelta(days=365)
         _get_db().collection("sixshot_tokens").document(token).set({
             "token": token,
+            "email": email,
             "created_at": now.isoformat(),
             "expires_at": expires.isoformat(),
         })
-        print(f"[SIXSHOT-TOKEN] 토큰 저장: {token[:8]}...")
+        print(f"[SIXSHOT-TOKEN] 토큰 저장: {token[:8]}... email:{email}")
     except Exception as e:
         print(f"[SIXSHOT-TOKEN] 저장 오류: {e}")
+
+
+@app.route("/api/sixshot/token-by-email", methods=["POST"])
+def sixshot_token_by_email():
+    """이메일로 유효한 열람 토큰 조회"""
+    try:
+        data = request.get_json(force=True)
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            return jsonify({"status": "error", "message": "이메일을 입력해주세요"}), 400
+
+        now = datetime.now(timezone.utc).isoformat()
+        docs = _get_db().collection("sixshot_tokens")\
+            .where("email", "==", email).get()
+
+        valid_token = None
+        for doc in docs:
+            d = doc.to_dict() or {}
+            expires_at = d.get("expires_at", "")
+            if expires_at > now:
+                valid_token = d.get("token")
+                break
+
+        if valid_token:
+            return jsonify({"status": "ok", "token": valid_token}), 200
+        else:
+            return jsonify({"status": "not_found", "message": "유효한 열람권을 찾을 수 없어요"}), 200
+    except Exception as e:
+        print(f"[SIXSHOT-TOKEN-EMAIL] 오류: {e}")
+        return jsonify({"status": "error"}), 500
 
 
 def firebase_get_sixshot(doc_id):
