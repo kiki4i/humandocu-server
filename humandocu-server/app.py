@@ -2062,6 +2062,15 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
     edit_url = f"https://tally.so/r/Bz8LbR" if type == "today" else "https://tally.so/r/ZjGpk0"
     open_label = "나의 투.필 열기" if type == "today" else "나의 식스샷 열기"
 
+    today_album_block = ""
+    if type == "today":
+        today_album_block = f"""
+      <div style="text-align:center;margin-top:24px;padding:20px 28px;background:#FFF8ED;border-radius:8px;border:1px solid rgba(200,135,10,.15)">
+        <div style="font-size:18px;margin-bottom:8px">🎞️</div>
+        <div style="font-size:14px;color:#C8870A;font-weight:600;margin-bottom:6px;letter-spacing:.04em">매일을 담아보세요</div>
+        <div style="font-size:13px;color:#8A6A3A;line-height:1.8">모으면 그것이 당신이에요.<br>오늘의 기록이 쌓여 나만의 필모그래피 앨범이 됩니다.</div>
+      </div>"""
+
     btn_block = f"""
       <div style="text-align:center;margin:0 0 20px">
         <a href="{page_url}"
@@ -2073,6 +2082,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
       <div style="text-align:center;margin-bottom:8px">
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
       </div>
+      {today_album_block}
       <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #e5dece">
         <a href="{edit_url}"
            style="display:inline-block;padding:10px 28px;background:#fff;border:1px solid #e0d4b8;
