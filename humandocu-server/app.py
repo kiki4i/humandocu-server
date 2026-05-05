@@ -3069,7 +3069,9 @@ function switchVer(v) {{
     <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
     <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
     <button onclick="copyPageUrl()" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit">링크 복사하기</button>
-    <div style="font-size:11px;color:#c8a96e;margin-top:8px">복사하여 카톡·인스타·명함 등에 붙여 담으세요</div>
+    <div style="font-size:12px;color:#c8a96e;margin-top:10px;line-height:1.8">
+      {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "복사하여 카톡·인스타·명함 등에 붙여 담으세요"}
+    </div>
   </div>
   <div class="footer">
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
