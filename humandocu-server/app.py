@@ -3174,9 +3174,17 @@ function switchVer(v) {{
   <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
     <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
     <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
-    <button onclick="copyPageUrl()" style="display:inline-block;padding:10px 24px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:12px;color:#9e8250;cursor:pointer;font-family:inherit">링크 복사하기</button>
-    <div style="font-size:12px;color:#c8a96e;margin-top:10px;line-height:1.8">
-      {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "복사하여 카톡·인스타·명함 등에 붙여 담으세요"}
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="kakaoShare()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#FEE500;border:none;border-radius:20px;font-size:13px;color:#3C1E1E;cursor:pointer;font-family:inherit;font-weight:600">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><ellipse cx="9" cy="8" rx="8" ry="6.5" fill="#3C1E1E"/><path d="M5.5 10.5c.3.7 1 1.2 2 1.5l-.5 2 2-1.5c.3 0 .7.1 1 .1 3.3 0 6-2 6-4.5S12.3 3.5 9 3.5 3 5.5 3 8c0 1 .6 2 1.5 2.5z" fill="#FEE500"/></svg>
+        카카오톡 공유
+      </button>
+      <button onclick="copyPageUrl()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:13px;color:#9e8250;cursor:pointer;font-family:inherit">
+        🔗 링크 복사
+      </button>
+    </div>
+    <div style="font-size:12px;color:#c8a96e;margin-top:4px;line-height:1.8">
+      {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "카톡·인스타·명함에 담으세요"}
     </div>
     <div style="margin-top:16px">
       <a href="https://humandocu-server-production-428d.up.railway.app/my/{data.get('name','')}"
@@ -3185,12 +3193,71 @@ function switchVer(v) {{
       </a>
     </div>
   </div>
+
+  <!-- 나도 만들기 CTA -->
+  <div style="background:#C8870A;padding:36px 40px;text-align:center">
+    <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">
+      {"HUMANDOCU · 투.필" if page_type == "today" else "HUMANDOCU · 식스샷"}
+    </div>
+    <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">
+      {"오늘 당신의 하루도<br>시가 될 수 있어요" if page_type == "today" else "당신의 인생도<br>필모그래피가 될 수 있어요"}
+    </div>
+    <div style="font-size:13px;color:rgba(255,248,237,.75);margin-bottom:20px;line-height:1.7">
+      {"사진 6장 + 한 줄 · 무료 · 결과는 이메일로" if page_type == "today" else "사진 6장 + 짧은 이야기 · AI가 시로 남겨드려요"}
+    </div>
+    <a href="{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}"
+       style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
+      {"나의 투.필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"}
+    </a>
+  </div>
+
   <div class="footer">
     <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
   </div>
 
 </div>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" crossorigin="anonymous"></script>
 <script>
+// 카카오 SDK 초기화
+if (window.Kakao && !Kakao.isInitialized()) {{
+  Kakao.init('74b5968f881ac8fe3e8488e194d3b6ef');
+}}
+
+function kakaoShare() {{
+  if (!window.Kakao || !Kakao.isInitialized()) {{
+    copyPageUrl();
+    return;
+  }}
+  Kakao.Share.sendDefault({{
+    objectType: 'feed',
+    content: {{
+      title: '{name}님의 {"오늘" if page_type == "today" else "인생"} 필모그래피 · 휴먼다큐',
+      description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
+      imageUrl: '{og_image}' || 'https://humandocu.com/og_main.png',
+      link: {{
+        mobileWebUrl: '{page_url_self}',
+        webUrl: '{page_url_self}',
+      }},
+    }},
+    buttons: [
+      {{
+        title: '필모그래피 보기',
+        link: {{
+          mobileWebUrl: '{page_url_self}',
+          webUrl: '{page_url_self}',
+        }},
+      }},
+      {{
+        title: '{"나도 만들기" if page_type == "today" else "나도 만들기"}',
+        link: {{
+          mobileWebUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
+          webUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
+        }},
+      }},
+    ],
+  }});
+}}
+
 function copyPageUrl(){{
   var url = window.location.href;
   if (navigator.clipboard) {{
