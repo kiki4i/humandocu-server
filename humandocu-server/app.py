@@ -1819,7 +1819,7 @@ def webhook_today():
             fields.get("메시지..", "")
         )
         is_public_raw = fields.get("공개 여부", "")
-        is_public = "공개" in is_public_raw
+        is_public = ("비공개" not in is_public_raw)  # 기본 공개, 비공개 선택시만 False
 
         print(f"[TODAY] last_to:{last_to}, last_msg:{last_msg}, today_one:{today_one}")
 
