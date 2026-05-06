@@ -3220,7 +3220,7 @@ function switchVer(v) {{
 <script>
 // 카카오 SDK 초기화
 if (window.Kakao && !Kakao.isInitialized()) {{
-  Kakao.init('74b5968f881ac8fe3e8488e194d3b6ef');
+  Kakao.init('5b7821698a09c74f1d72c0b52165d557');
 }}
 
 function kakaoShare() {{
