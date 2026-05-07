@@ -2739,65 +2739,8 @@ def _damnyejang_auth_html(name, error):
 
 @app.route("/my/<name>", methods=["GET"])
 def my_filmography(name):
-    """이름으로 모아보기 — 공개 투.필 목록"""
-    try:
-        docs = _get_db().collection("sixshot")\
-            .where("name", "==", name)\
-            .where("is_public", "==", True)\
-            .limit(50).get()
-
-        items = []
-        for doc in docs:
-            d = doc.to_dict() or {}
-            imgs = d.get("shot_images", {})
-            created = (d.get("created_at", "") or "")
-            date_label = created[:10] if created else ""
-            time_label = created[11:16] if len(created) > 15 else ""
-            items.append({
-                "doc_id": doc.id,
-                "name": name,
-                "nickname": d.get("nickname", "") or name,
-                "identity": d.get("identity", ""),
-                "created_at": created,
-                "date_label": date_label,
-                "time_label": time_label,
-                "type": d.get("type", "sixshot"),
-                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
-            })
-
-        # Python에서 날짜 역순 정렬
-        items.sort(key=lambda x: x["created_at"], reverse=True)
-
-        cards_html = ""
-        for item in items:
-            type_label = "투.필" if item["type"] == "today" else "인생 식스샷"
-            type_color = "#C8870A" if item["type"] == "today" else "#C8A96E"
-            time_str = f" {item['time_label']}" if item['time_label'] else ""
-            photos_html = "".join([
-                f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
-                for url in item["imgs"][:3]
-            ])
-            cards_html += f"""
-<a href="https://humandocu-server-production-428d.up.railway.app/sixshot/{item['doc_id']}"
-   style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none;transition:box-shadow .2s"
-   onmouseover="this.style.boxShadow='0 4px 16px rgba(200,169,110,.2)'"
-   onmouseout="this.style.boxShadow='none'">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px;letter-spacing:.06em">{type_label}</span>
-    <span style="font-size:12px;color:#9e8250">{item['date_label']}{time_str}</span>
-    <span style="font-size:12px;color:#C8A96E;font-style:italic">{item['nickname']}</span>
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:10px">{photos_html}</div>
-  <div style="font-size:14px;color:#2d2a22;line-height:1.7">{item['identity']}</div>
-</a>"""
-
-        empty_html = "" if items else """
-<div style="text-align:center;padding:60px 24px;color:#9e8250;font-size:14px;line-height:2">
-  아직 공개된 기록이 없어요<br>
-  <span style="font-size:12px;opacity:.6">투.필이나 식스샷을 공개로 올리면 여기에 모여요</span>
-</div>"""
-
-        html = f"""<!DOCTYPE html>
+    """이름으로 모아보기 — 이메일 인증 필요"""
+    html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -2806,39 +2749,56 @@ def my_filmography(name):
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}}
-nav{{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(249,246,240,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,169,110,.2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}}
-.logo{{font-family:'Noto Serif KR',serif;font-size:14px;color:#1A1208;text-decoration:none}}
-.logo span{{color:#C8A96E}}
-.wrap{{max-width:600px;margin:0 auto;padding:88px 24px 60px}}
-.header{{text-align:center;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid rgba(200,169,110,.2)}}
+body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}}
+.card{{background:#fff;border-radius:16px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(200,169,110,.12)}}
 .avatar{{width:64px;height:64px;border-radius:50%;background:#C8A96E;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif KR',serif;font-size:24px;color:#0f0d09;margin:0 auto 16px}}
-.name{{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:300;margin-bottom:6px}}
-.count{{font-size:13px;color:#9e8250}}
+h2{{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:300;margin-bottom:8px}}
+.sub{{font-size:13px;color:#9e8250;margin-bottom:28px;line-height:1.7}}
+input{{width:100%;padding:13px 16px;border:1px solid rgba(200,169,110,.4);border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;color:#1A1208;background:#fff}}
+input:focus{{border-color:#C8870A}}
+button{{width:100%;padding:13px;background:#C8870A;color:#FFF8ED;border:none;border-radius:8px;font-size:14px;font-family:inherit;font-weight:500;cursor:pointer}}
+.msg{{font-size:12px;color:#9e8250;margin-top:12px;line-height:1.7;display:none}}
+.logo{{position:fixed;top:20px;left:24px;font-family:'Noto Serif KR',serif;font-size:13px;color:#1A1208;text-decoration:none}}
+.logo span{{color:#C8A96E}}
 </style>
 </head>
 <body>
-<nav>
-  <a href="/" class="logo">휴먼다큐<span>닷컴</span></a>
-  <span style="font-size:12px;color:#9e8250">{name}님의 기록</span>
-</nav>
-<div class="wrap">
-  <div class="header">
-    <div class="avatar">{name[0] if name else '?'}</div>
-    <div class="name">{name}</div>
-    <div class="count">총 {len(items)}개의 기록</div>
-  </div>
-  {cards_html}
-  {empty_html}
+<a href="https://humandocu.com" class="logo">휴먼다큐<span>닷컴</span></a>
+<div class="card">
+  <div class="avatar">{name[0] if name else '?'}</div>
+  <h2>{name}님의 기록</h2>
+  <p class="sub">본인 확인을 위해<br>투.필 제출 시 사용한 이메일을 입력해주세요</p>
+  <input type="email" id="email" placeholder="이메일 주소" autocomplete="email">
+  <button onclick="sendLink()">확인 링크 받기</button>
+  <p class="msg" id="msg"></p>
 </div>
-</body>
-</html>"""
-        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
-
-    except Exception as e:
-        print(f"[MY] 오류: {e}")
-        import traceback; traceback.print_exc()
-        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>오류가 발생했어요</h2>", 500
+<script>
+async function sendLink() {{
+  const email = document.getElementById('email').value.trim();
+  if (!email || !email.includes('@')) {{ alert('이메일을 정확히 입력해주세요'); return; }}
+  const btn = document.querySelector('button');
+  btn.textContent = '전송 중...'; btn.disabled = true;
+  try {{
+    const res = await fetch('/api/my/send-link', {{
+      method: 'POST', headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{name: '{name}', email}})
+    }});
+    const data = await res.json();
+    const msg = document.getElementById('msg');
+    msg.style.display = 'block';
+    if (data.ok) {{
+      btn.textContent = '✓ 이메일을 확인해주세요';
+      msg.textContent = email + ' 으로 확인 링크를 보냈어요.';
+    }} else {{
+      btn.textContent = '확인 링크 받기'; btn.disabled = false;
+      msg.textContent = data.error || '등록된 이메일이 없어요.';
+    }}
+  }} catch(e) {{ btn.textContent = '확인 링크 받기'; btn.disabled = false; }}
+}}
+document.getElementById('email').addEventListener('keydown', e => {{ if(e.key==='Enter') sendLink(); }});
+</script>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
 
