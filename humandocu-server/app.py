@@ -2841,6 +2841,175 @@ nav{{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(249,246,240
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>오류가 발생했어요</h2>", 500
 
 
+
+@app.route("/api/my/send-link", methods=["POST"])
+def my_send_link():
+    """본인 확인 링크 이메일 발송"""
+    try:
+        data = request.get_json() or {}
+        name  = (data.get("name") or "").strip()
+        email = (data.get("email") or "").strip().lower()
+        if not name or not email:
+            return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
+
+        db = _get_db()
+        # 해당 이름+이메일 조합이 sixshot에 존재하는지 확인
+        docs = db.collection("sixshot").where("name", "==", name).where("email", "==", email).limit(1).get()
+        if not docs:
+            return jsonify({"ok": False, "error": "등록된 이메일이 없어요"}), 404
+
+        # 토큰 생성 및 저장 (24시간 유효)
+        import uuid, datetime
+        token = uuid.uuid4().hex
+        db.collection("my_tokens").document(token).set({
+            "name": name,
+            "email": email,
+            "created_at": datetime.datetime.utcnow().isoformat(),
+        })
+
+        # 이메일 발송
+        link = f"https://humandocu-server-production-428d.up.railway.app/my-verified/{name}?token={token}"
+        send_my_link_email(email, name, link)
+        return jsonify({"ok": True})
+    except Exception as e:
+        print(f"[MY-SEND-LINK] 오류: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+def send_my_link_email(email, name, link):
+    """내 기록 모음 링크 이메일 발송"""
+    import resend
+    resend.api_key = os.environ.get("RESEND_API_KEY", "")
+    html = f"""
+    <div style="font-family:'Noto Sans KR',sans-serif;max-width:480px;margin:0 auto;padding:40px 24px;background:#F9F6F0">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-family:Georgia,serif;font-size:20px;color:#1A1208">휴먼다큐<span style="color:#C8A96E">닷컴</span></div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:32px;text-align:center">
+        <div style="font-size:32px;margin-bottom:16px">🎞</div>
+        <h2 style="font-family:Georgia,serif;font-size:18px;font-weight:400;margin-bottom:8px">{name}님의 기록 모음</h2>
+        <p style="font-size:13px;color:#9e8250;margin-bottom:24px;line-height:1.7">아래 버튼을 눌러 나의 투.필·식스샷을 모두 확인하세요<br>링크는 24시간 동안 유효합니다</p>
+        <a href="{link}" style="display:inline-block;padding:14px 32px;background:#C8870A;color:#FFF8ED;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;letter-spacing:.04em">내 기록 모두 보기 →</a>
+        <p style="font-size:11px;color:#C8A96E;margin-top:20px">{link}</p>
+      </div>
+      <p style="text-align:center;font-size:11px;color:#C8A96E;margin-top:24px">humandocu.com · 031-539-9709</p>
+    </div>"""
+    resend.Emails.send({
+        "from": "휴먼다큐 <noreply@humandocu.com>",
+        "to": [email],
+        "subject": f"{name}님의 투.필 기록 모음 링크",
+        "html": html,
+    })
+
+
+@app.route("/my-verified/<name>", methods=["GET"])
+def my_filmography_verified(name):
+    """토큰 인증 후 본인 기록 모두 보기"""
+    token = request.args.get("token", "")
+    if not token:
+        return "<h3 style='font-family:sans-serif;text-align:center;margin-top:80px'>잘못된 접근이에요</h3>", 403
+    try:
+        db = _get_db()
+        token_doc = db.collection("my_tokens").document(token).get()
+        if not token_doc.exists:
+            return f"<h3 style='font-family:sans-serif;text-align:center;margin-top:80px'>만료된 링크예요. <a href='/my/{name}'>다시 요청하기</a></h3>", 403
+        token_data = token_doc.to_dict() or {}
+        verified_email = token_data.get("email", "")
+        verified_name  = token_data.get("name", "")
+        if verified_name != name:
+            return "<h3 style='font-family:sans-serif;text-align:center;margin-top:80px'>잘못된 접근이에요</h3>", 403
+
+        # 본인 이메일 기준으로 모든 기록 조회 (비공개 포함)
+        docs = db.collection("sixshot").where("email", "==", verified_email).limit(100).get()
+        items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            created = (d.get("created_at", "") or "")
+            items.append({
+                "doc_id": doc.id,
+                "nickname": d.get("nickname", "") or name,
+                "identity": d.get("identity", ""),
+                "created_at": created,
+                "date_label": created[:10] if created else "",
+                "time_label": created[11:16] if len(created) > 15 else "",
+                "type": d.get("type", "sixshot"),
+                "is_public": d.get("is_public", False),
+                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
+            })
+        items.sort(key=lambda x: x["created_at"], reverse=True)
+
+        cards_html = ""
+        for item in items:
+            type_label = "투.필" if item["type"] == "today" else "인생 식스샷"
+            type_color = "#C8870A" if item["type"] == "today" else "#C8A96E"
+            pub_badge = "" if item["is_public"] else '<span style="font-size:10px;color:#aaa;background:#f0f0f0;padding:2px 8px;border-radius:10px;margin-left:4px">비공개</span>'
+            time_str = f" {item['time_label']}" if item["time_label"] else ""
+            photos_html = "".join([
+                f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+                for url in item["imgs"][:3]
+            ])
+            cards_html += f"""
+<a href="https://humandocu-server-production-428d.up.railway.app/sixshot/{item['doc_id']}"
+   style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px">{type_label}</span>
+    {pub_badge}
+    <span style="font-size:12px;color:#9e8250">{item['date_label']}{time_str}</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">{photos_html}</div>
+  <div style="font-size:14px;color:#2d2a22;line-height:1.7">{item['identity']}</div>
+</a>"""
+
+        empty_html = "" if items else """
+<div style="text-align:center;padding:60px 24px;color:#9e8250;font-size:14px;line-height:2">
+  아직 기록이 없어요<br>
+  <a href="/today.html" style="color:#C8870A">투.필 시작하기 →</a>
+</div>"""
+
+        html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{name}님의 기록 모음 · 휴먼다큐</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}}
+nav{{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(249,246,240,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,169,110,.2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}}
+.logo{{font-family:'Noto Serif KR',serif;font-size:14px;color:#1A1208;text-decoration:none}}
+.logo span{{color:#C8A96E}}
+.wrap{{max-width:600px;margin:0 auto;padding:88px 24px 60px}}
+.header{{text-align:center;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid rgba(200,169,110,.2)}}
+.avatar{{width:64px;height:64px;border-radius:50%;background:#C8A96E;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif KR',serif;font-size:24px;color:#0f0d09;margin:0 auto 16px}}
+.name{{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:300;margin-bottom:6px}}
+.count{{font-size:13px;color:#9e8250}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="https://humandocu.com" class="logo">휴먼다큐<span>닷컴</span></a>
+  <span style="font-size:12px;color:#9e8250">{name}님의 기록</span>
+</nav>
+<div class="wrap">
+  <div class="header">
+    <div class="avatar">{name[0] if name else '?'}</div>
+    <div class="name">{name}</div>
+    <div class="count">총 {len(items)}개의 기록</div>
+  </div>
+  {cards_html}
+  {empty_html}
+</div>
+</body>
+</html>"""
+        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+    except Exception as e:
+        print(f"[MY-VERIFIED] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>오류가 발생했어요</h2>", 500
+
+
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
     """개인 식스샷 페이지 - Firebase에서 데이터 읽어 HTML 렌더링"""
@@ -3202,12 +3371,41 @@ function switchVer(v) {{
     <div style="font-size:12px;color:#c8a96e;margin-top:4px;line-height:1.8">
       {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "카톡·인스타·명함에 담으세요"}
     </div>
-    <div style="margin-top:16px">
-      <a href="https://humandocu-server-production-428d.up.railway.app/my/{data.get('name','')}"
-         style="display:inline-block;padding:8px 20px;background:transparent;border:1px solid rgba(200,169,110,.3);border-radius:20px;font-size:12px;color:#c8a96e;text-decoration:none;font-family:inherit">
-        나의 모든 기록 보기 →
-      </a>
+    <div style="margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+      <button onclick="sendMyLink()" id="my-link-btn"
+         style="display:inline-block;padding:8px 20px;background:#C8870A;border:none;border-radius:20px;font-size:12px;color:#FFF8ED;cursor:pointer;font-family:inherit">
+        📬 내 기록 모음 링크 받기
+      </button>
     </div>
+    <div id="my-link-msg" style="font-size:12px;color:#c8a96e;margin-top:10px;display:none;text-align:center"></div>
+    <script>
+    async function sendMyLink() {{
+      const btn = document.getElementById('my-link-btn');
+      btn.textContent = '전송 중...';
+      btn.disabled = true;
+      try {{
+        const res = await fetch('/api/my/send-link', {{
+          method: 'POST',
+          headers: {{'Content-Type': 'application/json'}},
+          body: JSON.stringify({{name: '{name}', email: '{email}'}})
+        }});
+        const data = await res.json();
+        const msg = document.getElementById('my-link-msg');
+        msg.style.display = 'block';
+        if (data.ok) {{
+          btn.textContent = '✓ 이메일 발송 완료';
+          msg.textContent = '{email} 으로 링크를 보냈어요. 메일함을 확인해주세요.';
+        }} else {{
+          btn.textContent = '📬 내 기록 모음 링크 받기';
+          btn.disabled = false;
+          msg.textContent = '오류: ' + (data.error || '다시 시도해주세요');
+        }}
+      }} catch(e) {{
+        btn.textContent = '📬 내 기록 모음 링크 받기';
+        btn.disabled = false;
+      }}
+    }}
+    </script>
   </div>
 
   <!-- 나도 만들기 CTA -->
