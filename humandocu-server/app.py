@@ -2903,13 +2903,29 @@ def sixshot_page(doc_id):
     if current_key:
         poem_dict[current_key] = "\n".join(current_lines)
 
-    # OG 태그용: 6번째 사진 우선, 없으면 앞에서부터 첫 번째
+    # OG 태그용: 1번째 사진 우선, 없으면 타입별 기본 이미지
     og_image = ""
-    for k in ["6", "5", "4", "3", "2", "1"]:
+    for k in ["1", "2", "3", "4", "5", "6"]:
         if shot_images.get(k):
             og_image = shot_images[k]
             break
-    og_desc = f"6장으로 정리한 {name}님의 인생 이야기 · 휴먼다큐 식스샷(Six Shot)"
+    if not og_image:
+        og_image = "https://humandocu.com/today_og.png" if page_type == "today" else "https://humandocu.com/sixshot_og.png"
+
+    # 첫 번째 시 첫 줄 (미리보기 텍스트용)
+    first_poem_line = ""
+    try:
+        first_poem_line = list(poems.values())[0].strip().split("\n")[0][:30]
+    except:
+        pass
+
+    if page_type == "today":
+        og_title = f"{nickname or name}님의 오늘 · 투.필 TODAY FILMOGRAPHY"
+        og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
+    else:
+        og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
+        og_desc  = f"6장으로 정리한 {name}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
+
     page_url_self = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
 
     def poem_html(text):
@@ -3116,9 +3132,9 @@ function switchVer(v) {{
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{name}님의 인생 이야기 · 휴먼다큐</title>
+<title>{"투.필 · " + (nickname or name) + "님의 오늘" if page_type == "today" else name + "님의 인생 이야기 · 휴먼다큐"}</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="{name}님의 인생 이야기 · 휴먼다큐 식스샷">
+<meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{og_desc}">
 <meta property="og:image" content="{og_image}">
 <meta property="og:url" content="{page_url_self}">
