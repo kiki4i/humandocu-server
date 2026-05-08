@@ -2984,7 +2984,7 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
-    poems    = data.get("poems", "")
+    poems    = data.get("poems", {}) if isinstance(data.get("poems"), dict) else {}
     shots       = data.get("shots", {})
     shot_images = data.get("shot_images", {})
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
