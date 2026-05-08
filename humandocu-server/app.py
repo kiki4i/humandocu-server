@@ -2977,7 +2977,9 @@ def sixshot_page(doc_id):
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
 
-    name     = data.get("nickname", "") or data.get("name", "")
+    name     = data.get("name", "")
+    nickname = data.get("nickname", "") or name
+    email    = data.get("email", "")
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
