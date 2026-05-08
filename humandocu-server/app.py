@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import requests
+import resend
 import re
 import urllib.parse
 import bcrypt
@@ -2838,7 +2839,6 @@ def my_send_link():
 
 def send_my_link_email(email, name, link):
     """내 기록 모음 링크 이메일 발송"""
-    import resend
     resend.api_key = os.environ.get("RESEND_API_KEY", "")
     html = f"""
     <div style="font-family:'Noto Sans KR',sans-serif;max-width:480px;margin:0 auto;padding:40px 24px;background:#F9F6F0">
