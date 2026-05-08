@@ -2978,7 +2978,8 @@ def sixshot_page(doc_id):
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
 
     name     = data.get("name", "")
-    nickname = data.get("nickname", "") or name
+    nickname = data.get("nickname", "") or name  # 표시용: 닉네임 우선
+    display_name = nickname  # 화면에 표시할 이름
     email    = data.get("email", "")
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
@@ -3055,7 +3056,7 @@ def sixshot_page(doc_id):
         og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
     else:
         og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
-        og_desc  = f"6장으로 정리한 {name}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
+        og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
 
     page_url_self = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
 
@@ -3263,7 +3264,7 @@ function switchVer(v) {{
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{"투.필 · " + (nickname or name) + "님의 오늘" if page_type == "today" else name + "님의 인생 이야기 · 휴먼다큐"}</title>
+<title>{"투.필 · " + display_name + "님의 오늘" if page_type == "today" else display_name + "님의 인생 이야기 · 휴먼다큐"}</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{og_desc}">
@@ -3297,8 +3298,8 @@ function switchVer(v) {{
 
   <div class="hero">
     <div class="hero-sub">HUMANDOCU · 필모그래피</div>
-    <div class="hero-name">{name}</div>
-    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{name}님의 필모그래피</div>
+    <div class="hero-name">{nickname}</div>
+    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{nickname}님의 필모그래피</div>
     <div class="hero-identity">{identity}</div>
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
@@ -3407,7 +3408,7 @@ function kakaoShare() {{
   Kakao.Share.sendDefault({{
     objectType: 'feed',
     content: {{
-      title: '{name}님의 {"오늘" if page_type == "today" else "인생"} 필모그래피 · 휴먼다큐',
+      title: '{nickname}님의 {"오늘" if page_type == "today" else "인생"} 필모그래피 · 휴먼다큐',
       description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
       imageUrl: '{og_image}' || 'https://humandocu.com/og_main.png',
       link: {{
