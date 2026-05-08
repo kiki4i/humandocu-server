@@ -2984,7 +2984,10 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
-    poems    = data.get("poems", {}) if isinstance(data.get("poems"), dict) else {}
+    poems_raw = data.get("poems", "")
+    # poems가 dict면 그대로, 문자열이면 파싱용으로 보존
+    poems = poems_raw if isinstance(poems_raw, dict) else {}
+    poems_str = poems_raw if isinstance(poems_raw, str) else ""
     shots       = data.get("shots", {})
     shot_images = data.get("shot_images", {})
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
@@ -3014,7 +3017,7 @@ def sixshot_page(doc_id):
     poem_dict = {}
     current_key = None
     current_lines = []
-    for line in poems.strip().split("\n"):
+    for line in poems_str.strip().split("\n"):
         line = line.strip()
         if line.startswith("[대표2]"):
             if current_key:
