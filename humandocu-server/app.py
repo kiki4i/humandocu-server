@@ -4616,6 +4616,10 @@ def today_submit_url():
         shot_images = {}
         shot_captions = {}
 
+        today_sentence = data.get("today_sentence", "")
+        last_to  = data.get("last_to", "")
+        last_msg = data.get("last_msg", "")
+
         for shot in shots[:6]:
             idx     = str(shot.get("index", 1))
             img_url = shot.get("image_url", "")
@@ -4623,27 +4627,41 @@ def today_submit_url():
             shot_images[idx]   = img_url
             shot_captions[idx] = caption
             if img_url:
-                content_parts.append({
-                    "type": "image",
-                    "source": {"type": "url", "url": img_url}
-                })
+                # Firebase Storage URL → 서버에서 다운로드 → base64로 Claude 전달
+                try:
+                    img_resp = requests.get(img_url, timeout=15)
+                    img_b64  = base64.b64encode(img_resp.content).decode()
+                    content_parts.append({
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": "image/jpeg", "data": img_b64}
+                    })
+                except Exception as img_err:
+                    print(f"[SHOT {idx}] 이미지 다운로드 실패: {img_err}")
             content_parts.append({
                 "type": "text",
                 "text": f"[SHOT {idx}] {caption}"
             })
 
+        extra = ""
+        if today_sentence:
+            extra += f"\n오늘 하루 한 문장: {today_sentence}"
+        if last_to and last_msg:
+            extra += f"\n누군가에게 한 마디 — {last_to}에게: {last_msg}"
+        elif last_msg:
+            extra += f"\n누군가에게 한 마디: {last_msg}"
+
+        shot_count = len([s for s in shots[:6] if s.get("image_url")])
+        shot_list = "\n".join([f"[SHOT {i+1}]\n이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)" for i in range(shot_count)])
+
         content_parts.append({"type": "text", "text": f"""
-위 사진들은 {nickname}님의 오늘 하루입니다.
+위 사진들은 {nickname}님의 오늘 하루입니다.{extra}
+
 각 사진과 설명을 보고 아래 형식으로 작성해주세요.
 
 [대표]
 오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
 
-[SHOT 1]
-이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)
-
-[SHOT 2]
-...
+{shot_list}
 
 [한줄평]
 오늘의 {nickname}님을 한 문장으로 (20자 이내)
@@ -4699,18 +4717,21 @@ def today_submit_url():
         doc_id = uuid.uuid4().hex[:12]
         now    = dt.datetime.utcnow().isoformat()
         _get_db().collection("sixshot").document(doc_id).set({
-            "doc_id":      doc_id,
-            "name":        name,
-            "nickname":    nickname,
-            "email":       email,
-            "type":        "today",
-            "is_public":   is_public,
-            "shot_images": shot_images,
-            "shots":       shot_captions,
-            "poems":       poems,
-            "identity":    identity,
-            "overall":     overall,
-            "created_at":  now,
+            "doc_id":          doc_id,
+            "name":            name,
+            "nickname":        nickname,
+            "email":           email,
+            "type":            "today",
+            "is_public":       is_public,
+            "shot_images":     shot_images,
+            "shots":           shot_captions,
+            "poems":           poems,
+            "identity":        identity,
+            "overall":         overall,
+            "today_sentence":  today_sentence,
+            "last_to":         last_to,
+            "last_msg":        last_msg,
+            "created_at":      now,
         })
 
         page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
