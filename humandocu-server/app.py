@@ -4592,3 +4592,139 @@ def today_submit():
         import traceback
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/today/submit-url", methods=["POST"])
+def today_submit_url():
+    """투.필 자체 폼 — Firebase Storage URL 받아서 AI 처리"""
+    try:
+        import uuid, datetime as dt
+        data    = request.get_json() or {}
+        name    = (data.get("name") or "").strip()
+        nickname= (data.get("nickname") or name).strip()
+        email   = (data.get("email") or "").strip().lower()
+        is_public = data.get("is_public", True)
+        shots   = data.get("shots", [])  # [{image_url, caption, index}, ...]
+
+        if not name or not email:
+            return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
+        if not shots:
+            return jsonify({"ok": False, "error": "사진을 올려주세요"}), 400
+
+        # 1. Claude API — 이미지 URL + 캡션으로 시 생성
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        content_parts = []
+        shot_images = {}
+        shot_captions = {}
+
+        for shot in shots[:6]:
+            idx     = str(shot.get("index", 1))
+            img_url = shot.get("image_url", "")
+            caption = shot.get("caption", "")
+            shot_images[idx]   = img_url
+            shot_captions[idx] = caption
+            if img_url:
+                content_parts.append({
+                    "type": "image",
+                    "source": {"type": "url", "url": img_url}
+                })
+            content_parts.append({
+                "type": "text",
+                "text": f"[SHOT {idx}] {caption}"
+            })
+
+        content_parts.append({"type": "text", "text": f"""
+위 사진들은 {nickname}님의 오늘 하루입니다.
+각 사진과 설명을 보고 아래 형식으로 작성해주세요.
+
+[대표]
+오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
+
+[SHOT 1]
+이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)
+
+[SHOT 2]
+...
+
+[한줄평]
+오늘의 {nickname}님을 한 문장으로 (20자 이내)
+
+[총평]
+오늘 하루 전체에 대한 따뜻한 한 단락 (3~4문장)
+
+형식 외 다른 말은 하지 마세요.
+""".strip()})
+
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": content_parts}]
+        )
+        ai_text = resp.content[0].text if resp.content else ""
+
+        # 2. 파싱
+        poems = {}
+        identity = ""
+        overall  = ""
+        current_key   = None
+        current_lines = []
+
+        for line in ai_text.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("[대표]"):
+                current_key = "대표"; current_lines = []
+            elif line.startswith("[SHOT "):
+                if current_key: poems[current_key] = "\n".join(current_lines).strip()
+                num = line.replace("[SHOT ","").replace("]","").strip()
+                current_key = f"SHOT{num}"; current_lines = []
+            elif line.startswith("[한줄평]"):
+                if current_key: poems[current_key] = "\n".join(current_lines).strip()
+                current_key = "한줄평"; current_lines = []
+            elif line.startswith("[총평]"):
+                if current_key == "한줄평":
+                    identity = "\n".join(current_lines).strip()
+                elif current_key:
+                    poems[current_key] = "\n".join(current_lines).strip()
+                current_key = "총평"; current_lines = []
+            elif line:
+                current_lines.append(line)
+
+        if current_key == "총평":
+            overall = "\n".join(current_lines).strip()
+        elif current_key == "한줄평":
+            identity = "\n".join(current_lines).strip()
+        elif current_key:
+            poems[current_key] = "\n".join(current_lines).strip()
+
+        # 3. Firestore 저장
+        doc_id = uuid.uuid4().hex[:12]
+        now    = dt.datetime.utcnow().isoformat()
+        _get_db().collection("sixshot").document(doc_id).set({
+            "doc_id":      doc_id,
+            "name":        name,
+            "nickname":    nickname,
+            "email":       email,
+            "type":        "today",
+            "is_public":   is_public,
+            "shot_images": shot_images,
+            "shots":       shot_captions,
+            "poems":       poems,
+            "identity":    identity,
+            "overall":     overall,
+            "created_at":  now,
+        })
+
+        page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+        return jsonify({
+            "ok":          True,
+            "doc_id":      doc_id,
+            "page_url":    page_url,
+            "poems":       poems,
+            "identity":    identity,
+            "overall":     overall,
+            "shot_images": shot_images,
+        })
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
