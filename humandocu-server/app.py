@@ -3062,6 +3062,7 @@ def sixshot_page(doc_id):
         og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
 
     page_url_self = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}"
 
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
@@ -3415,16 +3416,16 @@ function kakaoShare() {{
       description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
       imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
       link: {{
-        mobileWebUrl: window.location.href,
-        webUrl: window.location.href,
+        mobileWebUrl: '{page_url_kakao}',
+        webUrl: '{page_url_kakao}',
       }},
     }},
     buttons: [
       {{
         title: '필모그래피 보기',
         link: {{
-          mobileWebUrl: window.location.href,
-          webUrl: window.location.href,
+          mobileWebUrl: '{page_url_kakao}',
+          webUrl: '{page_url_kakao}',
         }},
       }},
       {{
