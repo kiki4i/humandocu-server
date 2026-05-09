@@ -4395,3 +4395,200 @@ def sixshot_random():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+
+
+# ──────────────────────────────────────────
+# 투.필 자체 폼 API
+# ──────────────────────────────────────────
+
+def _upload_to_firebase_storage(image_data_b64, filename):
+    """base64 이미지를 Firebase Storage에 업로드하고 공개 URL 반환"""
+    try:
+        from firebase_admin import storage as fb_storage
+        import uuid, datetime
+
+        svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+        svc = json.loads(svc_json)
+        bucket_name = svc.get("project_id", "humandocu-93c65") + ".appspot.com"
+
+        if not firebase_admin._apps:
+            _get_db()
+
+        bucket = fb_storage.bucket(bucket_name)
+
+        # base64 디코딩
+        if "," in image_data_b64:
+            image_data_b64 = image_data_b64.split(",")[1]
+        image_bytes = base64.b64decode(image_data_b64)
+
+        # 파일명
+        ext = "jpg"
+        blob = bucket.blob(f"today/{filename}")
+        blob.upload_from_string(image_bytes, content_type=f"image/{ext}")
+        blob.make_public()
+        return blob.public_url
+
+    except Exception as e:
+        print(f"[STORAGE] 업로드 오류: {e}")
+        return ""
+
+
+@app.route("/api/today/submit", methods=["POST"])
+def today_submit():
+    """투.필 자체 폼 제출 — 사진 업로드 + AI 시 생성 + 저장"""
+    try:
+        data = request.get_json() or {}
+        name     = (data.get("name") or "").strip()
+        nickname = (data.get("nickname") or name).strip()
+        email    = (data.get("email") or "").strip().lower()
+        is_public = data.get("is_public", True)
+        shots    = data.get("shots", [])  # [{image_b64, caption}, ...]
+
+        if not name or not email or not shots:
+            return jsonify({"ok": False, "error": "이름, 이메일, 사진을 모두 입력해주세요"}), 400
+        if len(shots) > 6:
+            shots = shots[:6]
+
+        # 1. 사진 Firebase Storage 업로드
+        import uuid, datetime
+        doc_id = uuid.uuid4().hex[:12]
+        shot_images = {}
+        shot_captions = {}
+        for i, shot in enumerate(shots):
+            idx = str(i + 1)
+            img_b64 = shot.get("image_b64", "")
+            caption = shot.get("caption", "")
+            shot_captions[idx] = caption
+            if img_b64:
+                fname = f"{doc_id}_shot{idx}_{uuid.uuid4().hex[:6]}.jpg"
+                url = _upload_to_firebase_storage(img_b64, fname)
+                shot_images[idx] = url
+
+        # 2. Claude API 호출 — 사진+설명으로 시 생성
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+
+        # 메시지 구성
+        content_parts = []
+        for i, shot in enumerate(shots):
+            idx = str(i + 1)
+            img_b64 = shot.get("image_b64", "")
+            caption = shot.get("caption", "")
+            if img_b64:
+                raw = img_b64.split(",")[1] if "," in img_b64 else img_b64
+                content_parts.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": "image/jpeg", "data": raw}
+                })
+            content_parts.append({
+                "type": "text",
+                "text": f"[SHOT {idx}] {caption}"
+            })
+
+        content_parts.append({"type": "text", "text": f"""
+위 사진 {len(shots)}장은 {nickname}님의 오늘 하루입니다.
+각 사진과 설명을 보고 아래 형식으로 작성해주세요.
+
+[대표]
+오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
+
+[SHOT 1]
+이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)
+
+[SHOT 2]
+...
+
+[SHOT {len(shots)}]
+...
+
+[한줄평]
+오늘의 {nickname}님을 한 문장으로 (20자 이내)
+
+[총평]
+오늘 하루 전체에 대한 따뜻한 한 단락 (3~4문장)
+
+형식 외 다른 말은 하지 마세요.
+""".strip()})
+
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": content_parts}]
+        )
+        ai_text = resp.content[0].text if resp.content else ""
+
+        # 3. 파싱
+        poems = {}
+        identity = ""
+        overall = ""
+        current_key = None
+        current_lines = []
+
+        for line in ai_text.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("[대표]"):
+                current_key = "대표"
+                current_lines = []
+            elif line.startswith("[SHOT "):
+                if current_key:
+                    poems[current_key] = "\n".join(current_lines).strip()
+                num = line.replace("[SHOT ", "").replace("]", "").strip()
+                current_key = f"SHOT{num}"
+                current_lines = []
+            elif line.startswith("[한줄평]"):
+                if current_key:
+                    poems[current_key] = "\n".join(current_lines).strip()
+                current_key = "한줄평"
+                current_lines = []
+            elif line.startswith("[총평]"):
+                if current_key:
+                    if current_key == "한줄평":
+                        identity = "\n".join(current_lines).strip()
+                    else:
+                        poems[current_key] = "\n".join(current_lines).strip()
+                current_key = "총평"
+                current_lines = []
+            elif line:
+                current_lines.append(line)
+
+        if current_key == "총평":
+            overall = "\n".join(current_lines).strip()
+        elif current_key == "한줄평":
+            identity = "\n".join(current_lines).strip()
+        elif current_key:
+            poems[current_key] = "\n".join(current_lines).strip()
+
+        # 4. Firestore 저장
+        now = datetime.datetime.utcnow().isoformat()
+        db = _get_db()
+        db.collection("sixshot").document(doc_id).set({
+            "doc_id": doc_id,
+            "name": name,
+            "nickname": nickname,
+            "email": email,
+            "type": "today",
+            "is_public": is_public,
+            "shot_images": shot_images,
+            "shots": shot_captions,
+            "poems": poems,
+            "identity": identity,
+            "overall": overall,
+            "created_at": now,
+        })
+
+        page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+
+        return jsonify({
+            "ok": True,
+            "doc_id": doc_id,
+            "page_url": page_url,
+            "poems": poems,
+            "identity": identity,
+            "overall": overall,
+            "shot_images": shot_images,
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
