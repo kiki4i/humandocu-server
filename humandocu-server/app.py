@@ -3413,18 +3413,18 @@ function kakaoShare() {{
     content: {{
       title: '{nickname}님의 {"오늘" if page_type == "today" else "인생"} 필모그래피 · 휴먼다큐',
       description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
-      imageUrl: '{og_image}' || 'https://humandocu.com/og_main.png',
+      imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
       link: {{
-        mobileWebUrl: '{page_url_self}',
-        webUrl: '{page_url_self}',
+        mobileWebUrl: window.location.href,
+        webUrl: window.location.href,
       }},
     }},
     buttons: [
       {{
         title: '필모그래피 보기',
         link: {{
-          mobileWebUrl: '{page_url_self}',
-          webUrl: '{page_url_self}',
+          mobileWebUrl: window.location.href,
+          webUrl: window.location.href,
         }},
       }},
       {{
