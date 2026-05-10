@@ -1903,8 +1903,10 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
    읽으면 피식 웃음이 나오는 하이쿠.
 
-5. [장면별 시] - 제출된 SHOT 각각 짧은 시 1편씩
-   일상의 작은 순간들 — 밥, 하늘, 사람, 풍경 — 그 안의 감각을 포착해주세요.
+5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
+   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 자조적이고 공감되는 톤. 너무 순하지 않게.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
 
 시 작성 규칙:
 - 3행 구성
@@ -1932,35 +1934,35 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 (2행)
 (3행)
 
-[SHOT1]
-(1행)
-(2행)
-(3행)
+[SHOT1감성]
+(하이쿠)
+[SHOT1유머]
+(하이쿠)
 
-[SHOT2]
-(1행)
-(2행)
-(3행)
+[SHOT2감성]
+(하이쿠)
+[SHOT2유머]
+(하이쿠)
 
-[SHOT3]
-(1행)
-(2행)
-(3행)
+[SHOT3감성]
+(하이쿠)
+[SHOT3유머]
+(하이쿠)
 
-[SHOT4]
-(1행)
-(2행)
-(3행)
+[SHOT4감성]
+(하이쿠)
+[SHOT4유머]
+(하이쿠)
 
-[SHOT5]
-(1행)
-(2행)
-(3행)
+[SHOT5감성]
+(하이쿠)
+[SHOT5유머]
+(하이쿠)
 
-[SHOT6]
-(1행)
-(2행)
-(3행)"""
+[SHOT6감성]
+(하이쿠)
+[SHOT6유머]
+(하이쿠)"""
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     message = client.messages.create(
@@ -3060,8 +3062,7 @@ def sixshot_page(doc_id):
         elif line.startswith("[SHOT"):
             if current_key:
                 poem_dict[current_key] = "\n".join(current_lines)
-            num = line.replace("[SHOT","").replace("]","").strip()
-            current_key = f"SHOT{num}"
+            current_key = line.strip("[]")
             current_lines = []
         elif line:
             current_lines.append(line)
@@ -3131,7 +3132,7 @@ def sixshot_page(doc_id):
             elif line.startswith("[SHOT"):
                 if current_key2:
                     poem_dict[current_key2] = "\n".join(current_lines2)
-                m = _re.match(r'\[SHOT(\d+)\](.*)', line)
+                m = _re.match(r'\[SHOT(\d+(?:감성|유머)?)\](.*)', line)
                 if m:
                     current_key2 = f"SHOT{m.group(1)}"
                     current_lines2 = [m.group(2).strip()] if m.group(2).strip() else []
@@ -3208,10 +3209,12 @@ function switchVer(v) {{
 
     # 장면별 카드 HTML
     scene_cards = ""
+    def _haiku_lines(text):
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        return "<br>".join(lines)
     for i in range(1, 7):
         key = str(i)
         shot_text = shots.get(key, shots.get(i, ""))
-        shot_poem = poem_dict.get(f"SHOT{i}", "")
         title = shot_titles.get(key, f"SHOT {i}")
         img_url = shot_images.get(key, "")
         if img_url:
@@ -3223,11 +3226,35 @@ function switchVer(v) {{
             )
         else:
             img_block = ""
+        if page_type == "today":
+            shot_poem_s = poem_dict.get(f"SHOT{i}감성", "")
+            shot_poem_h = poem_dict.get(f"SHOT{i}유머", "")
+            if shot_poem_s or shot_poem_h:
+                dual = '<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
+                if shot_poem_s:
+                    dual += (
+                        '<div style="color:#9e8250;margin-bottom:6px">🌸 감성</div>'
+                        f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_s)}</div>'
+                    )
+                if shot_poem_s and shot_poem_h:
+                    dual += '<hr style="border:none;border-top:1px solid #e5d9c3;margin:12px 0">'
+                if shot_poem_h:
+                    dual += (
+                        '<div style="color:#9e8250;margin-bottom:6px">😂 유머</div>'
+                        f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_h)}</div>'
+                    )
+                dual += '</div>'
+                poem_block = f'<div style="border-top:1px solid #e5dece;padding-top:20px">{dual}</div>'
+            else:
+                poem_block = ""
+        else:
+            shot_poem = poem_dict.get(f"SHOT{i}", "")
+            poem_block = f'<div style="border-top:1px solid #e5dece;padding-top:20px">{poem_html(shot_poem)}</div>'
         card_inner = (
             f'<div style="padding:24px 28px">'
             f'<div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d} · {title}</div>'
             f'<div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:20px;font-style:italic">{shot_text}</div>'
-            f'<div style="border-top:1px solid #e5dece;padding-top:20px">{poem_html(shot_poem)}</div>'
+            f'{poem_block}'
             f'</div>'
         )
         scene_cards += (
