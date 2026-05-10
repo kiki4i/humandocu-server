@@ -3365,7 +3365,7 @@ function switchVer(v) {{
         msg.style.display = 'block';
         if (data.ok) {{
           btn.textContent = '✓ 이메일 발송 완료';
-          msg.textContent = '{email} 으로 링크를 보냈어요. 메일함을 확인해주세요.';
+          msg.textContent = '{mask_email(email)} 으로 링크를 보냈어요. 메일함을 확인해주세요.';
         }} else {{
           btn.textContent = '📬 내 기록 모음 링크 받기';
           btn.disabled = false;
