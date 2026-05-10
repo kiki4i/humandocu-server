@@ -1880,12 +1880,12 @@ def generate_today_haiku(name, shots, today_one, last_msg):
     last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
 
     prompt = f"""당신은 일상의 순간을 포착하는 감각적인 시인입니다.
-아래는 오늘 하루를 담은 사진 6장과 짧은 설명들입니다.
+아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
 닉네임: {name}
 오늘 하루를 한 문장으로: {today_one}{last_msg_text}
 
-오늘의 6장면:
+오늘의 장면들:
 {shots_text}
 
 다음을 작성해주세요.
@@ -1897,7 +1897,7 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
    꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
 
-3. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩
+3. [장면별 시] - 제출된 SHOT 각각 짧은 시 1편씩
    일상의 작은 순간들 — 밥, 하늘, 사람, 풍경 — 그 안의 감각을 포착해주세요.
 
 시 작성 규칙:
