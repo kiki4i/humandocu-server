@@ -1785,7 +1785,7 @@ def webhook_today():
         if not name or not email:
             return jsonify({"error": "이름/이메일 없음"}), 400
 
-        # 사진 라벨 (투.필 폼 기준)
+        # 사진 라벨 (투*필 폼 기준)
         shot_labels = ["사진 01", "사진 02", "사진 03", "사진 04", "사진 05", "사진 06"]
         shots = {}
         shot_images = {}
@@ -1835,7 +1835,7 @@ def webhook_today():
                 poems = generate_today_haiku(nickname, shots, today_one, last_msg)
                 print(f"[TODAY] 시 생성 완료")
 
-                # 투.필은 매일 쌓이는 일기 — 기존 것 비공개 처리 안 함
+                # 투*필은 매일 쌓이는 일기 — 기존 것 비공개 처리 안 함
                 # 인생 식스샷만 기존 것 비공개 처리
                 if today_one is None:  # webhook_sixshot에서만 실행
                     pass
@@ -2065,7 +2065,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
       </div>""" if last_msg else ""
 
     edit_url = f"https://tally.so/r/Bz8LbR" if type == "today" else "https://tally.so/r/ZjGpk0"
-    open_label = "나의 투.필 열기" if type == "today" else "나의 식스샷 열기"
+    open_label = "나의 투*필 열기" if type == "today" else "나의 식스샷 열기"
 
     today_album_block = ""
     if type == "today":
@@ -2104,7 +2104,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
 <div style="max-width:560px;margin:0 auto;background:#fff">
 
   <div style="background:#0f0d09;padding:52px 36px;text-align:center">
-    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">{"HUMANDOCU · 투.필" if type == "today" else "HUMANDOCU · 필모그래피"}</div>
+    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">{"HUMANDOCU · 투*필" if type == "today" else "HUMANDOCU · 필모그래피"}</div>
     <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{"투데이 필모그래피" if type == "today" else f"{name}님의<br>필모그래피가"}<br>{"도착했어요 ✦" if type == "today" else "도착했습니다"}</div>
     <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
@@ -2128,7 +2128,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {'오늘의 투.필이 도착했어요 ✦' if type == 'today' else f'{name}님의 필모그래피가 도착했습니다'}", "html": html},
+              "subject": f"[휴먼다큐] {'오늘의 투*필이 도착했어요 ✦' if type == 'today' else f'{name}님의 필모그래피가 도착했습니다'}", "html": html},
         timeout=30)
     resp.raise_for_status()
     print(f"[SIXSHOT] 이메일 발송 완료 빈칸 {to_email}")
@@ -2772,7 +2772,7 @@ button{{width:100%;padding:13px;background:#C8870A;color:#FFF8ED;border:none;bor
 <div class="card">
   <div class="avatar">{name[0] if name else '?'}</div>
   <h2>{name}님의 기록</h2>
-  <p class="sub">본인 확인을 위해<br>투.필 제출 시 사용한 이메일을 입력해주세요</p>
+  <p class="sub">본인 확인을 위해<br>투*필 제출 시 사용한 이메일을 입력해주세요</p>
   <input type="email" id="email" placeholder="이메일 주소" autocomplete="email">
   <button onclick="sendLink()">확인 링크 받기</button>
   <p class="msg" id="msg"></p>
@@ -2852,7 +2852,7 @@ def send_my_link_email(email, name, link):
       <div style="background:#fff;border-radius:12px;padding:32px;text-align:center">
         <div style="font-size:32px;margin-bottom:16px">🎞</div>
         <h2 style="font-family:Georgia,serif;font-size:18px;font-weight:400;margin-bottom:8px">{name}님의 기록 모음</h2>
-        <p style="font-size:13px;color:#9e8250;margin-bottom:24px;line-height:1.7">아래 버튼을 눌러 나의 투.필·식스샷을 모두 확인하세요<br>링크는 24시간 동안 유효합니다</p>
+        <p style="font-size:13px;color:#9e8250;margin-bottom:24px;line-height:1.7">아래 버튼을 눌러 나의 투*필·식스샷을 모두 확인하세요<br>링크는 24시간 동안 유효합니다</p>
         <a href="{link}" style="display:inline-block;padding:14px 32px;background:#C8870A;color:#FFF8ED;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;letter-spacing:.04em">내 기록 모두 보기 →</a>
         <p style="font-size:11px;color:#C8A96E;margin-top:20px">{link}</p>
       </div>
@@ -2861,7 +2861,7 @@ def send_my_link_email(email, name, link):
     resend.Emails.send({
         "from": "휴먼다큐 <noreply@humandocu.com>",
         "to": [email],
-        "subject": f"{name}님의 투.필 기록 모음 링크",
+        "subject": f"{name}님의 투*필 기록 모음 링크",
         "html": html,
     })
 
@@ -2905,7 +2905,7 @@ def my_filmography_verified(name):
 
         cards_html = ""
         for item in items:
-            type_label = "투.필" if item["type"] == "today" else "인생 식스샷"
+            type_label = "투*필" if item["type"] == "today" else "인생 식스샷"
             type_color = "#C8870A" if item["type"] == "today" else "#C8A96E"
             pub_badge = "" if item["is_public"] else '<span style="font-size:10px;color:#aaa;background:#f0f0f0;padding:2px 8px;border-radius:10px;margin-left:4px">비공개</span>'
             time_str = f" {item['time_label']}" if item["time_label"] else ""
@@ -2928,7 +2928,7 @@ def my_filmography_verified(name):
         empty_html = "" if items else """
 <div style="text-align:center;padding:60px 24px;color:#9e8250;font-size:14px;line-height:2">
   아직 기록이 없어요<br>
-  <a href="/today.html" style="color:#C8870A">투.필 시작하기 →</a>
+  <a href="/today.html" style="color:#C8870A">투*필 시작하기 →</a>
 </div>"""
 
         html = f"""<!DOCTYPE html>
@@ -3059,7 +3059,7 @@ def sixshot_page(doc_id):
         pass
 
     if page_type == "today":
-        og_title = f"{nickname or name}님의 오늘 · 투.필 TODAY FILMOGRAPHY"
+        og_title = f"{nickname or name}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
         og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
     else:
         og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
@@ -3272,7 +3272,7 @@ function switchVer(v) {{
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{"투.필 · " + display_name + "님의 오늘" if page_type == "today" else display_name + "님의 인생 이야기 · 휴먼다큐"}</title>
+<title>{"투*필 · " + display_name + "님의 오늘" if page_type == "today" else display_name + "님의 인생 이야기 · 휴먼다큐"}</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{og_desc}">
@@ -3382,7 +3382,7 @@ function switchVer(v) {{
   <!-- 나도 만들기 CTA -->
   <div style="background:#C8870A;padding:36px 40px;text-align:center">
     <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">
-      {"HUMANDOCU · 투.필" if page_type == "today" else "HUMANDOCU · 식스샷"}
+      {"HUMANDOCU · 투*필" if page_type == "today" else "HUMANDOCU · 식스샷"}
     </div>
     <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">
       {"오늘 당신의 하루도<br>시가 될 수 있어요" if page_type == "today" else "당신의 인생도<br>필모그래피가 될 수 있어요"}
@@ -3392,7 +3392,7 @@ function switchVer(v) {{
     </div>
     <a href="{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}"
        style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
-      {"나의 투.필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"}
+      {"나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"}
     </a>
   </div>
 
@@ -4403,7 +4403,7 @@ if __name__ == "__main__":
 
 
 # ──────────────────────────────────────────
-# 투.필 자체 폼 API
+# 투*필 자체 폼 API
 # ──────────────────────────────────────────
 
 def _upload_to_firebase_storage(image_data_b64, filename):
@@ -4440,7 +4440,7 @@ def _upload_to_firebase_storage(image_data_b64, filename):
 
 @app.route("/api/today/submit", methods=["POST"])
 def today_submit():
-    """투.필 자체 폼 제출 — 사진 업로드 + AI 시 생성 + 저장"""
+    """투*필 자체 폼 제출 — 사진 업로드 + AI 시 생성 + 저장"""
     try:
         data = request.get_json() or {}
         name     = (data.get("name") or "").strip()
@@ -4600,7 +4600,7 @@ def today_submit():
 
 @app.route("/api/today/submit-url", methods=["POST"])
 def today_submit_url():
-    """투.필 자체 폼 — Firebase Storage URL 받아서 AI 처리"""
+    """투*필 자체 폼 — Firebase Storage URL 받아서 AI 처리"""
     try:
         import uuid, datetime as dt
         data    = request.get_json() or {}
@@ -4758,7 +4758,7 @@ def today_submit_url():
 
 @app.route("/api/today/submit-b64", methods=["POST"])
 def today_submit_b64():
-    """투.필 자체 폼 — base64 이미지 직접 처리 (Firebase Storage 불필요)"""
+    """투*필 자체 폼 — base64 이미지 직접 처리 (Firebase Storage 불필요)"""
     try:
         import uuid, datetime as dt
         data     = request.get_json() or {}
