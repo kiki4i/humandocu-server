@@ -1897,7 +1897,13 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
    꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
 
-3. [장면별 시] - 제출된 SHOT 각각 짧은 시 1편씩
+3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
+   짧지만 오늘의 온도가 느껴지는 하이쿠.
+
+4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
+   읽으면 피식 웃음이 나오는 하이쿠.
+
+5. [장면별 시] - 제출된 SHOT 각각 짧은 시 1편씩
    일상의 작은 순간들 — 밥, 하늘, 사람, 풍경 — 그 안의 감각을 포착해주세요.
 
 시 작성 규칙:
@@ -1912,6 +1918,16 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 (3행)
 
 [대표2]
+(1행)
+(2행)
+(3행)
+
+[하이쿠감성]
+(1행)
+(2행)
+(3행)
+
+[하이쿠유머]
 (1행)
 (2행)
 (3행)
@@ -3028,6 +3044,16 @@ def sixshot_page(doc_id):
                 poem_dict[current_key] = "\n".join(current_lines)
             current_key = "대표2"
             current_lines = []
+        elif line.startswith("[하이쿠감성]"):
+            if current_key:
+                poem_dict[current_key] = "\n".join(current_lines)
+            current_key = "하이쿠감성"
+            current_lines = []
+        elif line.startswith("[하이쿠유머]"):
+            if current_key:
+                poem_dict[current_key] = "\n".join(current_lines)
+            current_key = "하이쿠유머"
+            current_lines = []
         elif line.startswith("[대표]"):
             current_key = "대표"
             current_lines = []
@@ -3087,6 +3113,16 @@ def sixshot_page(doc_id):
                     poem_dict[current_key2] = "\n".join(current_lines2)
                 current_key2 = "대표2"
                 current_lines2 = [line[len("[대표2]"):].strip()] if line[len("[대표2]"):].strip() else []
+            elif line.startswith("[하이쿠감성]"):
+                if current_key2:
+                    poem_dict[current_key2] = "\n".join(current_lines2)
+                current_key2 = "하이쿠감성"
+                current_lines2 = [line[len("[하이쿠감성]"):].strip()] if line[len("[하이쿠감성]"):].strip() else []
+            elif line.startswith("[하이쿠유머]"):
+                if current_key2:
+                    poem_dict[current_key2] = "\n".join(current_lines2)
+                current_key2 = "하이쿠유머"
+                current_lines2 = [line[len("[하이쿠유머]"):].strip()] if line[len("[하이쿠유머]"):].strip() else []
             elif line.startswith("[대표]"):
                 if current_key2:
                     poem_dict[current_key2] = "\n".join(current_lines2)
@@ -3106,6 +3142,31 @@ def sixshot_page(doc_id):
 
     rep_poem = poem_dict.get("대표", "")
     rep_poem2 = poem_dict.get("대표2", "")
+    haiku_s = poem_dict.get("하이쿠감성", "")
+    haiku_h = poem_dict.get("하이쿠유머", "")
+
+    # 하이쿠 블록 HTML (today 타입이고 하이쿠가 있을 때만)
+    haiku_block_html = ""
+    if page_type == "today" and (haiku_s or haiku_h):
+        def haiku_lines_html(text):
+            lines = [l for l in text.strip().split("\n") if l.strip()]
+            return "<br>".join(lines)
+        haiku_block_html = '<div style="margin-bottom:32px">'
+        if haiku_s:
+            haiku_block_html += (
+                '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px;margin-bottom:12px">'
+                '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">🌸 하이쿠 · 감성</div>'
+                f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2">{haiku_lines_html(haiku_s)}</div>'
+                '</div>'
+            )
+        if haiku_h:
+            haiku_block_html += (
+                '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px">'
+                '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">😂 하이쿠 · 유머</div>'
+                f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2">{haiku_lines_html(haiku_h)}</div>'
+                '</div>'
+            )
+        haiku_block_html += '</div>'
 
     # 버전 토글 버튼 (대표2 있을 때만)
     ver_toggle_html = ""
@@ -3314,6 +3375,7 @@ function switchVer(v) {{
 
   <div class="section">
     <div class="section-label">{poem_section_title}</div>
+    {haiku_block_html}
     <div class="rep-poem" id="rep-poem-box">{poem_html(rep_poem)}</div>
     {ver_toggle_html}
   </div>
