@@ -3155,6 +3155,7 @@ def sixshot_page(doc_id):
         if haiku_s:
             haiku_block_html += (
                 '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px;margin-bottom:12px">'
+                '<p style="font-size:12px;color:#8B7355;text-align:center;margin-bottom:16px;letter-spacing:.05em;">5 · 7 · 5 음절로 오늘을 포착한 시</p>'
                 '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">🌸 하이쿠 · 감성</div>'
                 f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2">{haiku_lines_html(haiku_s)}</div>'
                 '</div>'
@@ -3173,13 +3174,16 @@ def sixshot_page(doc_id):
     ver_script = ""
     if rep_poem2:
         rep_poem2_escaped = poem_html(rep_poem2).replace("'", "\\'").replace('"', '&quot;')
-        ver_toggle_html = '''<div style="margin-top:16px;text-align:center">
-  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px">
-    <button onclick="switchVer(1)" id="ver1-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:#c8a96e;color:#0f0d09;cursor:pointer;letter-spacing:.05em">버전 1</button>
-    <button onclick="switchVer(2)" id="ver2-btn" style="font-size:11px;font-family:inherit;padding:5px 16px;border-radius:20px;border:1px solid #c8a96e;background:transparent;color:#c8a96e;cursor:pointer;letter-spacing:.05em">버전 2</button>
-  </div>
-  <div id="ver-desc" style="font-size:10px;color:rgba(200,169,110,.5);letter-spacing:.04em;line-height:1.7">
-    버전 1 · 시적, 은유적 — 마음에 걸리는 여운<br>버전 2 · 담담하고 직접적 — 꾸밈 없이 꽂히는 문장
+        ver_toggle_html = '''<div style="margin-top:16px">
+  <div style="display:flex;gap:10px">
+    <button onclick="switchVer(1)" id="ver1-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#C8870A;color:#fff;cursor:pointer;text-align:center;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">버전 1</div>
+      <div style="font-size:11px;opacity:.85;">시적 · 은유적</div>
+    </button>
+    <button onclick="switchVer(2)" id="ver2-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#fff;color:#C8870A;cursor:pointer;text-align:center;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">버전 2</div>
+      <div style="font-size:11px;opacity:.7;">담담 · 직접적</div>
+    </button>
   </div>
 </div>'''
         ver_script = f"""
@@ -3192,12 +3196,12 @@ function switchVer(v) {{
   var b2 = document.getElementById('ver2-btn');
   if (v === 1) {{
     box.innerHTML = _ver1;
-    b1.style.background = '#c8a96e'; b1.style.color = '#0f0d09';
-    b2.style.background = 'transparent'; b2.style.color = '#c8a96e';
+    b1.style.background = '#C8870A'; b1.style.color = '#fff'; b1.style.borderColor = '#C8870A';
+    b2.style.background = '#fff'; b2.style.color = '#C8870A'; b2.style.borderColor = '#C8870A';
   }} else {{
     box.innerHTML = _ver2;
-    b2.style.background = '#c8a96e'; b2.style.color = '#0f0d09';
-    b1.style.background = 'transparent'; b1.style.color = '#c8a96e';
+    b2.style.background = '#C8870A'; b2.style.color = '#fff'; b2.style.borderColor = '#C8870A';
+    b1.style.background = '#fff'; b1.style.color = '#C8870A'; b1.style.borderColor = '#C8870A';
   }}
 }}
 </script>"""
@@ -3455,6 +3459,18 @@ function switchVer(v) {{
     <a href="{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}"
        style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
       {"나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"}
+    </a>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:20px auto 0;">
+    <a href="https://humandocu.com/today.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+      📽️ 다른 투*필 둘러보기
+    </a>
+    <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+      🎞️ 인생 식스샷 둘러보기
+    </a>
+    <a href="https://humandocu.com" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+      🏠 휴먼다큐닷컴 둘러보기
     </a>
   </div>
 
