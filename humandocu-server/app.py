@@ -15,6 +15,10 @@ from datetime import datetime, timezone, timedelta
 
 app = Flask(__name__)
 
+def mask_email(email):
+    local, _, domain = email.partition("@")
+    return f"{local[0]}***@{domain}" if local else email
+
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin", "")
@@ -3517,7 +3521,7 @@ def test_basic():
             "religion": religion,
             "name": name,
             "url": pages_url,
-            "message": f"이메일({fields['신청자 이메일']})로 발송 완료!"
+            "message": f"이메일({mask_email(fields['신청자 이메일'])})로 발송 완료!"
         }), 200
     except Exception as e:
         import traceback; traceback.print_exc()
