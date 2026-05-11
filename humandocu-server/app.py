@@ -400,13 +400,13 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     life_photos = []
     for i in range(1, 6):
         url = fields.get(f"생애 사진{i}", "")
-        cap = fields.get(f"사진{i}에 대한 간단한 설명", "") or fields.get(f"생애 사진{i} 설명", "")
+        cap = fields.get(f"생애 사진{i} 설명", "") or fields.get(f"사진{i}에 대한 간단한 설명", "")
         if url:
             life_photos.append((url, cap))
 
     # 상단 액자: 생애사진1 + 사진1 설명
     frame_url = fields.get("생애 사진1", "")
-    frame_cap = fields.get("사진1에 대한 간단한 설명", "") or fields.get("생애 사진1 설명", "")
+    frame_cap = fields.get("생애 사진1 설명", "") or fields.get("사진1에 대한 간단한 설명", "")
     if frame_url:
         frame_html = (
             '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px">'
@@ -448,7 +448,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     gallery_photos = []
     for i in range(2, 6):
         url = fields.get(f"생애 사진{i}", "")
-        cap = fields.get(f"사진{i}에 대한 간단한 설명", "") or fields.get(f"생애 사진{i} 설명", "")
+        cap = fields.get(f"생애 사진{i} 설명", "") or fields.get(f"사진{i}에 대한 간단한 설명", "")
         if url:
             gallery_photos.append((url, cap))
 
@@ -4326,6 +4326,36 @@ def admin_resend_advanced_email(pending_id):
         print(f"[ADMIN] 이메일 재발송: {pending_id} → {contact_email}")
         return jsonify({"ok": True, "to": contact_email, "deceased_name": deceased_name,
                         "pages_url": pages_url})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "reason": str(e)}), 500
+
+
+@app.route("/admin/regen-memorial/<pending_id>", methods=["GET"])
+def admin_regen_memorial(pending_id):
+    """메모리얼 페이지 단독 재생성 (관리자용 임시)"""
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"ok": False, "reason": "문서 없음"}), 404
+        stored = doc.to_dict()
+        fields = stored.get("fields", {})
+        deceased_name = stored.get("deceased_name", "") or fields.get("고인 성함", "")
+        one_liner_a   = stored.get("one_liner_a", "")
+        intro         = fields.get("고인 한줄 소개", "")
+        life_events   = fields.get("생애 주요 사건", "")
+        photo_url     = fields.get("고인 사진(영정)", "")
+
+        memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
+        memorial_html = build_html_memorial(deceased_name, fields, {
+            "생년월일": fields.get("생년월일", ""),
+            "별세일":   fields.get("별세일", ""),
+            "한줄평":   one_liner_a,
+            "고인 소개": intro,
+        }, life_events, photo_url)
+        url = upload_to_github(memorial_filename, memorial_html)
+        print(f"[ADMIN-REGEN] 메모리얼 재생성 완료: {url}")
+        return jsonify({"ok": True, "url": url, "filename": memorial_filename})
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "reason": str(e)}), 500
