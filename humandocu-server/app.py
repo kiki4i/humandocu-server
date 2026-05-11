@@ -588,60 +588,197 @@ def build_edit_url(pending_id, fields):
     """이메일용 수정 링크 — 서버 리다이렉트 엔드포인트 URL 반환."""
     return f"https://humandocu-server-production.up.railway.app/edit-link/{pending_id}"
 
-_SUMMARY_FIELDS = [
-    ("고인 성함",           "고인 성함"),
-    ("생년월일",             "생년월일"),
-    ("별세일",               "별세일"),
-    ("직함/직책",            "직함/직책"),
-    ("성별",                 "성별"),
-    ("종교",                 "종교"),
-    ("상주 성함",            "상주 성함"),
-    ("고인과 상주의 관계",   "고인과 상주의 관계"),
-    ("장례식장 이름",        "장례식장 이름"),
-    ("장례식장 주소",        "장례식장 주소"),
-    ("장례식장 전화번호",    "장례식장 전화번호"),
-    ("입실일시",             "입실일시"),
-    ("입관일시",             "입관일시"),
-    ("발인일시",             "발인일시"),
-    ("장지이름 또는 주소",   "장지이름 또는 주소"),
-    ("조의금 계좌",          "조의금 계좌"),
-    ("안내 말씀",            "안내 말씀"),
-    ("고인 한줄 소개",       "고인 한줄 소개"),
-    ("생애 사진1 설명",      "사진1 설명"),
-    ("생애 사진2 설명",      "사진2 설명"),
-    ("생애 사진3 설명",      "사진3 설명"),
-    ("생애 사진4 설명",      "사진4 설명"),
-    ("생애 사진5 설명",      "사진5 설명"),
-]
+# form input name → Firebase field key 매핑
+_EDIT_FORM_FIELDS = {
+    "name":         "고인 성함",
+    "birth":        "생년월일",
+    "death":        "별세일",
+    "title":        "직함/직책",
+    "gender":       "성별",
+    "religion":     "종교",
+    "chief":        "상주 성함",
+    "relation":     "고인과 상주의 관계",
+    "email":        "신청자 이메일",
+    "hall_name":    "장례식장 이름",
+    "hall_addr":    "장례식장 주소",
+    "hall_tel":     "장례식장 전화번호",
+    "checkin":      "입실일시",
+    "checkin_time": "입실일시 시간",
+    "laying":       "입관일시",
+    "laying_time":  "입관일시 시간",
+    "funeral":      "발인일시",
+    "funeral_time": "발인일시 시간",
+    "burial":       "장지이름 또는 주소",
+    "account":      "조의금 계좌",
+    "notice":       "안내 말씀",
+    "intro":        "고인 한줄 소개",
+    "life_events":  "생애 주요 사건",
+    "memory":       "고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?",
+    "personality":  "고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?",
+    "bright":       "고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?",
+    "lastwords":    "끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.",
+    "photo1_desc":  "생애 사진1 설명",
+    "photo2_desc":  "생애 사진2 설명",
+    "photo3_desc":  "생애 사진3 설명",
+    "photo4_desc":  "생애 사진4 설명",
+    "photo5_desc":  "생애 사진5 설명",
+}
 
-def build_fields_summary_html(fields):
-    """입력값 요약 HTML 블록 생성. 값이 있는 항목만 표시."""
-    rows = ""
-    for field_key, display_label in _SUMMARY_FIELDS:
-        val = fields.get(field_key, "").strip() if fields.get(field_key) else ""
-        if not val:
-            continue
-        bg = "#ffffff" if len(rows) % 2 == 0 else "#faf7f2"
-        rows += (
-            f'<tr>'
-            f'<td style="padding:7px 10px;font-size:11px;color:#8b7355;white-space:nowrap;'
-            f'border-bottom:1px solid #f0ebe0;width:110px;vertical-align:top">{display_label}</td>'
-            f'<td style="padding:7px 10px;font-size:12px;color:#3a3a3a;border-bottom:1px solid #f0ebe0;'
-            f'word-break:break-all;line-height:1.6">{val}</td>'
-            f'</tr>'
+_EDIT_FORM_CSS = (
+    "* { box-sizing:border-box; margin:0; padding:0; }"
+    " body { background:#f5f2eb; font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; color:#2c2c2c; font-size:14px; }"
+    " .hdr { background:#1a1a2e; color:#e8e0d0; padding:28px 24px; text-align:center; }"
+    " .hdr small { letter-spacing:4px; font-size:10px; opacity:.5; display:block; margin-bottom:6px; }"
+    " .hdr h1 { font-weight:300; letter-spacing:3px; font-size:20px; margin-bottom:4px; }"
+    " .hdr p { font-size:11px; opacity:.4; letter-spacing:2px; }"
+    " form { max-width:560px; margin:0 auto; }"
+    " .sec { background:#fff; margin-bottom:2px; padding:20px 20px 16px; }"
+    " .sec-title { font-size:10px; color:#8b7355; letter-spacing:3px; font-weight:bold; margin-bottom:14px;"
+    "   border-bottom:1px solid #f0ebe0; padding-bottom:8px; }"
+    " .field { margin-bottom:13px; }"
+    " .field:last-child { margin-bottom:0; }"
+    " label { display:block; font-size:11px; color:#8b7355; letter-spacing:.5px; margin-bottom:5px; }"
+    " input[type=text], input[type=email], textarea {"
+    "   width:100%; border:1px solid #e0d9cc; border-radius:3px; padding:9px 11px;"
+    "   font-size:13px; color:#2c2c2c; font-family:inherit; background:#faf7f2; line-height:1.5; }"
+    " input:focus, textarea:focus { outline:none; border-color:#c8a96e; background:#fff; }"
+    " textarea { resize:vertical; min-height:72px; }"
+    " .r2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }"
+    " .r3 { display:grid; grid-template-columns:2fr 1fr; gap:10px; }"
+    " .submit-wrap { padding:24px 20px; text-align:center; }"
+    " .btn { width:100%; max-width:400px; background:#c8a96e; color:#0f0d09; border:none;"
+    "   padding:15px 32px; font-size:14px; font-weight:700; letter-spacing:2px; border-radius:4px;"
+    "   cursor:pointer; font-family:inherit; }"
+    " .btn:hover { background:#b89860; }"
+    " .note { font-size:11px; color:#9e8250; margin-top:8px; }"
+    " footer { background:#f5f0e8; padding:18px; text-align:center; font-size:11px; color:#8a8a8a; }"
+    " footer a { color:#8b7355; text-decoration:none; }"
+)
+
+def build_edit_form_html(pending_id, stored):
+    """수정 HTML 폼 생성. 기존 입력값 pre-fill."""
+    import html as _h
+    fields = stored.get("fields", {})
+    dn  = _h.escape(stored.get("deceased_name", ""))
+    pid = _h.escape(pending_id)
+
+    def v(key):
+        return _h.escape(str(fields.get(key, "") or ""))
+
+    def inp(form_name, label, field_key, typ="text"):
+        val = v(field_key)
+        return (
+            f'<div class="field"><label>{label}</label>'
+            f'<input type="{typ}" name="{form_name}" value="{val}"></div>'
         )
-    if not rows:
-        return ""
-    return (
-        '<div style="margin:20px 0 0;padding:16px;background:#faf7f2;border-radius:4px;border:1px solid #e8e0d0">'
-        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin:0 0 10px;font-weight:bold">📋 입력하신 내용 (수정 시 참고용)</p>'
-        '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:3px;overflow:hidden">'
-        + rows +
-        '</table>'
-        '</div>'
-    )
 
-def send_email_advanced(to_email, deceased_name, pages_url, edit_url="", fields=None):
+    def ta(form_name, label, field_key):
+        val = v(field_key)
+        return (
+            f'<div class="field"><label>{label}</label>'
+            f'<textarea name="{form_name}">{val}</textarea></div>'
+        )
+
+    css = _EDIT_FORM_CSS
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>부고 내용 수정 · 휴먼다큐</title>
+<style>{css}</style>
+</head>
+<body>
+<div class="hdr">
+  <small>HUMANDOCU · ADVANCED</small>
+  <h1>故 {dn}</h1>
+  <p>부고 내용 수정</p>
+</div>
+<form method="POST" action="/webhook/advanced/edit-form">
+<input type="hidden" name="pending_id" value="{pid}">
+
+<div class="sec">
+  <div class="sec-title">기본 정보</div>
+  {inp("name","고인 성함","고인 성함")}
+  <div class="r2">
+    {inp("birth","생년월일","생년월일")}
+    {inp("death","별세일","별세일")}
+  </div>
+  <div class="r2">
+    {inp("title","직함/직책","직함/직책")}
+    {inp("gender","성별","성별")}
+  </div>
+  {inp("religion","종교","종교")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">상주 정보</div>
+  <div class="r2">
+    {inp("chief","상주 성함","상주 성함")}
+    {inp("relation","고인과 상주의 관계","고인과 상주의 관계")}
+  </div>
+  {inp("email","신청자 이메일","신청자 이메일","email")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">장례식장</div>
+  {inp("hall_name","장례식장 이름","장례식장 이름")}
+  {inp("hall_addr","장례식장 주소","장례식장 주소")}
+  {inp("hall_tel","장례식장 전화번호","장례식장 전화번호")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">장례 일정</div>
+  <div class="r3">
+    {inp("checkin","입실일시","입실일시")}
+    {inp("checkin_time","입실 시간","입실일시 시간")}
+  </div>
+  <div class="r3">
+    {inp("laying","입관일시","입관일시")}
+    {inp("laying_time","입관 시간","입관일시 시간")}
+  </div>
+  <div class="r3">
+    {inp("funeral","발인일시","발인일시")}
+    {inp("funeral_time","발인 시간","발인일시 시간")}
+  </div>
+  {inp("burial","장지이름 또는 주소","장지이름 또는 주소")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">안내 및 조의</div>
+  {inp("account","조의금 계좌","조의금 계좌")}
+  {ta("notice","안내 말씀","안내 말씀")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">추모 내용</div>
+  {inp("intro","고인 한줄 소개","고인 한줄 소개")}
+  {ta("life_events","생애 주요 사건","생애 주요 사건")}
+  {ta("memory","기억에 남는 장면","고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?")}
+  {ta("personality","말버릇 / 습관","고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?")}
+  {ta("bright","빛나셨던 순간","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?")}
+  {ta("lastwords","전하고 싶은 말","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.")}
+</div>
+
+<div class="sec">
+  <div class="sec-title">생애 사진 설명</div>
+  {inp("photo1_desc","사진1 설명","생애 사진1 설명")}
+  {inp("photo2_desc","사진2 설명","생애 사진2 설명")}
+  {inp("photo3_desc","사진3 설명","생애 사진3 설명")}
+  {inp("photo4_desc","사진4 설명","생애 사진4 설명")}
+  {inp("photo5_desc","사진5 설명","생애 사진5 설명")}
+</div>
+
+<div class="submit-wrap">
+  <button type="submit" class="btn">수정 완료하기</button>
+  <p class="note">수정 후 이메일로 완료 알림을 보내드립니다</p>
+</div>
+</form>
+<footer><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a></footer>
+</body>
+</html>"""
+
+def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
     """어드밴스드 부고 발송 이메일"""
     edit_btn = (
         f'<div style="margin:16px 0;text-align:center">'
@@ -650,7 +787,6 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url="", fields=
         f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 내용 수정하기</a>'
         f'</div>'
     ) if edit_url else ""
-    fields_summary = build_fields_summary_html(fields or {})
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -664,9 +800,8 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url="", fields=
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 열기</a>'
         '</div>'
-        + edit_btn
-        + fields_summary +
-        '<div style="margin:20px 0 0;padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        + edit_btn +
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div>'
@@ -689,7 +824,7 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url="", fields=
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
 
 
-def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url="", fields=None):
+def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
     """수정 완료 알림 이메일 — 다시 수정 버튼 포함"""
     edit_btn = (
         f'<div style="margin:16px 0;text-align:center">'
@@ -698,7 +833,6 @@ def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url="", fi
         f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 다시 수정하기</a>'
         f'</div>'
     ) if edit_url else ""
-    fields_summary = build_fields_summary_html(fields or {})
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -711,9 +845,8 @@ def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url="", fi
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 수정된 부고 열기</a>'
         '</div>'
-        + edit_btn
-        + fields_summary +
-        '<div style="margin:20px 0 0;padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        + edit_btn +
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div></div>'
@@ -1759,7 +1892,7 @@ def webhook_premium_edit():
                 print(f"[EDIT] 수정 완료: {pages_url}")
                 if contact_email:
                     edit_url = build_edit_url(pending_id, merged)
-                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=merged)
+                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url)
 
             except Exception as e:
                 print(f"[EDIT] 수정 파이프라인 오류: {e}")
@@ -1866,7 +1999,7 @@ def _run_advanced_pipeline(pending_id):
 
                 if contact_email:
                     edit_url = build_edit_url(pending_id, fields)
-                    send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=fields)
+                    send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url)
                     send_email_admin_password(contact_email, deceased_name, admin_pw)
 
             except Exception as e:
@@ -2875,31 +3008,142 @@ def payment_verify():
 
 @app.route("/edit-link/<pending_id>")
 def edit_link_redirect(pending_id):
-    """이메일 수정 버튼 → Firebase에서 fields 읽어 Tally 프리필 URL로 리다이렉트"""
-    from flask import redirect as _redirect
+    """이메일 수정 버튼 → 기존 입력값이 채워진 커스텀 수정 폼 서빙"""
     try:
         doc = _get_db().collection("advanced_pending").document(pending_id).get()
         if not doc.exists:
             print(f"[EDIT-LINK] 문서 없음: pending_id={pending_id}")
             return "해당 정보를 찾을 수 없습니다.", 404
         stored = doc.to_dict()
-        status = stored.get("status", "")
         fields = stored.get("fields", {})
-        fields_by_key = stored.get("fields_by_key", {})
-        non_empty = {k: v for k, v in fields.items() if v}
-        print(f"[EDIT-LINK] pending_id={pending_id}, status={status}, "
-              f"fields({len(fields)})={list(fields.keys())}, "
-              f"fields_by_key({len(fields_by_key)})={list(fields_by_key.keys())}, "
-              f"non_empty_count={len(non_empty)}")
-        if not fields:
-            print(f"[EDIT-LINK] WARNING: fields 없음 — stored keys: {list(stored.keys())}")
-        tally_url = build_tally_prefill_url(pending_id, fields, fields_by_key)
-        print(f"[EDIT-LINK] redirect → {tally_url[:300]}...")
-        return _redirect(tally_url)
+        print(f"[EDIT-LINK] pending_id={pending_id}, status={stored.get('status','')}, "
+              f"fields_count={len(fields)}")
+        html = build_edit_form_html(pending_id, stored)
+        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
     except Exception as e:
         print(f"[EDIT-LINK] 오류: {e}")
         import traceback; traceback.print_exc()
-        return _redirect(f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?pending_id={pending_id}")
+        return "오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 500
+
+
+@app.route("/webhook/advanced/edit-form", methods=["POST"])
+def webhook_advanced_edit_form():
+    """커스텀 수정 폼 제출 처리 — AI 추모글 재사용, 텍스트 필드만 업데이트"""
+    try:
+        pending_id = request.form.get("pending_id", "").strip()
+        if not pending_id:
+            return "pending_id 없음", 400
+
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return "수정할 부고를 찾을 수 없습니다.", 404
+
+        stored = doc.to_dict()
+        stored_fields  = stored.get("fields", {})
+        one_liner_a    = stored.get("one_liner_a", "")
+        one_liner_b    = stored.get("one_liner_b", "")
+        tribute_para_a = stored.get("tribute_para_a", "")
+        tribute_para_b = stored.get("tribute_para_b", "")
+        contact_email  = stored.get("contact_email", "")
+        deceased_name  = stored.get("deceased_name", "")
+
+        if not one_liner_a:
+            return "초기 부고 작성이 완료되지 않았습니다.", 400
+
+        # 폼 데이터 → fields dict 변환
+        new_fields = {}
+        for form_name, field_key in _EDIT_FORM_FIELDS.items():
+            val = request.form.get(form_name, "").strip()
+            new_fields[field_key] = val
+
+        deceased_name  = new_fields.get("고인 성함", "") or deceased_name
+        contact_email  = new_fields.get("신청자 이메일", "") or contact_email
+
+        # 머지: new_fields(비어있지 않은 값) 우선, 사진은 stored 유지
+        merged = dict(stored_fields)
+        merged.update({k: v for k, v in new_fields.items() if v})
+        for photo_key in _PHOTO_KEYS:
+            merged[photo_key] = stored_fields.get(photo_key, "")
+
+        print(f"[EDIT-FORM] pending_id={pending_id}, deceased={deceased_name}")
+
+        def process():
+            try:
+                title        = merged.get("직함/직책", "")
+                intro        = merged.get("고인 한줄 소개", "")
+                relationship = merged.get("고인과 상주의 관계", "")
+                chief_name   = merged.get("상주 성함", "")
+                life_events  = merged.get("생애 주요 사건", "")
+                photo_url    = merged.get("고인 사진(영정)", "")
+
+                filename   = "adv-" + safe_filename(deceased_name)
+                filename_b = "adv-" + safe_filename(deceased_name) + "-b"
+                html_a = build_html_advanced(merged, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+                html_b = build_html_advanced(merged, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
+                pages_url = upload_to_github(filename, html_a)
+
+                memorial_html = build_html_memorial(deceased_name, merged, {
+                    "생년월일": merged.get("생년월일", ""),
+                    "별세일":   merged.get("별세일", ""),
+                    "한줄평":   one_liner_a,
+                    "고인 소개": intro,
+                }, life_events, photo_url)
+                upload_to_github("adv-memorial-" + safe_filename(deceased_name), memorial_html)
+                upload_to_github(filename_b, html_b)
+
+                import datetime as _dt
+                _get_db().collection("advanced_pending").document(pending_id).update({
+                    "fields":    merged,
+                    "edited_at": _dt.datetime.utcnow().isoformat(),
+                })
+
+                print(f"[EDIT-FORM] 수정 완료: {pages_url}")
+                if contact_email:
+                    edit_url = build_edit_url(pending_id, merged)
+                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url)
+
+            except Exception as e:
+                print(f"[EDIT-FORM] 파이프라인 오류: {e}")
+                import traceback; traceback.print_exc()
+
+        import threading
+        threading.Thread(target=process, daemon=True).start()
+
+        # 즉시 완료 안내 페이지 반환
+        import html as _h
+        dn = _h.escape(deceased_name)
+        return f"""<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>수정 완료 · 휴먼다큐</title>
+<style>
+  body{{background:#f5f2eb;font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}}
+  .card{{background:#fff;max-width:440px;width:90%;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center;}}
+  .hdr{{background:#1a1a2e;color:#e8e0d0;padding:28px;}}
+  .hdr small{{letter-spacing:4px;font-size:10px;opacity:.5;display:block;margin-bottom:6px;}}
+  .hdr h1{{font-weight:300;letter-spacing:3px;font-size:20px;}}
+  .body{{padding:28px;}}
+  .icon{{font-size:40px;margin-bottom:12px;}}
+  p{{line-height:1.9;font-size:14px;color:#6b6050;}}
+  footer{{background:#f5f0e8;padding:14px;font-size:11px;color:#8a8a8a;}}
+  footer a{{color:#8b7355;text-decoration:none;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="hdr"><small>HUMANDOCU · ADVANCED</small><h1>故 {dn}</h1></div>
+  <div class="body">
+    <div class="icon">✅</div>
+    <p>수정 내용을 처리 중입니다.<br>완료되면 이메일로 알려드립니다.</p>
+  </div>
+  <footer><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a></footer>
+</div>
+</body></html>""", 200, {"Content-Type": "text/html; charset=utf-8"}
+
+    except Exception as e:
+        print(f"[EDIT-FORM] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return "오류가 발생했습니다.", 500
 
 
 @app.route("/test/portone")
@@ -4065,7 +4309,7 @@ def admin_resend_advanced_email(pending_id):
             return jsonify({"ok": False, "reason": "contact_email 또는 pages_url 없음",
                             "keys": list(data.keys())}), 400
         edit_url = build_edit_url(pending_id, fields)
-        send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=fields)
+        send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url)
         print(f"[ADMIN] 이메일 재발송: {pending_id} → {contact_email}")
         return jsonify({"ok": True, "to": contact_email, "deceased_name": deceased_name,
                         "pages_url": pages_url})
