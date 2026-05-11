@@ -2306,7 +2306,7 @@ async function startPayment() {{
       btn.disabled = false;
     }} else {{
       status.textContent = '결제 완료! 잠시만 기다려주세요...';
-      const verify = await fetch('/payment/verify', {{
+      const verify = await fetch('https://humandocu-server-production-428d.up.railway.app/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
         body: JSON.stringify({{ paymentId: orderId, amount: {amount} }})
@@ -2551,7 +2551,7 @@ async function startPayment() {{
     }} else {{
       status.textContent = '결제 완료! 페이지 제작을 시작합니다...';
       // 결제 성공 빈칸 서버에 검증 요청
-      const verify = await fetch('/payment/verify', {{
+      const verify = await fetch('https://humandocu-server-production-428d.up.railway.app/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
         body: JSON.stringify({{ paymentId: orderId, amount: {amount}, pending_id: '{pending_id}' }})
