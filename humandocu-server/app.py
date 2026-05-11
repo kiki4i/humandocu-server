@@ -4331,36 +4331,6 @@ def admin_resend_advanced_email(pending_id):
         return jsonify({"ok": False, "reason": str(e)}), 500
 
 
-@app.route("/admin/regen-memorial/<pending_id>", methods=["GET"])
-def admin_regen_memorial(pending_id):
-    """메모리얼 페이지 단독 재생성 (관리자용 임시)"""
-    try:
-        doc = _get_db().collection("advanced_pending").document(pending_id).get()
-        if not doc.exists:
-            return jsonify({"ok": False, "reason": "문서 없음"}), 404
-        stored = doc.to_dict()
-        fields = stored.get("fields", {})
-        deceased_name = stored.get("deceased_name", "") or fields.get("고인 성함", "")
-        one_liner_a   = stored.get("one_liner_a", "")
-        intro         = fields.get("고인 한줄 소개", "")
-        life_events   = fields.get("생애 주요 사건", "")
-        photo_url     = fields.get("고인 사진(영정)", "")
-
-        memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
-        memorial_html = build_html_memorial(deceased_name, fields, {
-            "생년월일": fields.get("생년월일", ""),
-            "별세일":   fields.get("별세일", ""),
-            "한줄평":   one_liner_a,
-            "고인 소개": intro,
-        }, life_events, photo_url)
-        url = upload_to_github(memorial_filename, memorial_html)
-        print(f"[ADMIN-REGEN] 메모리얼 재생성 완료: {url}")
-        return jsonify({"ok": True, "url": url, "filename": memorial_filename})
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"ok": False, "reason": str(e)}), 500
-
-
 @app.route("/admin/migrate-nickname", methods=["GET"])
 def migrate_nickname():
     """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
