@@ -2797,15 +2797,23 @@ def edit_link_redirect(pending_id):
     try:
         doc = _get_db().collection("advanced_pending").document(pending_id).get()
         if not doc.exists:
+            print(f"[EDIT-LINK] 문서 없음: pending_id={pending_id}")
             return "해당 정보를 찾을 수 없습니다.", 404
         stored = doc.to_dict()
+        status = stored.get("status", "")
         fields = stored.get("fields", {})
-        print(f"[EDIT-LINK] pending_id={pending_id}, fields keys={list(fields.keys())}")
+        non_empty = {k: v for k, v in fields.items() if v}
+        print(f"[EDIT-LINK] pending_id={pending_id}, status={status}, "
+              f"fields keys({len(fields)})={list(fields.keys())}, "
+              f"non_empty_count={len(non_empty)}")
+        if not fields:
+            print(f"[EDIT-LINK] WARNING: fields 없음 — stored keys: {list(stored.keys())}")
         tally_url = build_tally_prefill_url(pending_id, fields)
-        print(f"[EDIT-LINK] redirect → {tally_url[:120]}...")
+        print(f"[EDIT-LINK] redirect → {tally_url[:200]}...")
         return _redirect(tally_url)
     except Exception as e:
         print(f"[EDIT-LINK] 오류: {e}")
+        import traceback; traceback.print_exc()
         return _redirect(f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?pending_id={pending_id}")
 
 
