@@ -394,7 +394,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             '<div style="display:inline-block;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
             'margin:10px">'
-            f'<img src="{frame_url}" style="width:240px;height:300px;object-fit:cover;object-position:top;display:block;">'
+            f'<img src="{frame_url}" style="max-width:240px;width:100%;height:auto;display:block;">'
             '</div>'
             + (f'<div style="font-size:12px;color:rgba(200,169,110,0.75);margin-top:6px;margin-bottom:4px;line-height:1.6;text-align:center;padding:0 16px">{frame_cap}</div>' if frame_cap else '')
             + '</div>'
@@ -470,7 +470,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
             dot_bg = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
             slides += (
                 f'<div class="sl" style="display:{display};text-align:center">'
-                f'<img src="{url}" style="width:100%;max-height:320px;object-fit:cover;border-radius:4px;display:block;">'
+                f'<img src="{url}" style="width:100%;height:auto;border-radius:4px;display:block;">'
                 + (f'<div style="font-size:12px;color:#c8a96e;margin-top:10px;line-height:1.7">{cap}</div>' if cap else '')
                 + '</div>'
             )
@@ -482,26 +482,33 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         n_total = str(len(slideshow_all))
         slideshow_js = (
             "var _si=0,_st=" + n_total + ";"
+            "var _timer=null,_playing=false;"
+            "var _bgm=document.getElementById('bgm');"
             "function goSl(n){"
             "document.querySelectorAll('.sl').forEach(function(e,i){e.style.display=i===n?'block':'none';});"
             "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
             "_si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
-            "setInterval(nxSl,3000);"
-            "var _bgm=document.getElementById('bgm');"
-            "function toggleBgm(){"
-            "_bgm.muted=!_bgm.muted;"
+            "function togglePlay(){"
             "var btn=document.getElementById('bgm-btn');"
-            "btn.textContent=_bgm.muted?'🔇 음소거':'🔊 음악';"
-            "}"
-            "document.addEventListener('click',function(){if(_bgm.paused)_bgm.play();},{once:true});"
+            "if(!_playing){"
+            "_playing=true;"
+            "_bgm.play().catch(function(){});"
+            "_timer=setInterval(nxSl,3000);"
+            "btn.textContent='⏸ 멈춤';"
+            "}else{"
+            "_playing=false;"
+            "_bgm.pause();"
+            "clearInterval(_timer);"
+            "btn.textContent='▶ 재생';"
+            "}}"
         )
         slideshow_section = (
             '<div style="background:#1a1714;padding:24px 20px;margin-top:1px;position:relative">'
-            '<audio id="bgm" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" autoplay loop></audio>'
-            '<button id="bgm-btn" onclick="toggleBgm()" style="position:absolute;top:14px;right:14px;'
+            '<audio id="bgm" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
+            '<button id="bgm-btn" onclick="togglePlay()" style="position:absolute;top:14px;right:14px;'
             'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
-            'padding:5px 13px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">🔊 음악</button>'
+            'padding:5px 13px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit">▶ 재생</button>'
             '<div style="font-size:10px;letter-spacing:4px;color:rgba(200,169,110,0.6);margin-bottom:16px;text-align:center">사 진 슬 라 이 드</div>'
             + slides
             + f'<div style="text-align:center;margin-top:14px">{dots}</div>'
@@ -893,7 +900,12 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
     share_js = (
         "function shareKakao(){"
         "var url=window.location.href;"
-        "if(navigator.share){navigator.share({title:'" + first_mourner + "의 부친 故 " + deceased_name + "님 부고',url:url}).catch(function(){});}"
+        "if(typeof Kakao!=='undefined'&&Kakao.isInitialized()){"
+        "Kakao.Share.sendDefault({objectType:'feed',"
+        "content:{title:'故 " + deceased_name + " 님 부고',"
+        "description:'" + first_mourner + " 가족',"
+        "imageUrl:'https://humandocu.com/chrysanthemum.jpg',"
+        "link:{mobileWebUrl:url,webUrl:url}}});}"
         "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('부고 링크가 복사되었습니다.');}}"
         "function copyAddr(addr){"
@@ -1245,7 +1257,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         f'<a href="{memorial_url}" style="display:inline-flex;align-items:center;gap:8px;'
         'background:#c8a96e;border:1px solid #c8a96e;'
         'color:#1a1a2e;font-size:13px;font-weight:700;letter-spacing:2px;padding:13px 32px;'
-        'border-radius:4px;text-decoration:none;">메모리얼 페이지 방문하기 빈칸</a>'
+        'border-radius:4px;text-decoration:none;">메모리얼 페이지 방문하기</a>'
         '</div>'
     )
 
@@ -1272,7 +1284,12 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
     share_js = (
         "function shareKakao(){"
         "var url=window.location.href;"
-        "if(navigator.share){navigator.share({title:'" + first_mourner + "의 부친 故 " + deceased_name + "님 부고',url:url}).catch(function(){});}"
+        "if(typeof Kakao!=='undefined'&&Kakao.isInitialized()){"
+        "Kakao.Share.sendDefault({objectType:'feed',"
+        "content:{title:'故 " + deceased_name + " 님 부고',"
+        "description:'" + first_mourner + " 가족',"
+        "imageUrl:'https://humandocu.com/chrysanthemum.jpg',"
+        "link:{mobileWebUrl:url,webUrl:url}}});}"
         "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('부고 링크가 복사되었습니다.');}}"
         "function copyAddr(addr){"
@@ -4155,7 +4172,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
         + f'<a href="{memorial_url}" style="display:block;margin:22px 0 0;padding:14px 0;'
           'border:1.5px solid #c8a87a;font-size:13px;color:#2c2c2c;letter-spacing:2px;'
           'background:#fff9f2;text-align:center;text-decoration:none;font-weight:500;border-radius:4px;">'
-          '메모리얼 페이지 방문하기 빈칸</a>\n'
+          '메모리얼 페이지 방문하기</a>\n'
         + '</div>\n\n'
 
         # ── 3. 장례 사진 (조건부)
