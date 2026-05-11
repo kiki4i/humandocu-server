@@ -557,13 +557,17 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
 ADVANCED_TALLY_FORM_ID = "7RVAZa"
 _PHOTO_KEYS = {"고인 사진(영정)", "생애 사진1", "생애 사진2", "생애 사진3", "생애 사진4", "생애 사진5"}
 
-def build_edit_url(pending_id, fields):
-    """저장된 텍스트 필드를 프리필한 Tally 수정 URL 생성. 사진 필드는 제외."""
+def build_tally_prefill_url(pending_id, fields):
+    """저장된 텍스트 필드를 프리필한 Tally URL 생성. 사진 필드 제외. quote_via=quote 사용."""
     params = {"pending_id": pending_id}
     for k, v in fields.items():
         if k not in _PHOTO_KEYS and v:
             params[k] = v
-    return f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?" + urllib.parse.urlencode(params)
+    return f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?" + urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+
+def build_edit_url(pending_id, fields):
+    """이메일용 수정 링크 — 서버 리다이렉트 엔드포인트 URL 반환."""
+    return f"https://humandocu-server-production.up.railway.app/edit-link/{pending_id}"
 
 def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
     """어드밴스드 부고 발송 이메일"""
@@ -1206,7 +1210,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
             '<div style="position:relative;display:inline-block;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
             'margin:10px;">'
-            f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:cover;object-position:top;display:block;">'
+            f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:contain;background:#1a1714;display:block;">'
             '</div>'
             '</div></div>'
         )
@@ -2784,6 +2788,25 @@ def payment_verify():
     except Exception as e:
         print(f"[PAYMENT] 검증 오류: {e}")
         return jsonify({"ok": False, "reason": str(e)})
+
+
+@app.route("/edit-link/<pending_id>")
+def edit_link_redirect(pending_id):
+    """이메일 수정 버튼 → Firebase에서 fields 읽어 Tally 프리필 URL로 리다이렉트"""
+    from flask import redirect as _redirect
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return "해당 정보를 찾을 수 없습니다.", 404
+        stored = doc.to_dict()
+        fields = stored.get("fields", {})
+        print(f"[EDIT-LINK] pending_id={pending_id}, fields keys={list(fields.keys())}")
+        tally_url = build_tally_prefill_url(pending_id, fields)
+        print(f"[EDIT-LINK] redirect → {tally_url[:120]}...")
+        return _redirect(tally_url)
+    except Exception as e:
+        print(f"[EDIT-LINK] 오류: {e}")
+        return _redirect(f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?pending_id={pending_id}")
 
 
 @app.route("/test/portone")
