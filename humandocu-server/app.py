@@ -2612,6 +2612,13 @@ def payment_verify():
         return jsonify({"ok": False, "reason": str(e)})
 
 
+@app.route("/test/portone")
+def test_portone():
+    import os
+    secret = os.environ.get("PORTONE_SECRET", "")
+    return jsonify({"has_secret": bool(secret), "secret_length": len(secret)})
+
+
 @app.route("/payment/success", methods=["GET"])
 def payment_success():
     pending_id = request.args.get("pending_id", "")
