@@ -141,6 +141,7 @@ def parse_tally_advanced(payload):
                 if label and label.startswith("생애 사진") and "설명" in label:
                     num = ''.join(filter(str.isdigit, label))
                     fields[f"생애 사진{num}"] = url
+                    continue  # 아래 elif label: 블록 스킵 - 가비지 문자열 저장 방지
                 else:
                     value = url
 
@@ -630,6 +631,8 @@ def build_edit_form_html(pending_id, stored):
     fields = stored.get("fields", {})
     dn  = _h.escape(stored.get("deceased_name", ""))
     pid = _h.escape(pending_id)
+    photo_desc_keys = ["생애 사진1 설명","생애 사진2 설명","생애 사진3 설명","생애 사진4 설명","생애 사진5 설명"]
+    print(f"[build_edit_form] pid={pending_id} 사진설명 데이터: { {k: fields.get(k,'(없음)') for k in photo_desc_keys} }")
 
     def v(key):
         return _h.escape(str(fields.get(key, "") or ""))
@@ -678,6 +681,8 @@ html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkM
 textarea.qi{resize:vertical;min-height:96px}
 .dt{display:grid;grid-template-columns:3fr 2fr;gap:10px}
 .divider{border:none;border-top:1px solid #f3f4f6;margin:40px 0}
+.section-hdr{font-size:14px;font-weight:600;color:#374151;margin-bottom:24px;letter-spacing:.02em}
+.section-sub{font-weight:400;color:#9ca3af;font-size:13px;margin-left:6px}
 .submit-area{margin-top:48px}
 .submit-btn{display:block;width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:16px 24px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
 .submit-btn:hover{background:#374151}
@@ -733,6 +738,7 @@ textarea.qi{resize:vertical;min-height:96px}
 {qt("bright","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?",4)}
 {qt("lastwords","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.",4)}
 <hr class="divider">
+<div class="section-hdr">사진 설명 <span class="section-sub">각 생애 사진에 대한 간단한 설명을 입력해주세요 (선택)</span></div>
 {q("photo1_desc","생애 사진1 설명","생애 사진1 설명")}
 {q("photo2_desc","생애 사진2 설명","생애 사진2 설명")}
 {q("photo3_desc","생애 사진3 설명","생애 사진3 설명")}
