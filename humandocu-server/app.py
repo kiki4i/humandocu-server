@@ -2596,7 +2596,7 @@ def payment_verify():
         paid_amount = payment.get("amount", {}).get("paid", 0)
         status = payment.get("status", "")
 
-        if status == "PAID" and paid_amount == expected_amount:
+        if status in ("PAID", "paid") and paid_amount == expected_amount:
             print(f"[PAYMENT] 검증 성공: {payment_id} / {paid_amount}원")
             pending_id = data.get("pending_id", "")
             if pending_id:
@@ -2605,7 +2605,7 @@ def payment_verify():
                 print(f"[PAYMENT] 파이프라인 실행: {pending_id}")
             return jsonify({"ok": True, "pending_id": pending_id})
         else:
-            print(f"[PAYMENT] 검증 실패: status={status}, paid={paid_amount}, expected={expected_amount}")
+            print(f"[PAYMENT] 검증 실패: status={status}, paid={paid_amount}, expected={expected_amount}, raw_response={payment}")
             return jsonify({"ok": False, "reason": "amount_mismatch"})
     except Exception as e:
         print(f"[PAYMENT] 검증 오류: {e}")
