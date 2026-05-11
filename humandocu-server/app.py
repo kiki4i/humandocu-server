@@ -4049,6 +4049,31 @@ def firebase_get_sixshot(doc_id):
         return None
 
 
+@app.route("/admin/resend-advanced-email/<pending_id>", methods=["GET"])
+def admin_resend_advanced_email(pending_id):
+    """어드밴스드 결과 이메일 재발송 (관리자용)"""
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"ok": False, "reason": "문서 없음"}), 404
+        data = doc.to_dict()
+        contact_email = data.get("contact_email", "")
+        deceased_name = data.get("deceased_name", "")
+        pages_url     = data.get("pages_url", "")
+        fields        = data.get("fields", {})
+        if not contact_email or not pages_url:
+            return jsonify({"ok": False, "reason": "contact_email 또는 pages_url 없음",
+                            "keys": list(data.keys())}), 400
+        edit_url = build_edit_url(pending_id, fields)
+        send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=fields)
+        print(f"[ADMIN] 이메일 재발송: {pending_id} → {contact_email}")
+        return jsonify({"ok": True, "to": contact_email, "deceased_name": deceased_name,
+                        "pages_url": pages_url})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "reason": str(e)}), 500
+
+
 @app.route("/admin/migrate-nickname", methods=["GET"])
 def migrate_nickname():
     """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
