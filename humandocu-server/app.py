@@ -106,13 +106,16 @@ def parse_tally(payload):
     return fields
 
 def parse_tally_advanced(payload):
-    """어드밴스드 전용 파서"""
+    """어드밴스드 전용 파서. fields(label→value)와 fields_by_key(key→value) 함께 반환."""
     fields = {}
+    fields_by_key = {}  # Tally 프리필용: field.key → value
     try:
         prev_label = None
+        prev_key = None
         for field in payload["data"]["fields"]:
             label = field.get("label")
             if label is not None: label = label.strip()
+            tally_key = field.get("key", "")  # Tally 내부 식별자 (예: question_abc123)
             value = field.get("value", "")
             field_type = field.get("type", "")
             options = field.get("options", [])
@@ -146,15 +149,22 @@ def parse_tally_advanced(payload):
 
             if field_type == "INPUT_TIME" and label is None and prev_label:
                 fields[prev_label + " 시간"] = str(value).strip() if value else ""
+                if prev_key:
+                    fields_by_key[prev_key + "_time"] = str(value).strip() if value else ""
             elif label:
                 if field_type == "CHECKBOXES" and "(" in label and ")" in label and options == []:
                     pass
                 else:
-                    fields[label] = str(value).strip() if value else ""
+                    str_val = str(value).strip() if value else ""
+                    fields[label] = str_val
+                    if tally_key and field_type != "FILE_UPLOAD":
+                        fields_by_key[tally_key] = str_val
                     prev_label = label
+                    prev_key = tally_key
     except Exception as e:
         print(f"[parse_tally_advanced] 오류: {e}")
-    return fields
+    print(f"[parse_tally_advanced] key→label 매핑: { {k: v for k, v in zip([f.get('key','') for f in payload.get('data',{}).get('fields',[])], [f.get('label','') for f in payload.get('data',{}).get('fields',[])])} }")
+    return fields, fields_by_key
 def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"):
     """어드밴스드용 추모글 생성 - 직함/한줄소개 추가 반영"""
     gender_hint = "남성" if "남" in gender else "여성"
@@ -557,12 +567,21 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
 ADVANCED_TALLY_FORM_ID = "7RVAZa"
 _PHOTO_KEYS = {"고인 사진(영정)", "생애 사진1", "생애 사진2", "생애 사진3", "생애 사진4", "생애 사진5"}
 
-def build_tally_prefill_url(pending_id, fields):
-    """저장된 텍스트 필드를 프리필한 Tally URL 생성. 사진 필드 제외. quote_via=quote 사용."""
+def build_tally_prefill_url(pending_id, fields, fields_by_key=None):
+    """저장된 텍스트 필드를 프리필한 Tally URL 생성.
+    fields_by_key가 있으면 Tally 내부 key(question_xxx)로 파라미터 생성.
+    없으면 label(한글)로 폴백 — 프리필이 안 될 수 있음."""
     params = {"pending_id": pending_id}
-    for k, v in fields.items():
-        if k not in _PHOTO_KEYS and v:
-            params[k] = v
+    if fields_by_key:
+        for k, v in fields_by_key.items():
+            if v:
+                params[k] = v
+        print(f"[PREFILL] fields_by_key 사용: {list(fields_by_key.keys())}")
+    else:
+        for k, v in fields.items():
+            if k not in _PHOTO_KEYS and v:
+                params[k] = v
+        print(f"[PREFILL] 폴백: label 사용 (fields_by_key 없음)")
     return f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?" + urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
 
 def build_edit_url(pending_id, fields):
@@ -1562,12 +1581,13 @@ def webhook_advanced():
         # URL 쿼리 파라미터로 pending_id가 오면 기존 문서에 필드 업데이트
         url_pending_id = request.args.get("pending_id", "")
         print("[ADVANCED] 웹훅 수신", f"pending_id={url_pending_id}" if url_pending_id else "")
-        fields = parse_tally_advanced(payload)
+        fields, fields_by_key = parse_tally_advanced(payload)
         # Tally hidden field로 넘어온 pending_id도 확인 (URL 파라미터 우선)
         if not url_pending_id:
             url_pending_id = fields.get("pending_id", "").strip()
         print(f"[ADVANCED] 최종 pending_id: {url_pending_id}")
         print("[ADVANCED] 파싱:", json.dumps(fields, ensure_ascii=False))
+        print(f"[ADVANCED] fields_by_key keys: {list(fields_by_key.keys())}")
 
         deceased_name = fields.get("고인 성함", "").strip()
         if not deceased_name:
@@ -1576,10 +1596,11 @@ def webhook_advanced():
         # Firebase에 데이터 저장
         import uuid, datetime
         if url_pending_id:
-            # 결제 완료 후 Tally 폼 제출 빈칸 기존 pending 문서에 필드 업데이트
+            # 결제 완료 후 Tally 폼 제출 기존 pending 문서에 필드 업데이트
             pending_id = url_pending_id
             _get_db().collection("advanced_pending").document(pending_id).update({
                 "fields": fields,
+                "fields_by_key": fields_by_key,
                 "deceased_name": deceased_name,
                 "status": "pending",
                 "updated_at": datetime.datetime.utcnow().isoformat(),
@@ -1594,6 +1615,7 @@ def webhook_advanced():
             pending_id = uuid.uuid4().hex[:16]
             _get_db().collection("advanced_pending").document(pending_id).set({
                 "fields": fields,
+                "fields_by_key": fields_by_key,
                 "deceased_name": deceased_name,
                 "status": "pending",
                 "created_at": datetime.datetime.utcnow().isoformat(),
@@ -1613,7 +1635,7 @@ def webhook_premium_edit():
     """수정 Tally 웹훅 — 기존 AI 추모글 재사용, 사진은 new or stored 머지, HTML 덮어쓰기"""
     try:
         payload = request.get_json(force=True)
-        new_fields = parse_tally_advanced(payload)
+        new_fields, new_fields_by_key = parse_tally_advanced(payload)
         pending_id = new_fields.get("pending_id", "").strip()
         print(f"[EDIT] 수정 웹훅 수신: pending_id={pending_id}")
 
@@ -1625,7 +1647,8 @@ def webhook_premium_edit():
             return jsonify({"status": "error", "reason": "pending 문서 없음"}), 404
 
         stored = doc.to_dict()
-        stored_fields  = stored.get("fields", {})
+        stored_fields         = stored.get("fields", {})
+        stored_fields_by_key  = stored.get("fields_by_key", {})
         one_liner_a    = stored.get("one_liner_a", "")
         one_liner_b    = stored.get("one_liner_b", "")
         tribute_para_a = stored.get("tribute_para_a", "")
@@ -1639,6 +1662,8 @@ def webhook_premium_edit():
         # 텍스트: new 우선 / 사진: new 업로드 시 교체, 없으면 stored 유지
         merged = dict(stored_fields)
         merged.update(new_fields)
+        merged_by_key = dict(stored_fields_by_key)
+        merged_by_key.update(new_fields_by_key)
         for key in _PHOTO_KEYS:
             if not new_fields.get(key):
                 merged[key] = stored_fields.get(key, "")
@@ -1670,6 +1695,7 @@ def webhook_premium_edit():
                 import datetime as _dt
                 _get_db().collection("advanced_pending").document(pending_id).update({
                     "fields": merged,
+                    "fields_by_key": merged_by_key,
                     "edited_at": _dt.datetime.utcnow().isoformat(),
                 })
 
@@ -2802,14 +2828,16 @@ def edit_link_redirect(pending_id):
         stored = doc.to_dict()
         status = stored.get("status", "")
         fields = stored.get("fields", {})
+        fields_by_key = stored.get("fields_by_key", {})
         non_empty = {k: v for k, v in fields.items() if v}
         print(f"[EDIT-LINK] pending_id={pending_id}, status={status}, "
-              f"fields keys({len(fields)})={list(fields.keys())}, "
+              f"fields({len(fields)})={list(fields.keys())}, "
+              f"fields_by_key({len(fields_by_key)})={list(fields_by_key.keys())}, "
               f"non_empty_count={len(non_empty)}")
         if not fields:
             print(f"[EDIT-LINK] WARNING: fields 없음 — stored keys: {list(stored.keys())}")
-        tally_url = build_tally_prefill_url(pending_id, fields)
-        print(f"[EDIT-LINK] redirect → {tally_url[:200]}...")
+        tally_url = build_tally_prefill_url(pending_id, fields, fields_by_key)
+        print(f"[EDIT-LINK] redirect → {tally_url[:300]}...")
         return _redirect(tally_url)
     except Exception as e:
         print(f"[EDIT-LINK] 오류: {e}")
