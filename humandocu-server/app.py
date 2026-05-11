@@ -164,6 +164,14 @@ def parse_tally_advanced(payload):
                     prev_key = tally_key
     except Exception as e:
         print(f"[parse_tally_advanced] 오류: {e}")
+    # Tally 폼 라벨 정규화: "사진N에 대한 간단한 설명" → "생애 사진N 설명"
+    import re as _re
+    for old_key in list(fields.keys()):
+        m = _re.match(r"사진(\d)에 대한 간단한 설명", old_key)
+        if m:
+            new_key = f"생애 사진{m.group(1)} 설명"
+            if new_key not in fields:
+                fields[new_key] = fields[old_key]
     print(f"[parse_tally_advanced] key→label 매핑: { {k: v for k, v in zip([f.get('key','') for f in payload.get('data',{}).get('fields',[])], [f.get('label','') for f in payload.get('data',{}).get('fields',[])])} }")
     return fields, fields_by_key
 def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"):
@@ -4291,38 +4299,6 @@ def admin_resend_advanced_email(pending_id):
                         "pages_url": pages_url})
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"ok": False, "reason": str(e)}), 500
-
-
-@app.route("/admin/peek-pending/<pending_id>", methods=["GET"])
-def admin_peek_pending(pending_id):
-    """pending 문서 fields 전체 조회 (관리자용 디버그)"""
-    try:
-        doc = _get_db().collection("advanced_pending").document(pending_id).get()
-        if not doc.exists:
-            return jsonify({"ok": False, "reason": "문서 없음"}), 404
-        data = doc.to_dict()
-        fields = data.get("fields", {})
-        photo_keys = [k for k in fields if "사진" in k]
-        return jsonify({"ok": True, "all_fields": fields, "photo_related_keys": photo_keys})
-    except Exception as e:
-        return jsonify({"ok": False, "reason": str(e)}), 500
-
-
-@app.route("/admin/patch-pending-fields/<pending_id>", methods=["POST"])
-def admin_patch_pending_fields(pending_id):
-    """pending 문서의 fields 서브맵 내 특정 키만 업데이트 (관리자용)"""
-    try:
-        updates = request.get_json(force=True)  # {field_key: new_value, ...}
-        if not updates:
-            return jsonify({"ok": False, "reason": "body 없음"}), 400
-        db = _get_db()
-        doc_ref = db.collection("advanced_pending").document(pending_id)
-        dot_updates = {f"fields.{k}": v for k, v in updates.items()}
-        doc_ref.update(dot_updates)
-        print(f"[ADMIN-PATCH] {pending_id} 업데이트: {list(updates.keys())}")
-        return jsonify({"ok": True, "updated_keys": list(updates.keys())})
-    except Exception as e:
         return jsonify({"ok": False, "reason": str(e)}), 500
 
 
