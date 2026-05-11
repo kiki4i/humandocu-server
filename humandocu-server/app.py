@@ -213,7 +213,7 @@ def generate_tribute_advanced(deceased_name, gender, title, intro, memory, perso
     return one_liner, tribute_para
 
 def _build_guestbook_section(deceased_name):
-    _api = "https://humandocu-server-production-428d.up.railway.app"
+    _api = "https://humandocu-server-production.up.railway.app"
     safe_name = (deceased_name
         .replace('&', '&amp;').replace('"', '&quot;')
         .replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;'))
@@ -568,7 +568,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '</div>'
         '<div style="margin:24px 16px 0;padding:20px;background:#faf7f2;border-radius:4px;text-align:center">'
         '<p style="font-size:12px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">발인 다음날 · 답례장 신청</p>'
-        f'<a href="https://humandocu-server-production-428d.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
+        f'<a href="https://humandocu-server-production.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
         'style="display:inline-block;background:#c8a96e;color:#0f0d09;padding:12px 24px;text-decoration:none;font-size:14px;font-weight:700;border-radius:4px;letter-spacing:.05em">'
         '📋 답례장 신청하기 빈칸</a>'
         '<p style="font-size:11px;color:#9e8250;margin-top:8px">위 버튼을 누르시면 비밀번호 입력 후 신청 가능합니다</p>'
@@ -1518,7 +1518,7 @@ def webhook_advanced():
                 "created_at": datetime.datetime.utcnow().isoformat(),
             })
             print(f"[ADVANCED] pending 저장: {pending_id} / {deceased_name}")
-            payment_url = f"https://humandocu-server-production-428d.up.railway.app/payment/advanced?pending_id={pending_id}"
+            payment_url = f"https://humandocu-server-production.up.railway.app/payment/advanced?pending_id={pending_id}"
             return jsonify({"status": "ok", "payment_url": payment_url}), 200
 
     except Exception as e:
@@ -1752,7 +1752,7 @@ def webhook_sixshot():
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
-                page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, nickname, poems, identity, last_msg, page_url)
             except Exception as e:
                 print(f"[SIXSHOT] 백그라운드 오류: {e}")
@@ -1857,7 +1857,7 @@ def webhook_today():
                     "type": "today",
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
-                page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+                page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today")
             except Exception as e:
                 print(f"[TODAY] 백그라운드 오류: {e}")
@@ -2306,7 +2306,7 @@ async function startPayment() {{
       btn.disabled = false;
     }} else {{
       status.textContent = '결제 완료! 잠시만 기다려주세요...';
-      const verify = await fetch('https://humandocu-server-production-428d.up.railway.app/payment/verify', {{
+      const verify = await fetch('https://humandocu-server-production.up.railway.app/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
         body: JSON.stringify({{ paymentId: orderId, amount: {amount} }})
@@ -2551,7 +2551,7 @@ async function startPayment() {{
     }} else {{
       status.textContent = '결제 완료! 페이지 제작을 시작합니다...';
       // 결제 성공 빈칸 서버에 검증 요청
-      const verify = await fetch('https://humandocu-server-production-428d.up.railway.app/payment/verify', {{
+      const verify = await fetch('https://humandocu-server-production.up.railway.app/payment/verify', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json'}},
         body: JSON.stringify({{ paymentId: orderId, amount: {amount}, pending_id: '{pending_id}' }})
@@ -2863,7 +2863,7 @@ def my_send_link():
         })
 
         # 이메일 발송
-        link = f"https://humandocu-server-production-428d.up.railway.app/my-verified/{name}?token={token}"
+        link = f"https://humandocu-server-production.up.railway.app/my-verified/{name}?token={token}"
         send_my_link_email(email, name, link)
         return jsonify({"ok": True})
     except Exception as e:
@@ -2944,7 +2944,7 @@ def my_filmography_verified(name):
                 for url in item["imgs"][:3]
             ])
             cards_html += f"""
-<a href="https://humandocu-server-production-428d.up.railway.app/sixshot/{item['doc_id']}"
+<a href="https://humandocu-server-production.up.railway.app/sixshot/{item['doc_id']}"
    style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
     <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px">{type_label}</span>
@@ -3104,7 +3104,7 @@ def sixshot_page(doc_id):
         og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
         og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
 
-    page_url_self = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+    page_url_self = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
     page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}"
 
     def poem_html(text):
@@ -4698,7 +4698,7 @@ def today_submit():
             "created_at": now,
         })
 
-        page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
 
         return jsonify({
             "ok": True,
@@ -4856,7 +4856,7 @@ def today_submit_url():
             "created_at":      now,
         })
 
-        page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
         return jsonify({
             "ok":          True,
             "doc_id":      doc_id,
@@ -5010,7 +5010,7 @@ def today_submit_b64():
             "created_at":      now,
         })
 
-        page_url = f"https://humandocu-server-production-428d.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
         return jsonify({
             "ok":       True,
             "doc_id":   doc_id,
