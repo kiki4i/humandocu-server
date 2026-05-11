@@ -624,39 +624,8 @@ _EDIT_FORM_FIELDS = {
     "photo5_desc":  "생애 사진5 설명",
 }
 
-_EDIT_FORM_CSS = (
-    "* { box-sizing:border-box; margin:0; padding:0; }"
-    " body { background:#f5f2eb; font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; color:#2c2c2c; font-size:14px; }"
-    " .hdr { background:#1a1a2e; color:#e8e0d0; padding:28px 24px; text-align:center; }"
-    " .hdr small { letter-spacing:4px; font-size:10px; opacity:.5; display:block; margin-bottom:6px; }"
-    " .hdr h1 { font-weight:300; letter-spacing:3px; font-size:20px; margin-bottom:4px; }"
-    " .hdr p { font-size:11px; opacity:.4; letter-spacing:2px; }"
-    " form { max-width:560px; margin:0 auto; }"
-    " .sec { background:#fff; margin-bottom:2px; padding:20px 20px 16px; }"
-    " .sec-title { font-size:10px; color:#8b7355; letter-spacing:3px; font-weight:bold; margin-bottom:14px;"
-    "   border-bottom:1px solid #f0ebe0; padding-bottom:8px; }"
-    " .field { margin-bottom:13px; }"
-    " .field:last-child { margin-bottom:0; }"
-    " label { display:block; font-size:11px; color:#8b7355; letter-spacing:.5px; margin-bottom:5px; }"
-    " input[type=text], input[type=email], textarea {"
-    "   width:100%; border:1px solid #e0d9cc; border-radius:3px; padding:9px 11px;"
-    "   font-size:13px; color:#2c2c2c; font-family:inherit; background:#faf7f2; line-height:1.5; }"
-    " input:focus, textarea:focus { outline:none; border-color:#c8a96e; background:#fff; }"
-    " textarea { resize:vertical; min-height:72px; }"
-    " .r2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }"
-    " .r3 { display:grid; grid-template-columns:2fr 1fr; gap:10px; }"
-    " .submit-wrap { padding:24px 20px; text-align:center; }"
-    " .btn { width:100%; max-width:400px; background:#c8a96e; color:#0f0d09; border:none;"
-    "   padding:15px 32px; font-size:14px; font-weight:700; letter-spacing:2px; border-radius:4px;"
-    "   cursor:pointer; font-family:inherit; }"
-    " .btn:hover { background:#b89860; }"
-    " .note { font-size:11px; color:#9e8250; margin-top:8px; }"
-    " footer { background:#f5f0e8; padding:18px; text-align:center; font-size:11px; color:#8a8a8a; }"
-    " footer a { color:#8b7355; text-decoration:none; }"
-)
-
 def build_edit_form_html(pending_id, stored):
-    """수정 HTML 폼 생성. 기존 입력값 pre-fill."""
+    """수정 HTML 폼 생성. Tally 폼(7RVAZa)과 동일한 디자인·질문 순서로 pre-fill."""
     import html as _h
     fields = stored.get("fields", {})
     dn  = _h.escape(stored.get("deceased_name", ""))
@@ -665,116 +634,117 @@ def build_edit_form_html(pending_id, stored):
     def v(key):
         return _h.escape(str(fields.get(key, "") or ""))
 
-    def inp(form_name, label, field_key, typ="text"):
+    def q(form_name, label, field_key, typ="text"):
         val = v(field_key)
         return (
-            f'<div class="field"><label>{label}</label>'
-            f'<input type="{typ}" name="{form_name}" value="{val}"></div>'
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label)}</label>'
+            f'<input type="{typ}" name="{form_name}" value="{val}" class="qi">'
+            f'</div>'
         )
 
-    def ta(form_name, label, field_key):
+    def qt(form_name, label, field_key, rows=4):
         val = v(field_key)
         return (
-            f'<div class="field"><label>{label}</label>'
-            f'<textarea name="{form_name}">{val}</textarea></div>'
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label)}</label>'
+            f'<textarea name="{form_name}" rows="{rows}" class="qi">{val}</textarea>'
+            f'</div>'
         )
 
-    css = _EDIT_FORM_CSS
+    def dt_row(fname_date, fname_time, label_date, fkey_date, fkey_time):
+        vd = v(fkey_date)
+        vt = v(fkey_time)
+        return (
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label_date)}</label>'
+            f'<div class="dt">'
+            f'<input type="text" name="{fname_date}" value="{vd}" class="qi" placeholder="날짜">'
+            f'<input type="text" name="{fname_time}" value="{vt}" class="qi" placeholder="시간">'
+            f'</div></div>'
+        )
+
+    css = """
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:48px 24px 96px}
+.fhdr{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid #f3f4f6}
+.ftitle{font-size:24px;font-weight:700;color:#0d0d0d;margin-bottom:6px}
+.fsub{font-size:15px;color:#6b7280}
+.q{margin-bottom:36px}
+.ql{display:block;font-size:16px;font-weight:500;color:#0d0d0d;margin-bottom:10px;line-height:1.5}
+.qi{display:block;width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px 16px;font-size:15px;color:#0d0d0d;font-family:inherit;background:#fff;line-height:1.5;transition:border-color .15s,box-shadow .15s}
+.qi:focus{outline:none;border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.08)}
+textarea.qi{resize:vertical;min-height:96px}
+.dt{display:grid;grid-template-columns:3fr 2fr;gap:10px}
+.divider{border:none;border-top:1px solid #f3f4f6;margin:40px 0}
+.submit-area{margin-top:48px}
+.submit-btn{display:block;width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:16px 24px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
+.submit-btn:hover{background:#374151}
+.submit-note{margin-top:12px;text-align:center;font-size:13px;color:#9ca3af}
+"""
+
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>부고 내용 수정 · 휴먼다큐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>{css}</style>
 </head>
 <body>
-<div class="hdr">
-  <small>HUMANDOCU · ADVANCED</small>
-  <h1>故 {dn}</h1>
-  <p>부고 내용 수정</p>
+<div class="wrap">
+<div class="fhdr">
+  <div class="ftitle">故 {dn} 부고 내용 수정</div>
+  <div class="fsub">기존에 입력하신 내용이 채워져 있습니다. 수정할 항목만 변경 후 제출해 주세요.</div>
 </div>
 <form method="POST" action="/webhook/advanced/edit-form">
 <input type="hidden" name="pending_id" value="{pid}">
 
-<div class="sec">
-  <div class="sec-title">기본 정보</div>
-  {inp("name","고인 성함","고인 성함")}
-  <div class="r2">
-    {inp("birth","생년월일","생년월일")}
-    {inp("death","별세일","별세일")}
-  </div>
-  <div class="r2">
-    {inp("title","직함/직책","직함/직책")}
-    {inp("gender","성별","성별")}
-  </div>
-  {inp("religion","종교","종교")}
-</div>
+{q("name","고인 성함","고인 성함")}
+{q("birth","생년월일","생년월일")}
+{q("death","별세일","별세일")}
+{q("title","직함/직책","직함/직책")}
+{q("gender","성별","성별")}
+{q("religion","종교","종교")}
+<hr class="divider">
+{q("chief","상주 성함","상주 성함")}
+{q("relation","고인과 상주의 관계","고인과 상주의 관계")}
+{q("email","신청자 이메일","신청자 이메일","email")}
+<hr class="divider">
+{q("hall_name","장례식장 이름","장례식장 이름")}
+{q("hall_addr","장례식장 주소","장례식장 주소")}
+{q("hall_tel","장례식장 전화번호","장례식장 전화번호")}
+<hr class="divider">
+{dt_row("checkin","checkin_time","입실일시","입실일시","입실일시 시간")}
+{dt_row("laying","laying_time","입관일시","입관일시","입관일시 시간")}
+{dt_row("funeral","funeral_time","발인일시","발인일시","발인일시 시간")}
+{q("burial","장지이름 또는 주소","장지이름 또는 주소")}
+<hr class="divider">
+{q("account","조의금 계좌","조의금 계좌")}
+{qt("notice","안내 말씀","안내 말씀")}
+<hr class="divider">
+{q("intro","고인 한줄 소개","고인 한줄 소개")}
+{qt("life_events","생애 주요 사건","생애 주요 사건",5)}
+{qt("memory","고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?","고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?",4)}
+{qt("personality","고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?","고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?",4)}
+{qt("bright","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?",4)}
+{qt("lastwords","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.",4)}
+<hr class="divider">
+{q("photo1_desc","생애 사진1 설명","생애 사진1 설명")}
+{q("photo2_desc","생애 사진2 설명","생애 사진2 설명")}
+{q("photo3_desc","생애 사진3 설명","생애 사진3 설명")}
+{q("photo4_desc","생애 사진4 설명","생애 사진4 설명")}
+{q("photo5_desc","생애 사진5 설명","생애 사진5 설명")}
 
-<div class="sec">
-  <div class="sec-title">상주 정보</div>
-  <div class="r2">
-    {inp("chief","상주 성함","상주 성함")}
-    {inp("relation","고인과 상주의 관계","고인과 상주의 관계")}
-  </div>
-  {inp("email","신청자 이메일","신청자 이메일","email")}
-</div>
-
-<div class="sec">
-  <div class="sec-title">장례식장</div>
-  {inp("hall_name","장례식장 이름","장례식장 이름")}
-  {inp("hall_addr","장례식장 주소","장례식장 주소")}
-  {inp("hall_tel","장례식장 전화번호","장례식장 전화번호")}
-</div>
-
-<div class="sec">
-  <div class="sec-title">장례 일정</div>
-  <div class="r3">
-    {inp("checkin","입실일시","입실일시")}
-    {inp("checkin_time","입실 시간","입실일시 시간")}
-  </div>
-  <div class="r3">
-    {inp("laying","입관일시","입관일시")}
-    {inp("laying_time","입관 시간","입관일시 시간")}
-  </div>
-  <div class="r3">
-    {inp("funeral","발인일시","발인일시")}
-    {inp("funeral_time","발인 시간","발인일시 시간")}
-  </div>
-  {inp("burial","장지이름 또는 주소","장지이름 또는 주소")}
-</div>
-
-<div class="sec">
-  <div class="sec-title">안내 및 조의</div>
-  {inp("account","조의금 계좌","조의금 계좌")}
-  {ta("notice","안내 말씀","안내 말씀")}
-</div>
-
-<div class="sec">
-  <div class="sec-title">추모 내용</div>
-  {inp("intro","고인 한줄 소개","고인 한줄 소개")}
-  {ta("life_events","생애 주요 사건","생애 주요 사건")}
-  {ta("memory","기억에 남는 장면","고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?")}
-  {ta("personality","말버릇 / 습관","고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?")}
-  {ta("bright","빛나셨던 순간","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?")}
-  {ta("lastwords","전하고 싶은 말","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.")}
-</div>
-
-<div class="sec">
-  <div class="sec-title">생애 사진 설명</div>
-  {inp("photo1_desc","사진1 설명","생애 사진1 설명")}
-  {inp("photo2_desc","사진2 설명","생애 사진2 설명")}
-  {inp("photo3_desc","사진3 설명","생애 사진3 설명")}
-  {inp("photo4_desc","사진4 설명","생애 사진4 설명")}
-  {inp("photo5_desc","사진5 설명","생애 사진5 설명")}
-</div>
-
-<div class="submit-wrap">
-  <button type="submit" class="btn">수정 완료하기</button>
-  <p class="note">수정 후 이메일로 완료 알림을 보내드립니다</p>
+<div class="submit-area">
+  <button type="submit" class="submit-btn">수정 완료하기</button>
+  <p class="submit-note">제출 후 이메일로 완료 알림을 보내드립니다</p>
 </div>
 </form>
-<footer><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a></footer>
+</div>
 </body>
 </html>"""
 
