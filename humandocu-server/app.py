@@ -554,11 +554,19 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         '</body></html>'
     )
     return html
-EDIT_TALLY_FORM_ID = "wMEqez"
+ADVANCED_TALLY_FORM_ID = "7RVAZa"
+_PHOTO_KEYS = {"고인 사진(영정)", "생애 사진1", "생애 사진2", "생애 사진3", "생애 사진4", "생애 사진5"}
 
-def send_email_advanced(to_email, deceased_name, pages_url, pending_id=""):
+def build_edit_url(pending_id, fields):
+    """저장된 텍스트 필드를 프리필한 Tally 수정 URL 생성. 사진 필드는 제외."""
+    params = {"pending_id": pending_id}
+    for k, v in fields.items():
+        if k not in _PHOTO_KEYS and v:
+            params[k] = v
+    return f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?" + urllib.parse.urlencode(params)
+
+def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
     """어드밴스드 부고 발송 이메일"""
-    edit_url = f"https://tally.so/r/{EDIT_TALLY_FORM_ID}?pending_id={pending_id}" if pending_id else ""
     edit_btn = (
         f'<div style="margin:16px 0;text-align:center">'
         f'<a href="{edit_url}" style="display:inline-block;background:#f5f0e8;color:#8b7355;'
@@ -603,8 +611,15 @@ def send_email_advanced(to_email, deceased_name, pages_url, pending_id=""):
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
 
 
-def send_email_edit_complete(to_email, deceased_name, pages_url):
-    """수정 완료 알림 이메일"""
+def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
+    """수정 완료 알림 이메일 — 다시 수정 버튼 포함"""
+    edit_btn = (
+        f'<div style="margin:16px 0;text-align:center">'
+        f'<a href="{edit_url}" style="display:inline-block;background:#f5f0e8;color:#8b7355;'
+        f'padding:12px 28px;text-decoration:none;letter-spacing:2px;font-size:12px;'
+        f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 다시 수정하기</a>'
+        f'</div>'
+    ) if edit_url else ""
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -617,6 +632,7 @@ def send_email_edit_complete(to_email, deceased_name, pages_url):
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 수정된 부고 열기</a>'
         '</div>'
+        + edit_btn +
         '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
@@ -1590,11 +1606,11 @@ def webhook_advanced():
 
 @app.route("/webhook/premium/edit", methods=["POST"])
 def webhook_premium_edit():
-    """수정 전용 Tally 웹훅 — 기존 AI 추모글 재사용, HTML 덮어쓰기"""
+    """수정 Tally 웹훅 — 기존 AI 추모글 재사용, 사진은 new or stored 머지, HTML 덮어쓰기"""
     try:
         payload = request.get_json(force=True)
-        fields = parse_tally_advanced(payload)
-        pending_id = fields.get("pending_id", "").strip()
+        new_fields = parse_tally_advanced(payload)
+        pending_id = new_fields.get("pending_id", "").strip()
         print(f"[EDIT] 수정 웹훅 수신: pending_id={pending_id}")
 
         if not pending_id:
@@ -1605,49 +1621,58 @@ def webhook_premium_edit():
             return jsonify({"status": "error", "reason": "pending 문서 없음"}), 404
 
         stored = doc.to_dict()
-        one_liner_a   = stored.get("one_liner_a", "")
-        one_liner_b   = stored.get("one_liner_b", "")
+        stored_fields  = stored.get("fields", {})
+        one_liner_a    = stored.get("one_liner_a", "")
+        one_liner_b    = stored.get("one_liner_b", "")
         tribute_para_a = stored.get("tribute_para_a", "")
         tribute_para_b = stored.get("tribute_para_b", "")
-        contact_email  = stored.get("contact_email", "") or fields.get("신청자 이메일", "")
-        deceased_name  = fields.get("고인 성함", "") or stored.get("deceased_name", "")
+        contact_email  = stored.get("contact_email", "") or new_fields.get("신청자 이메일", "")
+        deceased_name  = new_fields.get("고인 성함", "") or stored.get("deceased_name", "")
 
         if not deceased_name or not one_liner_a:
             return jsonify({"status": "error", "reason": "저장된 추모글 없음 — 초기 파이프라인 미완료"}), 400
 
+        # 텍스트: new 우선 / 사진: new 업로드 시 교체, 없으면 stored 유지
+        merged = dict(stored_fields)
+        merged.update(new_fields)
+        for key in _PHOTO_KEYS:
+            if not new_fields.get(key):
+                merged[key] = stored_fields.get(key, "")
+
         def process():
             try:
-                title        = fields.get("직함/직책", "") or stored.get("fields", {}).get("직함/직책", "")
-                intro        = fields.get("고인 한줄 소개", "") or stored.get("fields", {}).get("고인 한줄 소개", "")
-                relationship = fields.get("고인과 상주의 관계", "") or stored.get("fields", {}).get("고인과 상주의 관계", "")
-                chief_name   = fields.get("상주 성함", "") or stored.get("fields", {}).get("상주 성함", "")
-                life_events  = fields.get("생애 주요 사건", "") or stored.get("fields", {}).get("생애 주요 사건", "")
-                photo_url    = fields.get("고인 사진(영정)", "") or stored.get("fields", {}).get("고인 사진(영정)", "")
+                title        = merged.get("직함/직책", "")
+                intro        = merged.get("고인 한줄 소개", "")
+                relationship = merged.get("고인과 상주의 관계", "")
+                chief_name   = merged.get("상주 성함", "")
+                life_events  = merged.get("생애 주요 사건", "")
+                photo_url    = merged.get("고인 사진(영정)", "")
 
                 filename   = "adv-" + safe_filename(deceased_name)
                 filename_b = "adv-" + safe_filename(deceased_name) + "-b"
-                html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
-                html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
+                html_a = build_html_advanced(merged, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+                html_b = build_html_advanced(merged, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
                 pages_url = upload_to_github(filename, html_a)
 
-                memorial_html = build_html_memorial(deceased_name, fields, {
-                    "생년월일": fields.get("생년월일", ""),
-                    "별세일": fields.get("별세일", ""),
-                    "한줄평": one_liner_a,
+                memorial_html = build_html_memorial(deceased_name, merged, {
+                    "생년월일": merged.get("생년월일", ""),
+                    "별세일":   merged.get("별세일", ""),
+                    "한줄평":   one_liner_a,
                     "고인 소개": intro,
                 }, life_events, photo_url)
-                memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
-                upload_to_github(memorial_filename, memorial_html)
+                upload_to_github("adv-memorial-" + safe_filename(deceased_name), memorial_html)
                 upload_to_github(filename_b, html_b)
 
+                import datetime as _dt
                 _get_db().collection("advanced_pending").document(pending_id).update({
-                    "fields": fields,
-                    "edited_at": __import__("datetime").datetime.utcnow().isoformat(),
+                    "fields": merged,
+                    "edited_at": _dt.datetime.utcnow().isoformat(),
                 })
 
                 print(f"[EDIT] 수정 완료: {pages_url}")
                 if contact_email:
-                    send_email_edit_complete(contact_email, deceased_name, pages_url)
+                    edit_url = build_edit_url(pending_id, merged)
+                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url)
 
             except Exception as e:
                 print(f"[EDIT] 수정 파이프라인 오류: {e}")
@@ -1753,7 +1778,8 @@ def _run_advanced_pipeline(pending_id):
                 })
 
                 if contact_email:
-                    send_email_advanced(contact_email, deceased_name, pages_url, pending_id)
+                    edit_url = build_edit_url(pending_id, fields)
+                    send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url)
                     send_email_admin_password(contact_email, deceased_name, admin_pw)
 
             except Exception as e:
