@@ -400,13 +400,13 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     life_photos = []
     for i in range(1, 6):
         url = fields.get(f"생애 사진{i}", "")
-        cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
+        cap = fields.get(f"사진{i}에 대한 간단한 설명", "") or fields.get(f"생애 사진{i} 설명", "")
         if url:
             life_photos.append((url, cap))
 
     # 상단 액자: 생애사진1 + 사진1 설명
     frame_url = fields.get("생애 사진1", "")
-    frame_cap = fields.get("사진1에 대한 간단한 설명", "")
+    frame_cap = fields.get("사진1에 대한 간단한 설명", "") or fields.get("생애 사진1 설명", "")
     if frame_url:
         frame_html = (
             '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px">'
@@ -448,7 +448,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
     gallery_photos = []
     for i in range(2, 6):
         url = fields.get(f"생애 사진{i}", "")
-        cap = fields.get(f"사진{i}에 대한 간단한 설명", "")
+        cap = fields.get(f"사진{i}에 대한 간단한 설명", "") or fields.get(f"생애 사진{i} 설명", "")
         if url:
             gallery_photos.append((url, cap))
 
