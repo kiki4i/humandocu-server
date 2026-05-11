@@ -554,8 +554,18 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         '</body></html>'
     )
     return html
-def send_email_advanced(to_email, deceased_name, pages_url):
+EDIT_TALLY_FORM_ID = "wMEqez"
+
+def send_email_advanced(to_email, deceased_name, pages_url, pending_id=""):
     """어드밴스드 부고 발송 이메일"""
+    edit_url = f"https://tally.so/r/{EDIT_TALLY_FORM_ID}?pending_id={pending_id}" if pending_id else ""
+    edit_btn = (
+        f'<div style="margin:16px 0;text-align:center">'
+        f'<a href="{edit_url}" style="display:inline-block;background:#f5f0e8;color:#8b7355;'
+        f'padding:12px 28px;text-decoration:none;letter-spacing:2px;font-size:12px;'
+        f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 내용 수정하기</a>'
+        f'</div>'
+    ) if edit_url else ""
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -569,6 +579,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 열기</a>'
         '</div>'
+        + edit_btn +
         '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
@@ -577,7 +588,7 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         '<p style="font-size:12px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">발인 다음날 · 답례장 신청</p>'
         f'<a href="https://humandocu-server-production.up.railway.app/damnyejang/auth?name={urllib.parse.quote(deceased_name)}" '
         'style="display:inline-block;background:#c8a96e;color:#0f0d09;padding:12px 24px;text-decoration:none;font-size:14px;font-weight:700;border-radius:4px;letter-spacing:.05em">'
-        '📋 답례장 신청하기 빈칸</a>'
+        '📋 답례장 신청하기</a>'
         '<p style="font-size:11px;color:#9e8250;margin-top:8px">위 버튼을 누르시면 비밀번호 입력 후 신청 가능합니다</p>'
         '</div></div>'
         '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
@@ -590,6 +601,39 @@ def send_email_advanced(to_email, deceased_name, pages_url):
         timeout=30)
     resp.raise_for_status()
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
+
+
+def send_email_edit_complete(to_email, deceased_name, pages_url):
+    """수정 완료 알림 이메일"""
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
+        f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
+        '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고문이 수정되었습니다</p>'
+        '</div>'
+        '<div style="padding:32px;background:#fff">'
+        '<p style="line-height:2;color:#3a3a3a;font-size:14px">수정된 내용이 반영되었습니다.<br>아래 링크를 다시 공유해 주세요.</p>'
+        '<div style="margin:24px 0;text-align:center">'
+        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 수정된 부고 열기</a>'
+        '</div>'
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
+        f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
+        '</div></div>'
+        '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a></div></div>'
+    )
+    try:
+        resp = requests.post("https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+                  "subject": f"[휴먼다큐] 故 {deceased_name} 님의 부고문이 수정되었습니다", "html": html_body},
+            timeout=30)
+        resp.raise_for_status()
+        print(f"[EDIT] 수정 완료 이메일 발송: {to_email}")
+    except Exception as e:
+        print(f"[EDIT] 수정 완료 이메일 실패: {e}")
 
 
 def send_email_admin_password(to_email, deceased_name, admin_pw):
@@ -1544,6 +1588,81 @@ def webhook_advanced():
         return jsonify({"status": "error"}), 500
 
 
+@app.route("/webhook/premium/edit", methods=["POST"])
+def webhook_premium_edit():
+    """수정 전용 Tally 웹훅 — 기존 AI 추모글 재사용, HTML 덮어쓰기"""
+    try:
+        payload = request.get_json(force=True)
+        fields = parse_tally_advanced(payload)
+        pending_id = fields.get("pending_id", "").strip()
+        print(f"[EDIT] 수정 웹훅 수신: pending_id={pending_id}")
+
+        if not pending_id:
+            return jsonify({"status": "error", "reason": "pending_id 없음"}), 400
+
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"status": "error", "reason": "pending 문서 없음"}), 404
+
+        stored = doc.to_dict()
+        one_liner_a   = stored.get("one_liner_a", "")
+        one_liner_b   = stored.get("one_liner_b", "")
+        tribute_para_a = stored.get("tribute_para_a", "")
+        tribute_para_b = stored.get("tribute_para_b", "")
+        contact_email  = stored.get("contact_email", "") or fields.get("신청자 이메일", "")
+        deceased_name  = fields.get("고인 성함", "") or stored.get("deceased_name", "")
+
+        if not deceased_name or not one_liner_a:
+            return jsonify({"status": "error", "reason": "저장된 추모글 없음 — 초기 파이프라인 미완료"}), 400
+
+        def process():
+            try:
+                title        = fields.get("직함/직책", "") or stored.get("fields", {}).get("직함/직책", "")
+                intro        = fields.get("고인 한줄 소개", "") or stored.get("fields", {}).get("고인 한줄 소개", "")
+                relationship = fields.get("고인과 상주의 관계", "") or stored.get("fields", {}).get("고인과 상주의 관계", "")
+                chief_name   = fields.get("상주 성함", "") or stored.get("fields", {}).get("상주 성함", "")
+                life_events  = fields.get("생애 주요 사건", "") or stored.get("fields", {}).get("생애 주요 사건", "")
+                photo_url    = fields.get("고인 사진(영정)", "") or stored.get("fields", {}).get("고인 사진(영정)", "")
+
+                filename   = "adv-" + safe_filename(deceased_name)
+                filename_b = "adv-" + safe_filename(deceased_name) + "-b"
+                html_a = build_html_advanced(fields, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+                html_b = build_html_advanced(fields, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
+                pages_url = upload_to_github(filename, html_a)
+
+                memorial_html = build_html_memorial(deceased_name, fields, {
+                    "생년월일": fields.get("생년월일", ""),
+                    "별세일": fields.get("별세일", ""),
+                    "한줄평": one_liner_a,
+                    "고인 소개": intro,
+                }, life_events, photo_url)
+                memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
+                upload_to_github(memorial_filename, memorial_html)
+                upload_to_github(filename_b, html_b)
+
+                _get_db().collection("advanced_pending").document(pending_id).update({
+                    "fields": fields,
+                    "edited_at": __import__("datetime").datetime.utcnow().isoformat(),
+                })
+
+                print(f"[EDIT] 수정 완료: {pages_url}")
+                if contact_email:
+                    send_email_edit_complete(contact_email, deceased_name, pages_url)
+
+            except Exception as e:
+                print(f"[EDIT] 수정 파이프라인 오류: {e}")
+                import traceback; traceback.print_exc()
+
+        import threading
+        threading.Thread(target=process, daemon=True).start()
+        return jsonify({"status": "ok"}), 200
+
+    except Exception as e:
+        print(f"[EDIT] 웹훅 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"status": "error"}), 500
+
+
 def _run_advanced_pipeline(pending_id):
     """결제 완료 후 실제 어드밴스드 파이프라인 실행"""
     try:
@@ -1623,8 +1742,18 @@ def _run_advanced_pipeline(pending_id):
                 _         = upload_to_github(filename_b, html_b)
                 print(f"[ADVANCED] Pages URL: {pages_url}")
 
+                _get_db().collection("advanced_pending").document(pending_id).update({
+                    "status": "done",
+                    "one_liner_a": one_liner_a,
+                    "one_liner_b": one_liner_b,
+                    "tribute_para_a": tribute_para_a,
+                    "tribute_para_b": tribute_para_b,
+                    "pages_url": pages_url,
+                    "contact_email": contact_email,
+                })
+
                 if contact_email:
-                    send_email_advanced(contact_email, deceased_name, pages_url)
+                    send_email_advanced(contact_email, deceased_name, pages_url, pending_id)
                     send_email_admin_password(contact_email, deceased_name, admin_pw)
 
             except Exception as e:
