@@ -2614,9 +2614,14 @@ def payment_verify():
 
 @app.route("/test/portone")
 def test_portone():
-    import os
-    secret = os.environ.get("PORTONE_SECRET", "NOTFOUND")
-    return jsonify({"value_preview": secret[:10] if secret != "NOTFOUND" else "NOTFOUND", "length": len(secret)})
+    secret = os.environ.get("PORTONE_SECRET")
+    portone_keys = [k for k in os.environ if "portone" in k.lower()]
+    return jsonify({
+        "PORTONE_SECRET_exists": secret is not None,
+        "PORTONE_SECRET_length": len(secret) if secret else 0,
+        "PORTONE_SECRET_preview": secret[:10] if secret else None,
+        "portone_related_keys": portone_keys,
+    })
 
 
 @app.route("/payment/success", methods=["GET"])
