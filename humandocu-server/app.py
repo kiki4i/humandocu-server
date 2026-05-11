@@ -2575,9 +2575,11 @@ async function startPayment() {{
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
-@app.route("/payment/verify", methods=["POST"])
+@app.route("/payment/verify", methods=["POST", "OPTIONS"])
 def payment_verify():
     """포트원 결제 검증 - 금액 위변조 방지"""
+    if request.method == "OPTIONS":
+        return "", 204
     import requests as req
     data = request.get_json(force=True)
     payment_id = data.get("paymentId", "")
