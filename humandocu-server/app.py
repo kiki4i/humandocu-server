@@ -3052,6 +3052,7 @@ def webhook_advanced_edit_form():
         print(f"[EDIT-FORM] pending_id={pending_id}, deceased={deceased_name}")
 
         def process():
+            pages_url = ""
             try:
                 title        = merged.get("직함/직책", "")
                 intro        = merged.get("고인 한줄 소개", "")
@@ -3062,32 +3063,60 @@ def webhook_advanced_edit_form():
 
                 filename   = "adv-" + safe_filename(deceased_name)
                 filename_b = "adv-" + safe_filename(deceased_name) + "-b"
-                html_a = build_html_advanced(merged, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
-                html_b = build_html_advanced(merged, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename   + ".html")
-                pages_url = upload_to_github(filename, html_a)
 
+                print(f"[EDIT-FORM] 메인 부고 HTML 빌드 시작: {filename}")
+                html_a = build_html_advanced(merged, one_liner_a, tribute_para_a, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename_b + ".html")
+                pages_url = upload_to_github(filename, html_a)
+                print(f"[EDIT-FORM] 메인 부고 A 업로드 완료: {pages_url}")
+            except Exception as e:
+                print(f"[EDIT-FORM] 메인 부고 A 오류: {e}")
+                import traceback; traceback.print_exc()
+
+            try:
+                memorial_filename = "adv-memorial-" + safe_filename(deceased_name)
+                memorial_url = f"https://kiki4i.github.io/humandocu/bugo/{memorial_filename}.html"
+                print(f"[EDIT-FORM] 메모리얼 재생성 시작: {pending_id}")
                 memorial_html = build_html_memorial(deceased_name, merged, {
                     "생년월일": merged.get("생년월일", ""),
                     "별세일":   merged.get("별세일", ""),
                     "한줄평":   one_liner_a,
-                    "고인 소개": intro,
-                }, life_events, photo_url)
-                upload_to_github("adv-memorial-" + safe_filename(deceased_name), memorial_html)
-                upload_to_github(filename_b, html_b)
+                    "고인 소개": merged.get("고인 한줄 소개", ""),
+                }, merged.get("생애 주요 사건", ""), merged.get("고인 사진(영정)", ""))
+                upload_to_github(memorial_filename, memorial_html)
+                print(f"[EDIT-FORM] 메모리얼 재생성 완료: {memorial_url}")
+            except Exception as e:
+                print(f"[EDIT-FORM] 메모리얼 재생성 오류: {e}")
+                import traceback; traceback.print_exc()
 
+            try:
+                title        = merged.get("직함/직책", "")
+                intro        = merged.get("고인 한줄 소개", "")
+                relationship = merged.get("고인과 상주의 관계", "")
+                chief_name   = merged.get("상주 성함", "")
+                life_events  = merged.get("생애 주요 사건", "")
+                photo_url    = merged.get("고인 사진(영정)", "")
+                filename   = "adv-" + safe_filename(deceased_name)
+                filename_b = "adv-" + safe_filename(deceased_name) + "-b"
+                html_b = build_html_advanced(merged, one_liner_b, tribute_para_b, photo_url, title, intro, life_events, relationship, chief_name, alt_url=filename + ".html")
+                upload_to_github(filename_b, html_b)
+                print(f"[EDIT-FORM] 메인 부고 B 업로드 완료: {filename_b}")
+            except Exception as e:
+                print(f"[EDIT-FORM] 메인 부고 B 오류: {e}")
+                import traceback; traceback.print_exc()
+
+            try:
                 import datetime as _dt
                 _get_db().collection("advanced_pending").document(pending_id).update({
                     "fields":    merged,
                     "edited_at": _dt.datetime.utcnow().isoformat(),
                 })
-
-                print(f"[EDIT-FORM] 수정 완료: {pages_url}")
-                if contact_email:
+                print(f"[EDIT-FORM] Firebase 업데이트 완료: {pending_id}")
+                if contact_email and pages_url:
                     edit_url = build_edit_url(pending_id, merged)
                     send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url)
-
+                    print(f"[EDIT-FORM] 완료 이메일 발송: {contact_email}")
             except Exception as e:
-                print(f"[EDIT-FORM] 파이프라인 오류: {e}")
+                print(f"[EDIT-FORM] Firebase/이메일 오류: {e}")
                 import traceback; traceback.print_exc()
 
         import threading
