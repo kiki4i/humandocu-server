@@ -2593,7 +2593,7 @@ def payment_verify():
             timeout=10
         )
         payment = r.json()
-        paid_amount = payment.get("amount", {}).get("paid", 0)
+        paid_amount = int(payment.get("amount", {}).get("total", 0))
         status = payment.get("status", "")
 
         if status in ("PAID", "paid") and paid_amount == expected_amount:
