@@ -588,7 +588,60 @@ def build_edit_url(pending_id, fields):
     """이메일용 수정 링크 — 서버 리다이렉트 엔드포인트 URL 반환."""
     return f"https://humandocu-server-production.up.railway.app/edit-link/{pending_id}"
 
-def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
+_SUMMARY_FIELDS = [
+    ("고인 성함",           "고인 성함"),
+    ("생년월일",             "생년월일"),
+    ("별세일",               "별세일"),
+    ("직함/직책",            "직함/직책"),
+    ("성별",                 "성별"),
+    ("종교",                 "종교"),
+    ("상주 성함",            "상주 성함"),
+    ("고인과 상주의 관계",   "고인과 상주의 관계"),
+    ("장례식장 이름",        "장례식장 이름"),
+    ("장례식장 주소",        "장례식장 주소"),
+    ("장례식장 전화번호",    "장례식장 전화번호"),
+    ("입실일시",             "입실일시"),
+    ("입관일시",             "입관일시"),
+    ("발인일시",             "발인일시"),
+    ("장지이름 또는 주소",   "장지이름 또는 주소"),
+    ("조의금 계좌",          "조의금 계좌"),
+    ("안내 말씀",            "안내 말씀"),
+    ("고인 한줄 소개",       "고인 한줄 소개"),
+    ("생애 사진1 설명",      "사진1 설명"),
+    ("생애 사진2 설명",      "사진2 설명"),
+    ("생애 사진3 설명",      "사진3 설명"),
+    ("생애 사진4 설명",      "사진4 설명"),
+    ("생애 사진5 설명",      "사진5 설명"),
+]
+
+def build_fields_summary_html(fields):
+    """입력값 요약 HTML 블록 생성. 값이 있는 항목만 표시."""
+    rows = ""
+    for field_key, display_label in _SUMMARY_FIELDS:
+        val = fields.get(field_key, "").strip() if fields.get(field_key) else ""
+        if not val:
+            continue
+        bg = "#ffffff" if len(rows) % 2 == 0 else "#faf7f2"
+        rows += (
+            f'<tr>'
+            f'<td style="padding:7px 10px;font-size:11px;color:#8b7355;white-space:nowrap;'
+            f'border-bottom:1px solid #f0ebe0;width:110px;vertical-align:top">{display_label}</td>'
+            f'<td style="padding:7px 10px;font-size:12px;color:#3a3a3a;border-bottom:1px solid #f0ebe0;'
+            f'word-break:break-all;line-height:1.6">{val}</td>'
+            f'</tr>'
+        )
+    if not rows:
+        return ""
+    return (
+        '<div style="margin:20px 0 0;padding:16px;background:#faf7f2;border-radius:4px;border:1px solid #e8e0d0">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin:0 0 10px;font-weight:bold">📋 입력하신 내용 (수정 시 참고용)</p>'
+        '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:3px;overflow:hidden">'
+        + rows +
+        '</table>'
+        '</div>'
+    )
+
+def send_email_advanced(to_email, deceased_name, pages_url, edit_url="", fields=None):
     """어드밴스드 부고 발송 이메일"""
     edit_btn = (
         f'<div style="margin:16px 0;text-align:center">'
@@ -597,6 +650,7 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
         f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 내용 수정하기</a>'
         f'</div>'
     ) if edit_url else ""
+    fields_summary = build_fields_summary_html(fields or {})
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -610,8 +664,9 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 부고 열기</a>'
         '</div>'
-        + edit_btn +
-        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        + edit_btn
+        + fields_summary +
+        '<div style="margin:20px 0 0;padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div>'
@@ -634,7 +689,7 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
     print(f"[ADVANCED] 이메일 발송 완료: {resp.status_code}")
 
 
-def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
+def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url="", fields=None):
     """수정 완료 알림 이메일 — 다시 수정 버튼 포함"""
     edit_btn = (
         f'<div style="margin:16px 0;text-align:center">'
@@ -643,6 +698,7 @@ def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
         f'border-radius:4px;width:100%;text-align:center;border:1px solid #d4c9b5">✏️ 다시 수정하기</a>'
         f'</div>'
     ) if edit_url else ""
+    fields_summary = build_fields_summary_html(fields or {})
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -655,8 +711,9 @@ def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center">📄 수정된 부고 열기</a>'
         '</div>'
-        + edit_btn +
-        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        + edit_btn
+        + fields_summary +
+        '<div style="margin:20px 0 0;padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div></div>'
@@ -1702,7 +1759,7 @@ def webhook_premium_edit():
                 print(f"[EDIT] 수정 완료: {pages_url}")
                 if contact_email:
                     edit_url = build_edit_url(pending_id, merged)
-                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url)
+                    send_email_edit_complete(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=merged)
 
             except Exception as e:
                 print(f"[EDIT] 수정 파이프라인 오류: {e}")
@@ -1809,7 +1866,7 @@ def _run_advanced_pipeline(pending_id):
 
                 if contact_email:
                     edit_url = build_edit_url(pending_id, fields)
-                    send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url)
+                    send_email_advanced(contact_email, deceased_name, pages_url, edit_url=edit_url, fields=fields)
                     send_email_admin_password(contact_email, deceased_name, admin_pw)
 
             except Exception as e:
