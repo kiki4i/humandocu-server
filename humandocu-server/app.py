@@ -4294,6 +4294,38 @@ def admin_resend_advanced_email(pending_id):
         return jsonify({"ok": False, "reason": str(e)}), 500
 
 
+@app.route("/admin/peek-pending/<pending_id>", methods=["GET"])
+def admin_peek_pending(pending_id):
+    """pending 문서 fields 전체 조회 (관리자용 디버그)"""
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"ok": False, "reason": "문서 없음"}), 404
+        data = doc.to_dict()
+        fields = data.get("fields", {})
+        photo_keys = [k for k in fields if "사진" in k]
+        return jsonify({"ok": True, "all_fields": fields, "photo_related_keys": photo_keys})
+    except Exception as e:
+        return jsonify({"ok": False, "reason": str(e)}), 500
+
+
+@app.route("/admin/patch-pending-fields/<pending_id>", methods=["POST"])
+def admin_patch_pending_fields(pending_id):
+    """pending 문서의 fields 서브맵 내 특정 키만 업데이트 (관리자용)"""
+    try:
+        updates = request.get_json(force=True)  # {field_key: new_value, ...}
+        if not updates:
+            return jsonify({"ok": False, "reason": "body 없음"}), 400
+        db = _get_db()
+        doc_ref = db.collection("advanced_pending").document(pending_id)
+        dot_updates = {f"fields.{k}": v for k, v in updates.items()}
+        doc_ref.update(dot_updates)
+        print(f"[ADMIN-PATCH] {pending_id} 업데이트: {list(updates.keys())}")
+        return jsonify({"ok": True, "updated_keys": list(updates.keys())})
+    except Exception as e:
+        return jsonify({"ok": False, "reason": str(e)}), 500
+
+
 @app.route("/admin/migrate-nickname", methods=["GET"])
 def migrate_nickname():
     """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
