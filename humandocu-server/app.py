@@ -633,14 +633,31 @@ _EDIT_FORM_FIELDS = {
     "photo5_desc":  "생애 사진5 설명",
 }
 
+_EDIT_PHOTO_INPUT_MAP = {
+    "고인 사진(영정)": "rep_photo",
+    "생애 사진1": "life1",
+    "생애 사진2": "life2",
+    "생애 사진3": "life3",
+    "생애 사진4": "life4",
+    "생애 사진5": "life5",
+}
+
+_DAMNYEJANG_EDIT_PHOTO_INPUT_MAP = {
+    "고인 대표사진":   "rep_photo",
+    "유가족 답례사진": "chief_photo",
+    "장례사진1": "funeral1",
+    "장례사진2": "funeral2",
+    "장례사진3": "funeral3",
+    "장례사진4": "funeral4",
+    "장례사진5": "funeral5",
+}
+
 def build_edit_form_html(pending_id, stored):
     """수정 HTML 폼 생성. Tally 폼(7RVAZa)과 동일한 디자인·질문 순서로 pre-fill."""
     import html as _h
     fields = stored.get("fields", {})
     dn  = _h.escape(stored.get("deceased_name", ""))
     pid = _h.escape(pending_id)
-    photo_desc_keys = ["생애 사진1 설명","생애 사진2 설명","생애 사진3 설명","생애 사진4 설명","생애 사진5 설명"]
-    print(f"[build_edit_form] pid={pending_id} 사진설명 데이터: { {k: fields.get(k,'(없음)') for k in photo_desc_keys} }")
 
     def v(key):
         return _h.escape(str(fields.get(key, "") or ""))
@@ -675,6 +692,45 @@ def build_edit_form_html(pending_id, stored):
             f'</div></div>'
         )
 
+    def photo_replace_block(uid, label, field_key, cap_form_name=None, cap_field_key=None):
+        url = fields.get(field_key, "") or ""
+        url_esc = _h.escape(url)
+        if url:
+            existing = (
+                f'<div id="pe_{uid}">'
+                f'<div class="photo-thumb-wrap">'
+                f'<img src="{url_esc}" class="photo-thumb">'
+                f'<button type="button" onclick="deletePhoto(\'{uid}\')" class="del-btn">삭제</button>'
+                f'</div></div>'
+            )
+            new_area = (
+                f'<div id="pn_{uid}" style="display:none">'
+                f'<input type="file" name="file_{uid}" class="qi" accept="image/*">'
+                f'<button type="button" onclick="undoDelete(\'{uid}\')" class="undo-btn">↩ 취소 (기존 유지)</button>'
+                f'</div>'
+            )
+        else:
+            existing = ''
+            new_area = (
+                f'<div id="pn_{uid}">'
+                f'<div class="no-photo">등록된 사진 없음</div>'
+                f'<input type="file" name="file_{uid}" class="qi" accept="image/*">'
+                f'</div>'
+            )
+        cap_html = ""
+        if cap_form_name and cap_field_key:
+            cap_val = v(cap_field_key)
+            cap_html = (
+                f'<label class="ql" style="font-size:13px;color:#6b7280;font-weight:400;margin-top:8px;display:block;">설명 (선택)</label>'
+                f'<input type="text" name="{cap_form_name}" value="{cap_val}" class="qi">'
+            )
+        return (
+            f'<div class="q"><label class="ql">{_h.escape(label)}</label>'
+            + existing + new_area
+            + f'<input type="hidden" name="del_{uid}" id="pd_{uid}" value="0">'
+            + cap_html + '</div>'
+        )
+
     css = """
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -695,6 +751,26 @@ textarea.qi{resize:vertical;min-height:96px}
 .submit-btn{display:block;width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:16px 24px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
 .submit-btn:hover{background:#374151}
 .submit-note{margin-top:12px;text-align:center;font-size:13px;color:#9ca3af}
+.photo-thumb-wrap{position:relative;margin-bottom:8px}
+.photo-thumb{width:100%;max-height:220px;object-fit:cover;border-radius:6px;display:block}
+.del-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:4px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+.del-btn:hover{background:rgba(0,0,0,.8)}
+.undo-btn{display:inline-block;margin-top:6px;padding:6px 12px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;color:#374151;cursor:pointer;font-family:inherit}
+.no-photo{height:72px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#9ca3af;font-size:13px}
+input[type=file].qi{padding:8px 12px;cursor:pointer}
+"""
+
+    js = """
+function deletePhoto(uid){
+    document.getElementById('pe_'+uid).style.display='none';
+    document.getElementById('pn_'+uid).style.display='block';
+    document.getElementById('pd_'+uid).value='1';
+}
+function undoDelete(uid){
+    document.getElementById('pe_'+uid).style.display='block';
+    document.getElementById('pn_'+uid).style.display='none';
+    document.getElementById('pd_'+uid).value='0';
+}
 """
 
     return f"""<!DOCTYPE html>
@@ -713,7 +789,7 @@ textarea.qi{resize:vertical;min-height:96px}
   <div class="ftitle">故 {dn} 부고 내용 수정</div>
   <div class="fsub">기존에 입력하신 내용이 채워져 있습니다. 수정할 항목만 변경 후 제출해 주세요.</div>
 </div>
-<form method="POST" action="/webhook/advanced/edit-form">
+<form method="POST" action="/webhook/advanced/edit-form" enctype="multipart/form-data">
 <input type="hidden" name="pending_id" value="{pid}">
 
 {q("name","고인 성함","고인 성함")}
@@ -746,12 +822,15 @@ textarea.qi{resize:vertical;min-height:96px}
 {qt("bright","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?","고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?",4)}
 {qt("lastwords","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.","끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.",4)}
 <hr class="divider">
-<div class="section-hdr">사진 설명 <span class="section-sub">각 생애 사진에 대한 간단한 설명을 입력해주세요 (선택)</span></div>
-{q("photo1_desc","생애 사진1 설명","생애 사진1 설명")}
-{q("photo2_desc","생애 사진2 설명","생애 사진2 설명")}
-{q("photo3_desc","생애 사진3 설명","생애 사진3 설명")}
-{q("photo4_desc","생애 사진4 설명","생애 사진4 설명")}
-{q("photo5_desc","생애 사진5 설명","생애 사진5 설명")}
+<div class="section-hdr">영정사진</div>
+{photo_replace_block("rep_photo","고인 사진 (영정)","고인 사진(영정)")}
+<hr class="divider">
+<div class="section-hdr">생애 사진 <span class="section-sub">삭제 후 새 파일 선택 시 교체, 그대로 두면 기존 유지</span></div>
+{photo_replace_block("life1","생애 사진1","생애 사진1","photo1_desc","생애 사진1 설명")}
+{photo_replace_block("life2","생애 사진2","생애 사진2","photo2_desc","생애 사진2 설명")}
+{photo_replace_block("life3","생애 사진3","생애 사진3","photo3_desc","생애 사진3 설명")}
+{photo_replace_block("life4","생애 사진4","생애 사진4","photo4_desc","생애 사진4 설명")}
+{photo_replace_block("life5","생애 사진5","생애 사진5","photo5_desc","생애 사진5 설명")}
 
 <div class="submit-area">
   <button type="submit" class="submit-btn">수정 완료하기</button>
@@ -759,6 +838,7 @@ textarea.qi{resize:vertical;min-height:96px}
 </div>
 </form>
 </div>
+<script>{js}</script>
 </body>
 </html>"""
 
@@ -3041,11 +3121,21 @@ def webhook_advanced_edit_form():
         deceased_name  = new_fields.get("고인 성함", "") or deceased_name
         contact_email  = new_fields.get("신청자 이메일", "") or contact_email
 
-        # 머지: new_fields(비어있지 않은 값) 우선, 사진은 stored 유지
+        # 텍스트 머지 (비어있지 않은 값 우선)
         merged = dict(stored_fields)
         merged.update({k: v for k, v in new_fields.items() if v})
-        for photo_key in _PHOTO_KEYS:
-            merged[photo_key] = stored_fields.get(photo_key, "")
+
+        # 사진 처리: 삭제/교체/유지
+        for photo_key, input_name in _EDIT_PHOTO_INPUT_MAP.items():
+            deleted  = request.form.get(f"del_{input_name}", "0") == "1"
+            file_obj = request.files.get(f"file_{input_name}")
+            if file_obj and file_obj.filename:
+                new_url = _upload_form_photo(file_obj, f"{pending_id}_{input_name}")
+                merged[photo_key] = new_url if new_url else stored_fields.get(photo_key, "")
+            elif deleted:
+                merged[photo_key] = ""
+            else:
+                merged[photo_key] = stored_fields.get(photo_key, "")
 
         print(f"[EDIT-FORM] pending_id={pending_id}, deceased={deceased_name}")
 
@@ -4598,7 +4688,7 @@ _DAMNYEJANG_EDIT_FORM_FIELDS = {
 
 
 def build_damnyejang_edit_form_html(pending_id, stored):
-    """답례장 수정 HTML 폼 — 기존 값 pre-fill, 사진은 썸네일 표시(읽기 전용)"""
+    """답례장 수정 HTML 폼 — 기존 값 pre-fill, 사진 썸네일+삭제/교체"""
     import html as _h
     fields = stored.get("fields", {})
     dn  = _h.escape(stored.get("deceased_name", ""))
@@ -4625,35 +4715,49 @@ def build_damnyejang_edit_form_html(pending_id, stored):
             f'</div>'
         )
 
-    def photo_block(field_key, label, cap_form_name=None, cap_field_key=None):
+    def photo_replace_block(uid, label, field_key, cap_form_name=None, cap_field_key=None):
         url = fields.get(field_key, "") or ""
-        thumb = (
-            f'<img src="{_h.escape(url)}" style="width:100%;max-height:220px;object-fit:cover;'
-            f'border-radius:6px;margin-bottom:8px;display:block;">'
-            if url else
-            '<div style="height:72px;background:#f3f4f6;border-radius:6px;display:flex;'
-            'align-items:center;justify-content:center;margin-bottom:8px;'
-            'color:#9ca3af;font-size:13px;">사진 없음</div>'
-        )
-        cap_input = ""
+        url_esc = _h.escape(url)
+        if url:
+            existing = (
+                f'<div id="pe_{uid}">'
+                f'<div class="photo-thumb-wrap">'
+                f'<img src="{url_esc}" class="photo-thumb">'
+                f'<button type="button" onclick="deletePhoto(\'{uid}\')" class="del-btn">삭제</button>'
+                f'</div></div>'
+            )
+            new_area = (
+                f'<div id="pn_{uid}" style="display:none">'
+                f'<input type="file" name="file_{uid}" class="qi" accept="image/*">'
+                f'<button type="button" onclick="undoDelete(\'{uid}\')" class="undo-btn">↩ 취소 (기존 유지)</button>'
+                f'</div>'
+            )
+        else:
+            existing = ''
+            new_area = (
+                f'<div id="pn_{uid}">'
+                f'<div class="no-photo">등록된 사진 없음</div>'
+                f'<input type="file" name="file_{uid}" class="qi" accept="image/*">'
+                f'</div>'
+            )
+        cap_html = ""
         if cap_form_name and cap_field_key:
             cap_val = v(cap_field_key)
-            cap_input = (
-                f'<label class="ql" style="font-size:13px;color:#6b7280;font-weight:400;">설명 (선택)</label>'
+            cap_html = (
+                f'<label class="ql" style="font-size:13px;color:#6b7280;font-weight:400;margin-top:8px;display:block;">설명 (선택)</label>'
                 f'<input type="text" name="{cap_form_name}" value="{cap_val}" class="qi">'
             )
         return (
-            f'<div class="q">'
-            f'<label class="ql">{_h.escape(label)}</label>'
-            + thumb + cap_input +
-            '</div>'
+            f'<div class="q"><label class="ql">{_h.escape(label)}</label>'
+            + existing + new_area
+            + f'<input type="hidden" name="del_{uid}" id="pd_{uid}" value="0">'
+            + cap_html + '</div>'
         )
 
-    photo_blocks = "".join(
-        photo_block(f"장례사진{i}", f"장례사진 {i}", f"photo{i}_desc", f"장례사진{i}설명")
+    funeral_blocks = "".join(
+        photo_replace_block(f"funeral{i}", f"장례사진 {i}", f"장례사진{i}", f"photo{i}_desc", f"장례사진{i}설명")
         for i in range(1, 6)
     )
-    chief_photo_block = photo_block("유가족 답례사진", "유가족 답례사진")
 
     css = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4670,11 +4774,30 @@ textarea.qi{resize:vertical;min-height:96px}
 .divider{border:none;border-top:1px solid #f3f4f6;margin:40px 0}
 .section-hdr{font-size:14px;font-weight:600;color:#374151;margin-bottom:24px;letter-spacing:.02em}
 .section-sub{font-weight:400;color:#9ca3af;font-size:13px;margin-left:6px}
-.photo-note{font-size:12px;color:#9ca3af;margin-top:4px;margin-bottom:0;}
 .submit-area{margin-top:48px}
 .submit-btn{display:block;width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:16px 24px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
 .submit-btn:hover{background:#374151}
 .submit-note{margin-top:12px;text-align:center;font-size:13px;color:#9ca3af}
+.photo-thumb-wrap{position:relative;margin-bottom:8px}
+.photo-thumb{width:100%;max-height:220px;object-fit:cover;border-radius:6px;display:block}
+.del-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:4px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+.del-btn:hover{background:rgba(0,0,0,.8)}
+.undo-btn{display:inline-block;margin-top:6px;padding:6px 12px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;color:#374151;cursor:pointer;font-family:inherit}
+.no-photo{height:72px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#9ca3af;font-size:13px}
+input[type=file].qi{padding:8px 12px;cursor:pointer}
+"""
+
+    js = """
+function deletePhoto(uid){
+    document.getElementById('pe_'+uid).style.display='none';
+    document.getElementById('pn_'+uid).style.display='block';
+    document.getElementById('pd_'+uid).value='1';
+}
+function undoDelete(uid){
+    document.getElementById('pe_'+uid).style.display='block';
+    document.getElementById('pn_'+uid).style.display='none';
+    document.getElementById('pd_'+uid).value='0';
+}
 """
 
     return f"""<!DOCTYPE html>
@@ -4693,7 +4816,7 @@ textarea.qi{resize:vertical;min-height:96px}
   <div class="ftitle">故 {dn} 답례장 내용 수정</div>
   <div class="fsub">기존에 입력하신 내용이 채워져 있습니다. 수정할 항목만 변경 후 제출해 주세요.</div>
 </div>
-<form method="POST" action="/webhook/damnyejang/edit-form">
+<form method="POST" action="/webhook/damnyejang/edit-form" enctype="multipart/form-data">
 <input type="hidden" name="pending_id" value="{pid}">
 
 {q("name", "고인 이름", "고인이름")}
@@ -4703,12 +4826,16 @@ textarea.qi{resize:vertical;min-height:96px}
 {qt("chief_words", "상주가 대표로 하고 싶은 말", "상주가 대표로 하고 싶은 말", 5)}
 
 <hr class="divider">
-<div class="section-hdr">장례 사진 <span class="section-sub">사진은 변경 불가 · 설명만 수정 가능합니다</span></div>
-{photo_blocks}
+<div class="section-hdr">고인 대표사진 <span class="section-sub">삭제 후 새 파일 선택 시 교체, 그대로 두면 기존 유지</span></div>
+{photo_replace_block("rep_photo", "고인 대표사진", "고인 대표사진")}
 
 <hr class="divider">
-<div class="section-hdr">유가족 답례사진 <span class="section-sub">사진 변경 불가</span></div>
-{chief_photo_block}
+<div class="section-hdr">유가족 답례사진</div>
+{photo_replace_block("chief_photo", "유가족 답례사진", "유가족 답례사진")}
+
+<hr class="divider">
+<div class="section-hdr">장례 사진 <span class="section-sub">삭제 후 새 파일 선택 시 교체, 그대로 두면 기존 유지</span></div>
+{funeral_blocks}
 
 <div class="submit-area">
   <button type="submit" class="submit-btn">수정 완료하기</button>
@@ -4716,6 +4843,7 @@ textarea.qi{resize:vertical;min-height:96px}
 </div>
 </form>
 </div>
+<script>{js}</script>
 </body>
 </html>"""
 
@@ -4771,11 +4899,21 @@ def webhook_damnyejang_edit_form():
         deceased_name = new_text.get("고인이름") or deceased_name
         contact_email = new_text.get("답례장 링크 받으실 이메일") or contact_email
 
-        # 머지: 새 텍스트(비어있지 않으면) 우선, 사진은 stored 유지
+        # 텍스트 머지 (비어있지 않은 값 우선)
         merged = dict(stored_fields)
         merged.update({k: v for k, v in new_text.items() if v})
-        for key in _DAMNYEJANG_PHOTO_KEYS:
-            merged[key] = stored_fields.get(key, "")
+
+        # 사진 처리: 삭제/교체/유지
+        for photo_key, input_name in _DAMNYEJANG_EDIT_PHOTO_INPUT_MAP.items():
+            deleted  = request.form.get(f"del_{input_name}", "0") == "1"
+            file_obj = request.files.get(f"file_{input_name}")
+            if file_obj and file_obj.filename:
+                new_url = _upload_form_photo(file_obj, f"{pending_id}_{input_name}")
+                merged[photo_key] = new_url if new_url else stored_fields.get(photo_key, "")
+            elif deleted:
+                merged[photo_key] = ""
+            else:
+                merged[photo_key] = stored_fields.get(photo_key, "")
 
         print(f"[DAMNYEJANG-EDIT-FORM] pending_id={pending_id}, deceased={deceased_name}")
 
@@ -5577,6 +5715,34 @@ def _upload_to_firebase_storage(image_data_b64, filename):
 
     except Exception as e:
         print(f"[STORAGE] 업로드 오류: {e}")
+        return ""
+
+
+def _upload_form_photo(file_obj, uid):
+    """Flask FileStorage → Firebase Storage → 공개 URL. 실패 시 '' 반환."""
+    try:
+        from firebase_admin import storage as fb_storage
+        import uuid as _uuid
+        file_bytes = file_obj.read()
+        if not file_bytes:
+            return ""
+        content_type = file_obj.content_type or "image/jpeg"
+        raw_name = file_obj.filename or ""
+        ext = raw_name.rsplit(".", 1)[-1].lower() if "." in raw_name else "jpg"
+        fname = f"edit-photos/{uid}_{_uuid.uuid4().hex[:8]}.{ext}"
+        svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+        svc = json.loads(svc_json)
+        bucket_name = svc.get("project_id", "humandocu-93c65") + ".appspot.com"
+        if not firebase_admin._apps:
+            _get_db()
+        bucket = fb_storage.bucket(bucket_name)
+        blob = bucket.blob(fname)
+        blob.upload_from_string(file_bytes, content_type=content_type)
+        blob.make_public()
+        print(f"[STORAGE] 폼 사진 업로드 완료: {blob.public_url}")
+        return blob.public_url
+    except Exception as e:
+        print(f"[STORAGE] 폼 사진 업로드 오류: {e}")
         return ""
 
 
