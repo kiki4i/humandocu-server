@@ -1396,26 +1396,25 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
     if photo_url:
         photo_section = (
             '<div style="background:#1a1714;padding:32px 0 24px;text-align:center">'
-            '<div style="display:inline-flex;flex-direction:column;align-items:center">'
+            '<div style="display:flex;flex-direction:column;align-items:center;padding:0 24px;">'
             '<div style="font-size:9px;letter-spacing:3px;color:#c4a96e;background:#1a1714;'
             'border:0.5px solid #9a7d4a;padding:3px 10px;margin-bottom:-1px;z-index:1">MEMORIAL</div>'
-            '<div style="position:relative;display:inline-block;'
+            '<div style="width:100%;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
-            'margin:10px;">'
-            f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:cover;display:block;">'
+            'margin:10px 0;">'
+            f'<img src="{photo_url}" style="width:100%;height:auto;object-fit:contain;display:block;">'
             '</div>'
             '</div></div>'
         )
     else:
         photo_section = (
             '<div style="background:#1a1714;padding:32px 0 24px;text-align:center">'
-            '<div style="display:inline-flex;flex-direction:column;align-items:center">'
+            '<div style="display:flex;flex-direction:column;align-items:center;padding:0 24px;">'
             '<div style="font-size:9px;letter-spacing:3px;color:#c4a96e;background:#1a1714;'
             'border:0.5px solid #9a7d4a;padding:3px 10px;margin-bottom:-1px;z-index:1">MEMORIAL</div>'
-            '<div style="position:relative;display:inline-block;'
+            '<div style="width:100%;aspect-ratio:3/4;background:#2a1810;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
-            'margin:10px;width:180px;height:220px;background:#2a1810;'
-            'display:flex;align-items:center;justify-content:center">'
+            'margin:10px 0;display:flex;align-items:center;justify-content:center">'
             '<div style="font-size:52px;opacity:0.2">👤</div>'
             '</div>'
             '</div></div>'
@@ -4639,11 +4638,10 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
     # 영정사진 액자 (골드 프레임 - advanced 스타일)
     if rep_photo:
         rep_frame_html = (
-            '<div style="display:flex;justify-content:center;margin-bottom:22px;">'
-            '<div style="display:inline-block;'
-            'box-shadow:0 0 0 1px #c8a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c8a96e;'
-            'margin:14px;">'
-            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:contain;background:#1a1a2e;display:block;">'
+            '<div style="margin-bottom:22px;padding:0 14px;">'
+            '<div style="'
+            'box-shadow:0 0 0 1px #c8a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c8a96e;">'
+            f'<img src="{rep_photo}" style="width:100%;height:auto;object-fit:contain;display:block;">'
             '</div></div>'
         )
     else:
