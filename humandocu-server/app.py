@@ -4588,11 +4588,255 @@ _DAMNYEJANG_PHOTO_KEYS = {
 }
 
 
+_DAMNYEJANG_EDIT_FORM_FIELDS = {
+    "name":        "고인이름",
+    "chief_name":  "상주 이름",
+    "contact":     "상주 연락처",
+    "email":       "답례장 링크 받으실 이메일",
+    "chief_words": "상주가 대표로 하고 싶은 말",
+}
+
+
+def build_damnyejang_edit_form_html(pending_id, stored):
+    """답례장 수정 HTML 폼 — 기존 값 pre-fill, 사진은 썸네일 표시(읽기 전용)"""
+    import html as _h
+    fields = stored.get("fields", {})
+    dn  = _h.escape(stored.get("deceased_name", ""))
+    pid = _h.escape(pending_id)
+
+    def v(key):
+        return _h.escape(str(fields.get(key, "") or ""))
+
+    def q(form_name, label, field_key, typ="text"):
+        val = v(field_key)
+        return (
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label)}</label>'
+            f'<input type="{typ}" name="{form_name}" value="{val}" class="qi">'
+            f'</div>'
+        )
+
+    def qt(form_name, label, field_key, rows=4):
+        val = v(field_key)
+        return (
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label)}</label>'
+            f'<textarea name="{form_name}" rows="{rows}" class="qi">{val}</textarea>'
+            f'</div>'
+        )
+
+    def photo_block(field_key, label, cap_form_name=None, cap_field_key=None):
+        url = fields.get(field_key, "") or ""
+        thumb = (
+            f'<img src="{_h.escape(url)}" style="width:100%;max-height:220px;object-fit:cover;'
+            f'border-radius:6px;margin-bottom:8px;display:block;">'
+            if url else
+            '<div style="height:72px;background:#f3f4f6;border-radius:6px;display:flex;'
+            'align-items:center;justify-content:center;margin-bottom:8px;'
+            'color:#9ca3af;font-size:13px;">사진 없음</div>'
+        )
+        cap_input = ""
+        if cap_form_name and cap_field_key:
+            cap_val = v(cap_field_key)
+            cap_input = (
+                f'<label class="ql" style="font-size:13px;color:#6b7280;font-weight:400;">설명 (선택)</label>'
+                f'<input type="text" name="{cap_form_name}" value="{cap_val}" class="qi">'
+            )
+        return (
+            f'<div class="q">'
+            f'<label class="ql">{_h.escape(label)}</label>'
+            + thumb + cap_input +
+            '</div>'
+        )
+
+    photo_blocks = "".join(
+        photo_block(f"장례사진{i}", f"장례사진 {i}", f"photo{i}_desc", f"장례사진{i}설명")
+        for i in range(1, 6)
+    )
+    chief_photo_block = photo_block("유가족 답례사진", "유가족 답례사진")
+
+    css = """
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:48px 24px 96px}
+.fhdr{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid #f3f4f6}
+.ftitle{font-size:24px;font-weight:700;color:#0d0d0d;margin-bottom:6px}
+.fsub{font-size:15px;color:#6b7280}
+.q{margin-bottom:36px}
+.ql{display:block;font-size:16px;font-weight:500;color:#0d0d0d;margin-bottom:10px;line-height:1.5}
+.qi{display:block;width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px 16px;font-size:15px;color:#0d0d0d;font-family:inherit;background:#fff;line-height:1.5;transition:border-color .15s,box-shadow .15s}
+.qi:focus{outline:none;border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.08)}
+textarea.qi{resize:vertical;min-height:96px}
+.divider{border:none;border-top:1px solid #f3f4f6;margin:40px 0}
+.section-hdr{font-size:14px;font-weight:600;color:#374151;margin-bottom:24px;letter-spacing:.02em}
+.section-sub{font-weight:400;color:#9ca3af;font-size:13px;margin-left:6px}
+.photo-note{font-size:12px;color:#9ca3af;margin-top:4px;margin-bottom:0;}
+.submit-area{margin-top:48px}
+.submit-btn{display:block;width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:16px 24px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
+.submit-btn:hover{background:#374151}
+.submit-note{margin-top:12px;text-align:center;font-size:13px;color:#9ca3af}
+"""
+
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>답례장 내용 수정 · 휴먼다큐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>{css}</style>
+</head>
+<body>
+<div class="wrap">
+<div class="fhdr">
+  <div class="ftitle">故 {dn} 답례장 내용 수정</div>
+  <div class="fsub">기존에 입력하신 내용이 채워져 있습니다. 수정할 항목만 변경 후 제출해 주세요.</div>
+</div>
+<form method="POST" action="/webhook/damnyejang/edit-form">
+<input type="hidden" name="pending_id" value="{pid}">
+
+{q("name", "고인 이름", "고인이름")}
+{q("chief_name", "상주 이름", "상주 이름")}
+{q("contact", "상주 연락처", "상주 연락처", "tel")}
+{q("email", "이메일", "답례장 링크 받으실 이메일", "email")}
+{qt("chief_words", "상주가 대표로 하고 싶은 말", "상주가 대표로 하고 싶은 말", 5)}
+
+<hr class="divider">
+<div class="section-hdr">장례 사진 <span class="section-sub">사진은 변경 불가 · 설명만 수정 가능합니다</span></div>
+{photo_blocks}
+
+<hr class="divider">
+<div class="section-hdr">유가족 답례사진 <span class="section-sub">사진 변경 불가</span></div>
+{chief_photo_block}
+
+<div class="submit-area">
+  <button type="submit" class="submit-btn">수정 완료하기</button>
+  <p class="submit-note">제출 후 이메일로 완료 알림을 보내드립니다</p>
+</div>
+</form>
+</div>
+</body>
+</html>"""
+
+
 @app.route("/damnyejang/edit-link/<pending_id>")
 def damnyejang_edit_link(pending_id):
-    from flask import redirect as _redirect
-    tally_url = f"https://tally.so/r/{DAMNYEJANG_TALLY_FORM_ID}?pending_id={pending_id}"
-    return _redirect(tally_url)
+    try:
+        doc = _get_db().collection("damnyejang_pending").document(pending_id).get()
+        if not doc.exists:
+            return "해당 정보를 찾을 수 없습니다.", 404
+        stored = doc.to_dict()
+        html = build_damnyejang_edit_form_html(pending_id, stored)
+        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+    except Exception as e:
+        print(f"[DAMNYEJANG-EDIT-LINK] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return "오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 500
+
+
+@app.route("/webhook/damnyejang/edit-form", methods=["POST"])
+def webhook_damnyejang_edit_form():
+    """커스텀 수정 폼 제출 — msg_a/b 재사용, HTML 덮어쓰기, 이메일 재발송"""
+    try:
+        pending_id = request.form.get("pending_id", "").strip()
+        if not pending_id:
+            return "pending_id 없음", 400
+
+        doc = _get_db().collection("damnyejang_pending").document(pending_id).get()
+        if not doc.exists:
+            return "수정할 답례장을 찾을 수 없습니다.", 404
+
+        stored = doc.to_dict()
+        stored_fields = stored.get("fields", {})
+        msg_a         = stored.get("msg_a", "")
+        msg_b         = stored.get("msg_b", "")
+        contact_email = stored.get("contact_email", "")
+        deceased_name = stored.get("deceased_name", "")
+
+        if not msg_a:
+            return "초기 답례장 작성이 완료되지 않았습니다.", 400
+
+        # 폼 데이터 → fields dict
+        new_text = {
+            "고인이름":                  request.form.get("name",        "").strip(),
+            "상주 이름":                  request.form.get("chief_name",  "").strip(),
+            "상주 연락처":                request.form.get("contact",     "").strip(),
+            "답례장 링크 받으실 이메일":  request.form.get("email",       "").strip(),
+            "상주가 대표로 하고 싶은 말": request.form.get("chief_words", "").strip(),
+        }
+        for i in range(1, 6):
+            new_text[f"장례사진{i}설명"] = request.form.get(f"photo{i}_desc", "").strip()
+
+        deceased_name = new_text.get("고인이름") or deceased_name
+        contact_email = new_text.get("답례장 링크 받으실 이메일") or contact_email
+
+        # 머지: 새 텍스트(비어있지 않으면) 우선, 사진은 stored 유지
+        merged = dict(stored_fields)
+        merged.update({k: v for k, v in new_text.items() if v})
+        for key in _DAMNYEJANG_PHOTO_KEYS:
+            merged[key] = stored_fields.get(key, "")
+
+        print(f"[DAMNYEJANG-EDIT-FORM] pending_id={pending_id}, deceased={deceased_name}")
+
+        def process():
+            try:
+                adv_data = firebase_get_advanced(deceased_name)
+                edit_url = f"https://humandocu-server-production.up.railway.app/damnyejang/edit-link/{pending_id}"
+                html = build_html_damnyejang(merged, adv_data, msg_a, msg_b, edit_url=edit_url)
+                filename  = "damnyejang-" + safe_filename(deceased_name)
+                pages_url = upload_to_github(filename, html)
+                print(f"[DAMNYEJANG-EDIT-FORM] 업로드 완료: {pages_url}")
+
+                import datetime as _dt
+                _get_db().collection("damnyejang_pending").document(pending_id).update({
+                    "fields":    merged,
+                    "edited_at": _dt.datetime.utcnow().isoformat(),
+                })
+
+                send_email_damnyejang(contact_email, deceased_name, pages_url, edit_url=edit_url)
+                print(f"[DAMNYEJANG-EDIT-FORM] 이메일 재발송: {contact_email}")
+            except Exception as e:
+                print(f"[DAMNYEJANG-EDIT-FORM] 오류: {e}")
+                import traceback; traceback.print_exc()
+
+        import threading
+        threading.Thread(target=process, daemon=True).start()
+
+        import html as _h
+        dn = _h.escape(deceased_name)
+        return f"""<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>수정 완료 · 휴먼다큐</title>
+<style>
+  body{{background:#f5f2eb;font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}}
+  .card{{background:#fff;max-width:440px;width:90%;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center;}}
+  .hdr{{background:#1a1a2e;color:#e8e0d0;padding:28px;}}
+  .hdr small{{letter-spacing:4px;font-size:10px;opacity:.5;display:block;margin-bottom:6px;}}
+  .hdr h1{{font-weight:300;letter-spacing:3px;font-size:20px;}}
+  .body{{padding:28px;}}
+  .icon{{font-size:40px;margin-bottom:12px;}}
+  p{{line-height:1.9;font-size:14px;color:#6b6050;}}
+  footer{{background:#f5f0e8;padding:14px;font-size:11px;color:#8a8a8a;}}
+  footer a{{color:#8b7355;text-decoration:none;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="hdr"><small>HUMANDOCU · 답례장</small><h1>故 {dn}</h1></div>
+  <div class="body">
+    <div class="icon">✅</div>
+    <p>수정 내용을 처리 중입니다.<br>완료되면 이메일로 알려드립니다.</p>
+  </div>
+  <footer><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a></footer>
+</div>
+</body></html>""", 200, {"Content-Type": "text/html; charset=utf-8"}
+
+    except Exception as e:
+        print(f"[DAMNYEJANG-EDIT-FORM] 요청 처리 오류: {e}")
+        import traceback; traceback.print_exc()
+        return "오류가 발생했습니다.", 500
 
 
 # ─────────────────────────────────────────────────────────────────
