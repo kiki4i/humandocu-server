@@ -4643,7 +4643,7 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
             '<div style="display:inline-block;'
             'box-shadow:0 0 0 1px #c8a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c8a96e;'
             'margin:14px;">'
-            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:cover;object-position:top;background:#1a1714;display:block;">'
+            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:contain;background:#1a1a2e;display:block;">'
             '</div></div>'
         )
     else:
@@ -4752,20 +4752,15 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
             '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 20px;"></div>'
             + cards_html +
             # 다크 슬라이드쇼
-            '<div style="background:#1a1a2e;border-radius:4px;overflow:hidden;margin-top:4px;">'
-            '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.5);text-align:center;padding:14px 0 10px;">슬 라 이 드 쇼</div>'
+            '<div style="background:#1a1714;padding:24px 20px;margin-top:4px;position:relative;border-radius:4px;">'
+            '<audio id="dj-bgm" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
+            '<button id="dj-play-btn" onclick="djTogglePlay()" '
+            'style="position:absolute;top:14px;right:14px;'
+            'background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.28);border-radius:20px;'
+            'padding:5px 13px;font-size:11px;color:#c8a96e;cursor:pointer;letter-spacing:.04em;font-family:inherit;">▶ 재생</button>'
+            '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.5);text-align:center;margin-bottom:16px;">슬 라 이 드 쇼</div>'
             + sl_html +
-            '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;">'
-            f'<button onclick="djSlide(-1)" style="background:none;border:1px solid rgba(200,169,110,0.35);color:#8b7355;padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">‹</button>'
-            f'<div style="display:flex;align-items:center;gap:8px;">'
-            f'<span style="display:flex;gap:3px;">{dots_html}</span>'
-            f'<button id="dj-play-btn" onclick="djTogglePlay()" '
-            f'style="background:none;border:1px solid rgba(200,169,110,0.35);color:#c8a96e;'
-            f'padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:11px;letter-spacing:1px;">▶ 재생</button>'
-            f'</div>'
-            f'<button onclick="djSlide(1)" style="background:none;border:1px solid rgba(200,169,110,0.35);color:#8b7355;padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">›</button>'
-            '</div>'
-            '<audio id="dj-bgm" src="https://kiki4i.github.io/humandocu/assets/memorial-bgm.mp3" loop preload="none"></audio>'
+            f'<div style="text-align:center;margin-top:14px;">{dots_html}</div>'
             '</div>'
             '</div>'
         )
@@ -4860,16 +4855,7 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         'border-left:2px solid #c8a96e;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
         + msg_a +
         '</div>'
-        '<div id="dj-msg-b" style="display:none;font-size:14px;line-height:2.4;color:#2c2c2c;'
-        'border-left:2px solid #9a7d4a;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
-        + msg_b +
-        '</div>'
         f'<div style="text-align:right;margin-top:16px;font-size:14px;color:#1a1a2e;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>'
-        '<button id="dj-ver-btn" onclick="djToggleVer()" '
-        'style="margin-top:16px;width:100%;padding:11px;border:1px solid #c8a96e;background:#fff;'
-        'color:#8b7355;font-size:12px;letter-spacing:1.5px;cursor:pointer;border-radius:3px;'
-        "font-family:'Noto Serif KR',serif;\">"
-        '✦ 다른 버전의 인사말 보기</button>'
         '</div>'
 
         # 4. 장례 사진 슬라이드쇼 (조건부)
@@ -4894,7 +4880,21 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         + comfort_btns
         + '</div>'
 
-        # 8. 푸터
+        # 8. 다른 버전 인사말 토글 (최하단)
+        + '<div style="background:#f9f6f0;padding:20px 20px;margin-top:1px;">'
+        '<button id="dj-ver-btn" onclick="djToggleVer()" '
+        'style="width:100%;padding:13px;border:1px solid #c8a96e;background:#fff;'
+        'color:#8b7355;font-size:12px;letter-spacing:1.5px;cursor:pointer;border-radius:3px;'
+        "font-family:'Noto Serif KR',serif;\">"
+        '✦ 다른 버전의 인사말 보기</button>'
+        '<div id="dj-msg-b-bottom" style="display:none;margin-top:14px;font-size:14px;line-height:2.4;color:#2c2c2c;'
+        'border-left:2px solid #9a7d4a;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
+        + msg_b +
+        f'<div style="text-align:right;margin-top:12px;font-size:14px;color:#1a1a2e;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>'
+        '</div>'
+        '</div>'
+
+        # 9. 푸터
         + '<div style="background:#1a1a2e;padding:28px 24px;text-align:center;margin-top:1px;">'
         '<div style="font-size:11px;color:rgba(200,169,110,0.6);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>'
         '<div style="font-size:11px;color:rgba(249,246,240,0.35);line-height:2.0;margin-bottom:14px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>'
@@ -4908,7 +4908,7 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         "var _djVerShown=false;"
         "function djToggleVer(){"
         "  _djVerShown=!_djVerShown;"
-        "  document.getElementById('dj-msg-b').style.display=_djVerShown?'block':'none';"
+        "  document.getElementById('dj-msg-b-bottom').style.display=_djVerShown?'block':'none';"
         "  document.getElementById('dj-ver-btn').textContent=_djVerShown?'✦ 버전1 인사말로 돌아가기':'✦ 다른 버전의 인사말 보기';"
         "}"
         + slideshow_js +
