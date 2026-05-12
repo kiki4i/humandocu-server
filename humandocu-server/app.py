@@ -4330,6 +4330,28 @@ def admin_resend_advanced_email(pending_id):
         return jsonify({"ok": False, "reason": str(e)}), 500
 
 
+@app.route("/admin/list-pending", methods=["GET"])
+def admin_list_pending():
+    """최근 advanced_pending 문서 목록 조회 (관리자용)"""
+    try:
+        docs = _get_db().collection("advanced_pending").stream()
+        results = []
+        for doc in docs:
+            d = doc.to_dict()
+            results.append({
+                "id": doc.id,
+                "name": d.get("deceased_name", ""),
+                "status": d.get("status", ""),
+                "created_at": d.get("created_at", ""),
+                "updated_at": d.get("updated_at", ""),
+                "email": d.get("contact_email", ""),
+            })
+        results.sort(key=lambda x: x.get("created_at") or x.get("updated_at") or "", reverse=True)
+        return jsonify({"count": len(results), "docs": results[:30]}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/migrate-nickname", methods=["GET"])
 def migrate_nickname():
     """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
