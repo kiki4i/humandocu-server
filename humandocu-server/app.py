@@ -5694,7 +5694,7 @@ def _upload_to_firebase_storage(image_data_b64, filename):
 
         svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
         svc = json.loads(svc_json)
-        bucket_name = svc.get("project_id", "humandocu-93c65") + ".appspot.com"
+        bucket_name = svc.get("project_id", "humandocu-93c65") + ".firebasestorage.app"
 
         if not firebase_admin._apps:
             _get_db()
@@ -5732,7 +5732,7 @@ def _upload_form_photo(file_obj, uid):
         fname = f"edit-photos/{uid}_{_uuid.uuid4().hex[:8]}.{ext}"
         svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
         svc = json.loads(svc_json)
-        bucket_name = svc.get("project_id", "humandocu-93c65") + ".appspot.com"
+        bucket_name = svc.get("project_id", "humandocu-93c65") + ".firebasestorage.app"
         if not firebase_admin._apps:
             _get_db()
         bucket = fb_storage.bucket(bucket_name)
