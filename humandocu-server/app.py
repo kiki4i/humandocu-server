@@ -1402,7 +1402,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
             '<div style="position:relative;display:inline-block;'
             'box-shadow:0 0 0 1px #c4a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c4a96e;'
             'margin:10px;">'
-            f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:contain;background:#1a1714;display:block;">'
+            f'<img src="{photo_url}" style="width:180px;height:220px;object-fit:cover;display:block;">'
             '</div>'
             '</div></div>'
         )
@@ -4538,8 +4538,22 @@ def generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_dat
     return msg_a, msg_b
 
 
+DAMNYEJANG_TALLY_FORM_ID = "68QAvO"
+_DAMNYEJANG_PHOTO_KEYS = {
+    "고인 대표사진", "유가족 답례사진", "고인 육성 파일", "상주 육성 파일",
+    "장례사진1", "장례사진2", "장례사진3", "장례사진4", "장례사진5",
+}
+
+
+@app.route("/damnyejang/edit-link/<pending_id>")
+def damnyejang_edit_link(pending_id):
+    from flask import redirect as _redirect
+    tally_url = f"https://tally.so/r/{DAMNYEJANG_TALLY_FORM_ID}?pending_id={pending_id}"
+    return _redirect(tally_url)
+
+
 # ─────────────────────────────────────────────────────────────────
-# 답례장 HTML 생성 (2버전 탭 + 슬라이드쇼 + 수정하기 버튼)
+# 답례장 HTML 생성 (버전 토글 + 세로카드+슬라이드쇼 + 방명록 + 수정하기)
 # ─────────────────────────────────────────────────────────────────
 
 def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
@@ -4585,7 +4599,7 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
             '<div style="display:inline-block;'
             'box-shadow:0 0 0 1px #c8a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c8a96e;'
             'margin:14px;">'
-            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:contain;background:#1a1714;display:block;">'
+            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:cover;object-position:top;background:#1a1714;display:block;">'
             '</div></div>'
         )
     else:
@@ -4656,40 +4670,86 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
             'border-radius:3px;margin-bottom:10px;font-family:inherit;">🔗 이 답례장 공유하기</button>'
         )
 
-    # 슬라이드쇼 HTML
+    # 장례사진: 세로 스크롤 카드 + 다크 슬라이드쇼 (BGM + 재생/멈춤 + 점)
     if photo_items:
-        slides_html = ""
+        # 세로 스크롤 카드 섹션
+        cards_html = ""
         for idx, (pu, cap) in enumerate(photo_items):
-            disp = "block" if idx == 0 else "none"
-            slides_html += (
-                f'<div class="dj-slide" style="display:{disp}">'
-                f'<img src="{pu}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">'
-                + (f'<div style="font-size:13px;color:#3d2b1f;padding:10px 16px 4px;line-height:1.8;font-style:italic;">{cap}</div>' if cap else '')
+            cards_html += (
+                f'<div style="margin-bottom:14px;border-radius:4px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">'
+                f'<img src="{pu}" style="width:100%;display:block;aspect-ratio:4/3;object-fit:cover;">'
+                + (f'<div style="font-size:12px;color:#8b7355;padding:10px 14px;background:#fff;line-height:1.8;font-style:italic;">{cap}</div>' if cap else '')
                 + '</div>'
             )
+
+        # 다크 슬라이드쇼 HTML
+        sl_html = ""
+        for idx, (pu, cap) in enumerate(photo_items):
+            disp = "block" if idx == 0 else "none"
+            sl_html += (
+                f'<div class="dj-sl" style="display:{disp}">'
+                f'<img src="{pu}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">'
+                + (f'<div style="font-size:12px;color:rgba(249,246,240,0.55);padding:8px 16px;line-height:1.8;font-style:italic;">{cap}</div>' if cap else '')
+                + '</div>'
+            )
+
         total = len(photo_items)
+        dots_html = "".join(
+            f'<span class="dj-dot" onclick="djGoSl({i})" style="display:inline-block;width:6px;height:6px;border-radius:50%;'
+            + ('background:#c8a96e;' if i == 0 else 'background:rgba(200,169,110,0.3);')
+            + 'margin:0 4px;cursor:pointer;vertical-align:middle;"></span>'
+            for i in range(total)
+        )
+
         slideshow_section = (
-            '<div style="background:#f5f0e8;padding:32px 0 28px;margin-top:1px;">'
+            # 세로 카드
+            '<div style="background:#f5f0e8;padding:32px 20px 28px;margin-top:1px;">'
             '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:16px;">장 례 사 진</div>'
-            '<div style="position:relative;">'
-            + slides_html +
-            f'<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">'
-            f'<button onclick="djSlide(-1)" style="background:none;border:1px solid #c8a96e;color:#8b7355;padding:6px 14px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">‹ 이전</button>'
-            f'<span id="djCounter" style="font-size:11px;color:#8b7355;letter-spacing:2px;">1 / {total}</span>'
-            f'<button onclick="djSlide(1)" style="background:none;border:1px solid #c8a96e;color:#8b7355;padding:6px 14px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">다음 ›</button>'
+            '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 20px;"></div>'
+            + cards_html +
+            # 다크 슬라이드쇼
+            '<div style="background:#1a1a2e;border-radius:4px;overflow:hidden;margin-top:4px;">'
+            '<div style="font-size:9px;letter-spacing:4px;color:rgba(200,169,110,0.5);text-align:center;padding:14px 0 10px;">슬 라 이 드 쇼</div>'
+            + sl_html +
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;">'
+            f'<button onclick="djSlide(-1)" style="background:none;border:1px solid rgba(200,169,110,0.35);color:#8b7355;padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">‹</button>'
+            f'<div style="display:flex;align-items:center;gap:8px;">'
+            f'<span style="display:flex;gap:3px;">{dots_html}</span>'
+            f'<button id="dj-play-btn" onclick="djTogglePlay()" '
+            f'style="background:none;border:1px solid rgba(200,169,110,0.35);color:#c8a96e;'
+            f'padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:11px;letter-spacing:1px;">▶ 재생</button>'
             f'</div>'
+            f'<button onclick="djSlide(1)" style="background:none;border:1px solid rgba(200,169,110,0.35);color:#8b7355;padding:5px 12px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">›</button>'
+            '</div>'
+            '<audio id="dj-bgm" src="https://kiki4i.github.io/humandocu/assets/memorial-bgm.mp3" loop preload="none"></audio>'
             '</div>'
             '</div>'
         )
         slideshow_js = (
-            f"var djIdx=0,djTotal={total};"
-            "function djSlide(d){"
-            "  var slides=document.querySelectorAll('.dj-slide');"
-            "  slides[djIdx].style.display='none';"
-            "  djIdx=(djIdx+d+djTotal)%djTotal;"
-            "  slides[djIdx].style.display='block';"
-            "  document.getElementById('djCounter').textContent=(djIdx+1)+' / '+djTotal;"
-            "}"
+            f"var _dji=0,_djt={total},_djTimer=null,_djPlaying=false;"
+            "var _djBgm=document.getElementById('dj-bgm');"
+            "function djGoSl(n){{"
+            "  document.querySelectorAll('.dj-sl')[_dji].style.display='none';"
+            "  document.querySelectorAll('.dj-dot')[_dji].style.background='rgba(200,169,110,0.3)';"
+            "  _dji=n;"
+            "  document.querySelectorAll('.dj-sl')[_dji].style.display='block';"
+            "  document.querySelectorAll('.dj-dot')[_dji].style.background='#c8a96e';"
+            "}}"
+            "function djSlide(d){{djGoSl((_dji+d+_djt)%_djt);}}"
+            "function djTogglePlay(){{"
+            "  var btn=document.getElementById('dj-play-btn');"
+            "  if(!_djPlaying){{"
+            "    _djPlaying=true;"
+            "    if(_djBgm)_djBgm.play().catch(function(){{}});"
+            "    _djTimer=setInterval(function(){{djGoSl((_dji+1)%_djt);}},3000);"
+            "    btn.textContent='⏸ 멈춤';"
+            "  }}else{{"
+            "    _djPlaying=false;"
+            "    if(_djBgm)_djBgm.pause();"
+            "    clearInterval(_djTimer);"
+            "    btn.textContent='▶ 재생';"
+            "  }}"
+            "}}"
         )
     else:
         slideshow_section = ""
@@ -4748,23 +4808,24 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
           '메모리얼 페이지 방문하기</a>'
         + '</div>'
 
-        # 3. 상주 인사말 탭 (버전1 담담한 그리움 / 버전2 따뜻한 위로)
+        # 3. 상주 인사말 (버전1 표시, 하단 토글 버튼으로 버전2 보기)
         '<div style="background:#f9f6f0;padding:32px 20px;margin-top:1px;">'
         '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:14px;">상 주 인 사</div>'
         '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 18px;"></div>'
-        '<div style="display:flex;gap:2px;background:rgba(24,22,15,.09);border-radius:4px;padding:3px;margin-bottom:18px;">'
-        '<button class="tab-btn" id="dj-tab-a" onclick="djTab(\'a\')" style="background:#1a1a2e;color:#c8a96e;">버전 1 · 담담한 그리움</button>'
-        '<button class="tab-btn" id="dj-tab-b" onclick="djTab(\'b\')" style="background:transparent;color:#8b7355;">버전 2 · 따뜻한 위로</button>'
-        '</div>'
         '<div id="dj-msg-a" style="font-size:14px;line-height:2.4;color:#2c2c2c;'
         'border-left:2px solid #c8a96e;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
         + msg_a +
         '</div>'
         '<div id="dj-msg-b" style="display:none;font-size:14px;line-height:2.4;color:#2c2c2c;'
-        'border-left:2px solid #c8a96e;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
+        'border-left:2px solid #9a7d4a;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
         + msg_b +
         '</div>'
         f'<div style="text-align:right;margin-top:16px;font-size:14px;color:#1a1a2e;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>'
+        '<button id="dj-ver-btn" onclick="djToggleVer()" '
+        'style="margin-top:16px;width:100%;padding:11px;border:1px solid #c8a96e;background:#fff;'
+        'color:#8b7355;font-size:12px;letter-spacing:1.5px;cursor:pointer;border-radius:3px;'
+        "font-family:'Noto Serif KR',serif;\">"
+        '✦ 다른 버전의 인사말 보기</button>'
         '</div>'
 
         # 4. 장례 사진 슬라이드쇼 (조건부)
@@ -4773,7 +4834,10 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         # 5. 유가족 + 상주 육성 (조건부)
         + chief_section_html
 
-        # 6. 위로 전하기
+        # 6. 디지털 방명록
+        + _build_guestbook_section(deceased_name)
+
+        # 7. 위로 전하기
         + '<div style="background:#fff;padding:32px 20px;margin-top:1px;">'
         '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:14px;">위 로 전 하 기</div>'
         '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 18px;"></div>'
@@ -4786,7 +4850,7 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         + comfort_btns
         + '</div>'
 
-        # 7. 푸터
+        # 8. 푸터
         + '<div style="background:#1a1a2e;padding:28px 24px;text-align:center;margin-top:1px;">'
         '<div style="font-size:11px;color:rgba(200,169,110,0.6);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>'
         '<div style="font-size:11px;color:rgba(249,246,240,0.35);line-height:2.0;margin-bottom:14px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>'
@@ -4797,13 +4861,11 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
         '</div>'
 
         '<script>'
-        "function djTab(v){"
-        "  document.getElementById('dj-msg-a').style.display=v==='a'?'block':'none';"
-        "  document.getElementById('dj-msg-b').style.display=v==='b'?'block':'none';"
-        "  document.getElementById('dj-tab-a').style.background=v==='a'?'#1a1a2e':'transparent';"
-        "  document.getElementById('dj-tab-a').style.color=v==='a'?'#c8a96e':'#8b7355';"
-        "  document.getElementById('dj-tab-b').style.background=v==='b'?'#1a1a2e':'transparent';"
-        "  document.getElementById('dj-tab-b').style.color=v==='b'?'#c8a96e':'#8b7355';"
+        "var _djVerShown=false;"
+        "function djToggleVer(){"
+        "  _djVerShown=!_djVerShown;"
+        "  document.getElementById('dj-msg-b').style.display=_djVerShown?'block':'none';"
+        "  document.getElementById('dj-ver-btn').textContent=_djVerShown?'✦ 버전1 인사말로 돌아가기':'✦ 다른 버전의 인사말 보기';"
         "}"
         + slideshow_js +
         "var _ca=null;"
@@ -4822,7 +4884,14 @@ def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
     return html
 
 
-def send_email_damnyejang(to_email, deceased_name, pages_url):
+def send_email_damnyejang(to_email, deceased_name, pages_url, edit_url=""):
+    edit_btn_html = (
+        f'<div style="margin-top:16px;text-align:center">'
+        f'<a href="{edit_url}" style="display:inline-block;background:#fff;color:#8b7355;'
+        'padding:12px 28px;text-decoration:none;letter-spacing:2px;font-size:12px;'
+        'border:1px solid #c8a96e;border-radius:4px;width:100%;text-align:center;">✏️ 내용 수정하기</a>'
+        '</div>'
+    ) if edit_url else ""
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
@@ -4832,12 +4901,13 @@ def send_email_damnyejang(to_email, deceased_name, pages_url):
         '</div>'
         '<div style="padding:32px;background:#fff">'
         f'<p style="line-height:2;font-size:14px;">故 <strong>{deceased_name}</strong> 님의 디지털 답례장이 완성되었습니다.<br>'
-        '버전 1(담담한 그리움) / 버전 2(따뜻한 위로) 중 원하시는 버전을 선택해 카카오톡으로 공유해 주세요.</p>'
+        '카카오톡으로 공유해 주세요.</p>'
         '<div style="margin:24px 0;text-align:center">'
         f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;'
         'padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center;">📄 답례장 열기</a>'
         '</div>'
-        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        + edit_btn_html +
+        '<div style="margin-top:16px;padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
         '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px;">📋 카카오톡 공유용 링크</p>'
         f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div></div>'
@@ -4862,8 +4932,9 @@ def send_email_damnyejang(to_email, deceased_name, pages_url):
 
 @app.route("/webhook/damnyejang", methods=["POST"])
 def webhook_damnyejang():
-    """Tally 답례장 웹훅 - 비동기 파이프라인으로 처리"""
+    """Tally 답례장 웹훅 - 신규/수정 모드 비동기 파이프라인"""
     try:
+        import uuid, datetime as _dt
         payload = request.get_json(force=True)
         print(f"[DAMNYEJANG] 웹훅 수신: {json.dumps(payload, ensure_ascii=False)[:500]}")
 
@@ -4873,24 +4944,78 @@ def webhook_damnyejang():
         chief_words   = d_fields.get("상주가 대표로 하고 싶은 말", "").strip()
         contact_email = d_fields.get("답례장 링크 받으실 이메일", "").strip() or "mongmong4i@gmail.com"
 
+        # URL 파라미터 또는 hidden field로 넘어온 pending_id
+        url_pending_id = request.args.get("pending_id", "").strip() or d_fields.get("pending_id", "").strip()
+
         if not deceased_name:
             return jsonify({"error": "고인이름 없음"}), 400
+
+        # 수정 모드: 기존 pending 문서 로드
+        is_edit = bool(url_pending_id)
+        pending_id = url_pending_id if is_edit else uuid.uuid4().hex[:16]
+
+        stored_msg_a = stored_msg_b = ""
+        stored_fields = {}
+
+        if is_edit:
+            doc = _get_db().collection("damnyejang_pending").document(pending_id).get()
+            if doc.exists:
+                stored = doc.to_dict()
+                stored_msg_a   = stored.get("msg_a", "")
+                stored_msg_b   = stored.get("msg_b", "")
+                stored_fields  = stored.get("fields", {})
+                contact_email  = stored.get("contact_email", contact_email)
+                print(f"[DAMNYEJANG] 수정 모드: pending_id={pending_id}, has_msgs={bool(stored_msg_a)}")
+            else:
+                print(f"[DAMNYEJANG] 수정 모드지만 pending 없음: {pending_id} — 신규 처리")
+                is_edit = False
 
         def _run():
             try:
                 adv_data = firebase_get_advanced(deceased_name)
                 print(f"[DAMNYEJANG] Firebase 조회: {list(adv_data.keys())}")
 
-                msg_a, msg_b = generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_data)
-                print(f"[DAMNYEJANG] 인사말 A 생성: {msg_a[:60]}...")
-                print(f"[DAMNYEJANG] 인사말 B 생성: {msg_b[:60]}...")
+                # 수정 시 기존 인사말 재사용, 신규 시 생성
+                if is_edit and stored_msg_a and stored_msg_b:
+                    msg_a, msg_b = stored_msg_a, stored_msg_b
+                    print("[DAMNYEJANG] 기존 인사말 재사용")
+                else:
+                    msg_a, msg_b = generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_data)
+                    print(f"[DAMNYEJANG] 인사말 A 생성: {msg_a[:60]}...")
+                    print(f"[DAMNYEJANG] 인사말 B 생성: {msg_b[:60]}...")
 
-                html = build_html_damnyejang(d_fields, adv_data, msg_a, msg_b)
+                # 수정 시 사진 필드: 새 업로드 없으면 기존 값 유지
+                merged_fields = dict(stored_fields)
+                merged_fields.update(d_fields)
+                if is_edit:
+                    for key in _DAMNYEJANG_PHOTO_KEYS:
+                        if not d_fields.get(key):
+                            merged_fields[key] = stored_fields.get(key, "")
+
+                edit_url = f"https://humandocu-server-production.up.railway.app/damnyejang/edit-link/{pending_id}"
+                html = build_html_damnyejang(merged_fields, adv_data, msg_a, msg_b, edit_url=edit_url)
                 filename  = "damnyejang-" + safe_filename(deceased_name)
                 pages_url = upload_to_github(filename, html)
                 print(f"[DAMNYEJANG] 업로드 완료: {pages_url}")
 
-                send_email_damnyejang(contact_email, deceased_name, pages_url)
+                # Firestore에 저장 (신규: set, 수정: update)
+                doc_data = {
+                    "fields": merged_fields,
+                    "deceased_name": deceased_name,
+                    "contact_email": contact_email,
+                    "msg_a": msg_a,
+                    "msg_b": msg_b,
+                    "pages_url": pages_url,
+                    "status": "done",
+                    "updated_at": _dt.datetime.utcnow().isoformat(),
+                }
+                if is_edit:
+                    _get_db().collection("damnyejang_pending").document(pending_id).update(doc_data)
+                else:
+                    doc_data["created_at"] = _dt.datetime.utcnow().isoformat()
+                    _get_db().collection("damnyejang_pending").document(pending_id).set(doc_data)
+
+                send_email_damnyejang(contact_email, deceased_name, pages_url, edit_url=edit_url)
 
             except Exception as e:
                 import traceback; traceback.print_exc()
@@ -4898,7 +5023,7 @@ def webhook_damnyejang():
 
         import threading
         threading.Thread(target=_run, daemon=True).start()
-        return jsonify({"status": "ok"}), 200
+        return jsonify({"status": "ok", "pending_id": pending_id}), 200
 
     except Exception as e:
         import traceback; traceback.print_exc()
