@@ -4352,6 +4352,50 @@ def admin_list_pending():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/admin/list-damnyejang-pending", methods=["GET"])
+def admin_list_damnyejang_pending():
+    """최근 damnyejang_pending 문서 목록 조회 (관리자용)"""
+    try:
+        docs = _get_db().collection("damnyejang_pending").stream()
+        results = []
+        for doc in docs:
+            d = doc.to_dict()
+            results.append({
+                "id": doc.id,
+                "name": d.get("deceased_name", ""),
+                "status": d.get("status", ""),
+                "created_at": d.get("created_at", ""),
+                "updated_at": d.get("updated_at", ""),
+                "email": d.get("contact_email", ""),
+                "pages_url": d.get("pages_url", ""),
+            })
+        results.sort(key=lambda x: x.get("created_at") or x.get("updated_at") or "", reverse=True)
+        return jsonify({"count": len(results), "docs": results[:30]}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/resend-damnyejang-email/<pending_id>", methods=["GET"])
+def admin_resend_damnyejang_email(pending_id):
+    """damnyejang_pending 문서의 이메일 재발송 (관리자용)"""
+    try:
+        doc = _get_db().collection("damnyejang_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"error": "문서 없음"}), 404
+        d = doc.to_dict()
+        contact_email  = d.get("contact_email", "")
+        deceased_name  = d.get("deceased_name", "")
+        pages_url      = d.get("pages_url", "")
+        if not contact_email or not pages_url:
+            return jsonify({"error": "이메일 또는 pages_url 없음", "doc": d}), 400
+        edit_url = f"https://humandocu-server-production.up.railway.app/damnyejang/edit-link/{pending_id}"
+        send_email_damnyejang(contact_email, deceased_name, pages_url, edit_url=edit_url)
+        return jsonify({"status": "ok", "to": contact_email, "name": deceased_name}), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/migrate-nickname", methods=["GET"])
 def migrate_nickname():
     """nickname 없는 sixshot 문서에 name 값으로 nickname 채우기"""
