@@ -4425,6 +4425,7 @@ def firebase_get_guestbook_doc(deceased_name, doc_id):
 # ─────────────────────────────────────────────────────────────────
 
 def parse_tally_damnyejang(payload):
+    """답례장 탈리 웹훅 파서 - 사진/텍스트/파일 필드 파싱"""
     raw_fields = payload.get("data", {}).get("fields", [])
     fields = {}
     photo_idx = 0
@@ -4438,79 +4439,92 @@ def parse_tally_damnyejang(payload):
                 for item in value:
                     if isinstance(item, dict):
                         u = item.get("url") or item.get("downloadUrl") or ""
-                        if u:
-                            urls.append(u)
+                        if u: urls.append(u)
                     elif isinstance(item, str):
                         urls.append(item)
             url = urls[0] if urls else ""
-            if label.startswith("장례사진") and "설명" in label:
+            # 장례사진: label에 "장례사진"이 포함된 FILE_UPLOAD
+            if "장례사진" in label:
                 photo_idx += 1
                 fields[f"장례사진{photo_idx}"] = url
-            elif label == "고인 대표사진":
-                fields["고인 대표사진"] = url
-            elif label == "유가족 답례사진":
-                fields["유가족 답례사진"] = url
-            elif label == "고인 육성 파일":
-                fields["고인 육성 파일"] = url
-            elif label == "상주 육성 파일":
-                fields["상주 육성 파일"] = url
+            elif label in ("고인 대표사진", "유가족 답례사진", "고인 육성 파일", "상주 육성 파일"):
+                fields[label] = url
             else:
                 fields[label] = url
         elif value is not None:
-            if photo_idx > 0 and label not in ("고인이름", "고인 대표사진", "유가족 답례사진", "고인 육성 파일", "상주 육성 파일"):
+            str_val = str(value).strip() if value else ""
+            # 장례사진 직후 텍스트 → 캡션으로 저장
+            if photo_idx > 0 and label not in (
+                "고인이름", "고인 대표사진", "유가족 답례사진",
+                "고인 육성 파일", "상주 육성 파일",
+                "상주 이름", "상주 연락처", "답례장 링크 받으실 이메일",
+                "상주가 대표로 하고 싶은 말"
+            ):
                 cap_key = f"장례사진{photo_idx}설명"
-                fields[cap_key] = str(value).strip() if value else ""
+                if cap_key not in fields:
+                    fields[cap_key] = str_val
             if label:
-                fields[label] = str(value).strip() if value else ""
-    print(f"[damnyejang] parsed fields keys: {list(fields.keys())}")
+                fields[label] = str_val
+    # 폴백: 다양한 캡션 라벨 패턴 정규화
+    import re as _re
+    for old_key in list(fields.keys()):
+        m = _re.match(r"장례\s*사진\s*(\d)\s*설명", old_key)
+        if m:
+            new_key = f"장례사진{m.group(1)}설명"
+            if new_key not in fields:
+                fields[new_key] = fields[old_key]
+    print(f"[DAMNYEJANG] 파싱 keys: {list(fields.keys())}")
     return fields
+
+
 # ─────────────────────────────────────────────────────────────────
-# Claude API - 상주 인사말 생성
+# Claude API - 답례 인사말 2가지 버전 생성
 # ─────────────────────────────────────────────────────────────────
 
-def generate_damnyejang_message(deceased_name, chief_name, chief_words, adv_data):
+def generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_data):
+    """담담한 그리움(A) / 따뜻한 위로(B) 2버전 답례 인사말 생성 (각 150자 내외)"""
     memo = adv_data.get("한줄평", "") or adv_data.get("고인 소개", "")
-    prompt = (
-        f"당신은 장례 답례장 글을 쓰는 전문 작가입니다.\n\n"
+    base_info = (
         f"고인 이름: {deceased_name}\n"
         f"상주 이름: {chief_name}\n"
-        f"상주가 하고 싶은 말: {chief_words}\n"
+        f"상주가 전하고 싶은 말: {chief_words}\n"
         f"고인 메모: {memo}\n\n"
-        "위 정보를 바탕으로 답례장 상주 인사말을 써주세요.\n"
-        "조건:\n"
-        "- 4~6줄, 짧고 진심이 담긴 문장\n"
-        "- 상투적인 표현(삼가 고인의 명복, 깊이 감사드립니다 등) 사용 금지\n"
-        "- 실제 사람이 쓴 것처럼 자연스럽고 따뜻하게\n"
-        "- 마지막에 꼭 찾아뵙겠다는 느낌의 문장 포함\n"
-        "- 줄바꿈은 <br>로\n\n"
-        "인사말만 출력하세요."
     )
-    resp = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": CLAUDE_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json"
-        },
-        json={
-            "model": "claude-sonnet-4-20250514",
-            "max_tokens": 500,
-            "messages": [{"role": "user", "content": prompt}]
-        },
-        timeout=60
-    )
-    resp.raise_for_status()
-    return resp.json()["content"][0]["text"].strip()
+    def _call(style_prompt):
+        prompt = (
+            "당신은 장례 답례장 글을 쓰는 전문 작가입니다.\n\n"
+            + base_info
+            + "위 정보를 바탕으로 답례 인사말을 써주세요.\n"
+            "조건:\n"
+            "- 전체 150자 내외 (너무 길지 않게)\n"
+            "- 상투적인 표현(삼가 고인의 명복, 깊이 감사드립니다 등) 사용 금지\n"
+            "- 실제 사람이 쓴 것처럼 자연스럽게\n"
+            "- 줄바꿈은 <br>로\n\n"
+            + style_prompt
+            + "\n인사말만 출력하세요."
+        )
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-20250514", "max_tokens": 400, "messages": [{"role": "user", "content": prompt}]},
+            timeout=60
+        )
+        resp.raise_for_status()
+        return resp.json()["content"][0]["text"].strip()
+
+    msg_a = _call("스타일: 담담하고 절제된 문체. 고요하고 깊은 여운이 남도록. 화려한 표현 대신 진실된 한 마디.")
+    msg_b = _call("스타일: 따뜻하고 서정적인 문체. 고인의 온기가 느껴지도록. 가족과 조문객 마음에 위로가 되는 언어.")
+    return msg_a, msg_b
 
 
 # ─────────────────────────────────────────────────────────────────
-# 답례장 HTML 생성
+# 답례장 HTML 생성 (2버전 탭 + 슬라이드쇼 + 수정하기 버튼)
 # ─────────────────────────────────────────────────────────────────
 
-def build_html_damnyejang(d_fields, adv_data, chief_msg):
+def build_html_damnyejang(d_fields, adv_data, msg_a, msg_b, edit_url=""):
     deceased_name  = d_fields.get("고인이름", "")
     chief_name     = d_fields.get("상주 이름", "")
-    contact        = d_fields.get("문자 받으실 연락처", "")
+    contact        = d_fields.get("상주 연락처", "") or d_fields.get("문자 받으실 연락처", "")
     rep_photo      = d_fields.get("고인 대표사진", "")
     chief_photo    = d_fields.get("유가족 답례사진", "")
     deceased_voice = d_fields.get("고인 육성 파일", "")
@@ -4531,9 +4545,7 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     oneliner = adv_data.get("한줄평", "") or adv_data.get("고인 소개", "") or "평생을 가족과 이웃을 위해 헌신하셨던 분."
     oneliner = oneliner[:80]
 
-    # 장례 사진
-    # Tally에서 캡션 라벨이 "장례사진1설명" 또는 placeholder 텍스트로 잡힐 수 있음
-    # 빈칸 여러 패턴 시도 + 폴백으로 fields 순서 기반 파싱
+    # 장례 사진 수집
     photo_items = []
     for i in range(1, 6):
         photo_url = d_fields.get(f"장례사진{i}", "")
@@ -4541,29 +4553,18 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
             d_fields.get(f"장례사진{i}설명", "")
             or d_fields.get(f"장례사진{i} 설명", "")
             or d_fields.get(f"장례 사진{i} 설명", "")
-            or d_fields.get(f"장례사진{i}캡션", "")
         )
         if photo_url:
             photo_items.append((photo_url, caption))
 
-    photos_html_parts = []
-    for photo_url, caption in photo_items:
-        photos_html_parts.append(
-            '<div style="margin:0 20px 6px;">'
-            f'<img src="{photo_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:2px;">'
-            '</div>'
-            + (f'<div style="font-size:13px;color:#3d2b1f;margin:8px 20px 22px;line-height:1.8;">{caption}</div>' if caption else '<div style="margin-bottom:22px"></div>')
-        )
-    photos_html = "\n".join(photos_html_parts)
-
-    # ── 영정사진 액자 (골드 프레임)
+    # 영정사진 액자 (골드 프레임 - advanced 스타일)
     if rep_photo:
         rep_frame_html = (
             '<div style="display:flex;justify-content:center;margin-bottom:22px;">'
             '<div style="display:inline-block;'
-            'box-shadow:0 0 0 1px #c8a96e,0 0 0 5px #3d2b1f,0 0 0 7px #9a7d4a,0 0 0 11px #3d2b1f,0 0 0 13px #c8a96e;'
+            'box-shadow:0 0 0 1px #c8a96e,0 0 0 4px #1a1714,0 0 0 6px #9a7d4a,0 0 0 9px #1a1714,0 0 0 11px #c8a96e;'
             'margin:14px;">'
-            f'<img src="{rep_photo}" style="width:200px;height:250px;object-fit:cover;object-position:top;display:block;">'
+            f'<img src="{rep_photo}" style="width:180px;height:220px;object-fit:contain;background:#1a1714;display:block;">'
             '</div></div>'
         )
     else:
@@ -4572,215 +4573,230 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
     # 고인 육성 버튼
     if deceased_voice:
         voice_btn_html = (
-            f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\', \'voiceSvg\')" '
+            f'<button id="voiceBtn" onclick="toggleAudio(\'{deceased_voice}\',\'voiceSvg\')" '
             'style="display:flex;align-items:center;gap:12px;padding:12px 16px;'
-            'border:1.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
-            'margin-top:16px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:4px;">'
-            '<div style="width:40px;height:40px;border-radius:50%;background:#3d2b1f;'
+            'border:1.5px solid #c8a96e;background:#fff;cursor:pointer;'
+            'margin-top:16px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:3px;">'
+            '<div style="width:38px;height:38px;border-radius:50%;background:#1a1a2e;'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg id="voiceSvg" width="14" height="14" viewBox="0 0 13 13" fill="none">'
-            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+            '<svg id="voiceSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<polygon points="3,1 12,6.5 3,12" fill="#c8a96e"/></svg></div>'
             '<div style="text-align:left;">'
-            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:3px;">육성 인사말</div>'
-            f'<div style="font-size:14px;color:#2c2c2c;font-weight:500;">故 {deceased_name}님의 목소리</div>'
+            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:2px;">육성 인사말</div>'
+            f'<div style="font-size:14px;color:#1a1a2e;font-weight:500;">故 {deceased_name}님의 목소리</div>'
             '</div></button>'
         )
     else:
         voice_btn_html = ""
 
-    # 상주 단체사진 + 육성 버튼
+    # 상주 단체사진 + 상주 육성 버튼
+    chief_section_inner = ""
     if chief_photo:
-        chief_photo_html = (
+        chief_section_inner += (
             f'<img src="{chief_photo}" '
-            'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:4px;">'
+            'style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:3px;">'
         )
-        chief_voice_btn_html = (
-            f'<button id="chiefVoiceBtn" onclick="toggleAudio(\'{chief_voice}\', \'chiefSvg\')" '
+    if chief_voice:
+        chief_section_inner += (
+            f'<button id="chiefVoiceBtn" onclick="toggleAudio(\'{chief_voice}\',\'chiefSvg\')" '
             'style="display:flex;align-items:center;gap:12px;padding:12px 16px;'
-            'border:1.5px solid #c8a87a;background:#fff9f2;cursor:pointer;'
-            'margin-top:12px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:4px;">'
-            '<div style="width:40px;height:40px;border-radius:50%;background:#3d2b1f;'
+            'border:1.5px solid #c8a96e;background:#fff;cursor:pointer;'
+            'margin-top:12px;font-family:inherit;box-sizing:border-box;width:100%;border-radius:3px;">'
+            '<div style="width:38px;height:38px;border-radius:50%;background:#1a1a2e;'
             'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-            '<svg id="chiefSvg" width="14" height="14" viewBox="0 0 13 13" fill="none">'
-            '<polygon points="3,1 12,6.5 3,12" fill="#fef0dc"/></svg></div>'
+            '<svg id="chiefSvg" width="13" height="13" viewBox="0 0 13 13" fill="none">'
+            '<polygon points="3,1 12,6.5 3,12" fill="#c8a96e"/></svg></div>'
             '<div style="text-align:left;">'
-            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:3px;">가족 인사말</div>'
-            f'<div style="font-size:14px;color:#2c2c2c;font-weight:500;">상주 육성 듣기</div>'
+            '<div style="font-size:10px;color:#8b7355;letter-spacing:1px;margin-bottom:2px;">가족 인사말</div>'
+            f'<div style="font-size:14px;color:#1a1a2e;font-weight:500;">상주 육성 듣기</div>'
             '</div></button>'
-        ) if chief_voice else ""
-        chief_photo_section = (
-            '<div style="margin-bottom:8px;">' + chief_photo_html + '</div>'
-            + chief_voice_btn_html
         )
-    else:
-        chief_photo_section = ''
 
-    # 메모리얼 URL
     memorial_url = (
         "https://kiki4i.github.io/humandocu/bugo/"
         + urllib.parse.quote("adv-memorial-" + safe_filename(deceased_name))
         + ".html"
     )
 
-    # 카카오 / 문자 버튼 (연락처 있을 때만 활성화)
+    # 위로 보내기 버튼
     if contact:
-        if "kakao" in contact.lower() or "open" in contact.lower() or "http" in contact.lower():
-            kakao_btn_html = (
-                f'<a href="{contact}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
-                'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
-                f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
-                '</a>\n'
-            )
-            sms_btn_html = ""
-        else:
-            sms_body = f"故 {deceased_name}님의 명복을 빕니다.\n찾아뵙지 못해 죄송합니다.\n{chief_name}님과 가족분들 건강 잘 챙기시길 바랍니다."
-            sms_href = f"sms:{contact}?body={urllib.parse.quote(sms_body)}"
-            kakao_btn_html = (
-                f'<a href="https://open.kakao.com/o/{contact}" style="display:flex;align-items:center;justify-content:center;gap:10px;'
-                'width:100%;padding:16px;background:#FEE500;border-radius:6px;text-decoration:none;margin-bottom:12px;">\n'
-                f'<span style="font-size:15px;color:#3C1E1E;font-weight:700;letter-spacing:1px;">💬 {chief_name}에게 카카오톡으로 위로 전하기</span>\n'
-                '</a>\n'
-            )
-            sms_btn_html = (
-                f'<a href="{sms_href}" style="display:block;width:100%;padding:14px;'
-                'border:1.5px solid #c8a87a;font-size:14px;color:#2c2c2c;letter-spacing:2px;font-weight:500;'
-                'background:#fff9f2;text-align:center;text-decoration:none;border-radius:6px;">📱 문자로 위로 전하기</a>\n'
-            )
-    else:
-        kakao_btn_html = (
-            '<button onclick="shareOrCopy()" style="display:flex;align-items:center;justify-content:center;gap:10px;'
-            'width:100%;padding:16px;background:#3d2b1f;border:none;border-radius:6px;cursor:pointer;margin-bottom:12px;">\n'
-            '<span style="font-size:15px;color:#fef0dc;font-weight:700;letter-spacing:1px;">🔗 이 답례장 공유하기</span>\n'
-            '</button>\n'
-            '<script>\n'
-            'function shareOrCopy() {\n'
-            f'  var shareData = {{title: "故 {deceased_name} 답례장", url: window.location.href}};\n'
-            '  if (navigator.share) { navigator.share(shareData); }\n'
-            '  else { navigator.clipboard.writeText(window.location.href).then(function() { alert("링크가 복사되었습니다."); }); }\n'
-            '}\n'
-            '</script>\n'
+        sms_body = f"故 {deceased_name}님의 명복을 빕니다.\n찾아뵙지 못해 죄송합니다.\n{chief_name}님과 가족분들 건강 잘 챙기시길 바랍니다."
+        sms_href = f"sms:{contact}?body={urllib.parse.quote(sms_body)}"
+        comfort_btns = (
+            f'<a href="{sms_href}" style="display:block;width:100%;padding:15px;'
+            'background:#1a1a2e;color:#e8e0d0;font-size:14px;font-weight:600;letter-spacing:2px;'
+            'text-align:center;text-decoration:none;border-radius:3px;margin-bottom:10px;">📱 문자로 위로 전하기</a>'
         )
-        sms_btn_html = ""
+    else:
+        comfort_btns = (
+            '<button onclick="if(navigator.share){navigator.share({title:\'故 ' + deceased_name + ' 답례장\',url:window.location.href});}else{navigator.clipboard.writeText(window.location.href).then(function(){alert(\'링크가 복사되었습니다.\');});}" '
+            'style="display:block;width:100%;padding:15px;background:#1a1a2e;color:#e8e0d0;'
+            'font-size:14px;font-weight:600;letter-spacing:2px;border:none;cursor:pointer;'
+            'border-radius:3px;margin-bottom:10px;font-family:inherit;">🔗 이 답례장 공유하기</button>'
+        )
 
-    # ── 조건부 섹션 미리 조립
-    section_divider = '<div style="width:40px;height:1px;background:#c8a87a;margin:0 auto 22px;"></div>\n'
+    # 슬라이드쇼 HTML
+    if photo_items:
+        slides_html = ""
+        for idx, (pu, cap) in enumerate(photo_items):
+            disp = "block" if idx == 0 else "none"
+            slides_html += (
+                f'<div class="dj-slide" style="display:{disp}">'
+                f'<img src="{pu}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">'
+                + (f'<div style="font-size:13px;color:#3d2b1f;padding:10px 16px 4px;line-height:1.8;font-style:italic;">{cap}</div>' if cap else '')
+                + '</div>'
+            )
+        total = len(photo_items)
+        slideshow_section = (
+            '<div style="background:#f5f0e8;padding:32px 0 28px;margin-top:1px;">'
+            '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:16px;">장 례 사 진</div>'
+            '<div style="position:relative;">'
+            + slides_html +
+            f'<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">'
+            f'<button onclick="djSlide(-1)" style="background:none;border:1px solid #c8a96e;color:#8b7355;padding:6px 14px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">‹ 이전</button>'
+            f'<span id="djCounter" style="font-size:11px;color:#8b7355;letter-spacing:2px;">1 / {total}</span>'
+            f'<button onclick="djSlide(1)" style="background:none;border:1px solid #c8a96e;color:#8b7355;padding:6px 14px;cursor:pointer;font-family:inherit;border-radius:2px;font-size:13px;">다음 ›</button>'
+            f'</div>'
+            '</div>'
+            '</div>'
+        )
+        slideshow_js = (
+            f"var djIdx=0,djTotal={total};"
+            "function djSlide(d){"
+            "  var slides=document.querySelectorAll('.dj-slide');"
+            "  slides[djIdx].style.display='none';"
+            "  djIdx=(djIdx+d+djTotal)%djTotal;"
+            "  slides[djIdx].style.display='block';"
+            "  document.getElementById('djCounter').textContent=(djIdx+1)+' / '+djTotal;"
+            "}"
+        )
+    else:
+        slideshow_section = ""
+        slideshow_js = ""
 
-    photos_section = (
-        '<div style="background:#ede4d6;padding:36px 0;">\n'
-        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">장 례 사 진</div>\n'
-        + section_divider
-        + photos_html + '\n'
-        '</div>\n\n'
-    ) if photos_html else ''
+    # 수정하기 버튼
+    edit_btn = (
+        f'<a href="{edit_url}" style="display:block;width:100%;padding:14px;'
+        'border:1px solid rgba(200,169,110,0.4);font-size:13px;color:rgba(249,246,240,0.6);'
+        'letter-spacing:2px;text-align:center;text-decoration:none;border-radius:3px;margin-top:10px;">'
+        '✏️ 내용 수정하기</a>'
+    ) if edit_url else ""
 
-    chief_section = (
-        '<div style="background:#f8f0e6;padding:32px 20px;">\n'
-        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">유 가 족</div>\n'
-        + section_divider
-        + chief_photo_section + '\n'
-        '</div>\n\n'
-    ) if chief_photo_section else ''
-
-    chief_msg_section = (
-        '<div style="background:#fff9f2;padding:36px 20px;border-top:3px solid #c8a87a;border-bottom:3px solid #c8a87a;">\n'
-        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">상 주 인 사</div>\n'
-        + section_divider
-        + f'<div style="font-size:15px;line-height:2.4;color:#2c2c2c;border-left:3px solid #c8a87a;padding:14px 18px;background:#fdf8f2;border-radius:0 4px 4px 0;">{chief_msg}</div>\n'
-        + f'<div style="text-align:right;margin-top:20px;font-size:15px;color:#3d2b1f;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>\n'
-        '</div>\n\n'
-    ) if chief_msg else ''
+    # 유가족 섹션
+    chief_section_html = (
+        '<div style="background:#f5f0e8;padding:32px 20px;margin-top:1px;">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:16px;">유 가 족</div>'
+        + chief_section_inner +
+        '</div>'
+    ) if chief_section_inner else ""
 
     html = (
-        "<!DOCTYPE html>\n"
-        '<html lang="ko">\n'
-        "<head>\n"
-        '<meta charset="UTF-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-        f"<title>故 {deceased_name} 답례장 | 휴먼다큐</title>\n"
-        "<style>\n"
-        "*{margin:0;padding:0;box-sizing:border-box;}\n"
-        "body{background:#fdf8f2;font-family:'Noto Serif KR',Georgia,serif;max-width:480px;margin:0 auto;}\n"
-        "</style>\n"
-        "</head>\n"
-        "<body>\n\n"
+        '<!DOCTYPE html><html lang="ko"><head>'
+        '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
+        f'<title>故 {deceased_name} 답례장 | 휴먼다큐</title>'
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
+        '<style>'
+        '*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}'
+        "body{font-family:'Noto Serif KR',Georgia,serif;background:#f5f0e8;color:#2c2c2c;max-width:480px;margin:0 auto;}"
+        '.tab-btn{flex:1;padding:10px 4px;border:none;border-radius:3px;font-size:12px;font-weight:500;cursor:pointer;'
+        "font-family:'Noto Serif KR',serif;transition:all .2s;}"
+        '</style></head><body>'
 
-        # ── 1. 배너
-        '<div style="background:#3d2b1f;padding:52px 28px 44px;text-align:center;">\n'
-        '<div style="font-size:11px;letter-spacing:5px;color:rgba(200,169,110,0.55);margin-bottom:22px;">HUMANDOCU · 답례장</div>\n'
-        '<div style="font-size:28px;font-weight:300;color:#fef0dc;letter-spacing:6px;margin-bottom:10px;">정말 고맙습니다</div>\n'
-        '<div style="font-size:18px;font-weight:300;color:rgba(254,240,220,0.8);letter-spacing:3px;margin-bottom:22px;">덕분에 잘 모셨습니다</div>\n'
-        '<div style="width:40px;height:1px;background:rgba(200,169,110,0.4);margin:0 auto 22px;"></div>\n'
-        '<div style="font-size:13px;color:rgba(255,230,190,0.65);line-height:2.2;letter-spacing:1px;">깊이 감사드리며<br>저희 가족, 꼭 잊지 않겠습니다</div>\n'
-        '</div>\n\n'
+        # 1. 헤더 배너
+        '<div style="background:#1a1a2e;padding:48px 24px 40px;text-align:center;">'
+        '<div style="font-size:9px;letter-spacing:5px;color:rgba(200,169,110,0.55);margin-bottom:20px;">HUMANDOCU · 답례장</div>'
+        f'<div style="font-family:\'Noto Serif KR\',serif;font-size:26px;font-weight:300;color:#f5f0e8;letter-spacing:4px;margin-bottom:10px;">故 {deceased_name}</div>'
+        '<div style="font-size:16px;font-weight:300;color:rgba(200,169,110,0.8);letter-spacing:3px;margin-bottom:20px;">감사합니다</div>'
+        '<div style="width:36px;height:1px;background:rgba(200,169,110,0.4);margin:0 auto 18px;"></div>'
+        '<div style="font-size:13px;color:rgba(249,246,240,0.55);line-height:2.1;letter-spacing:.5px;">소중한 걸음 주셔서<br>저희 가족 오래 기억하겠습니다</div>'
+        '</div>'
 
-        # ── 2. 고인 소개 (영정사진 액자 + 정보)
-        '<div style="background:#f8f0e6;padding:36px 20px 28px;text-align:center;border-bottom:2px solid #c8a87a;">\n'
-        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;margin-bottom:6px;font-weight:500;">고 인 소 개</div>\n'
-        + section_divider
+        # 2. 고인 소개 (영정사진 + 날짜 + 한줄평 + 고인 육성)
+        '<div style="background:#fff;padding:36px 20px 28px;text-align:center;margin-top:1px;">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;margin-bottom:14px;">고 인 소 개</div>'
+        '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 20px;"></div>'
         + rep_frame_html
-        + f'<div style="font-size:22px;color:#1a1a2e;letter-spacing:5px;margin-bottom:8px;font-weight:300;">故 {deceased_name}</div>\n'
-        + f'<div style="font-size:13px;color:#8b7355;letter-spacing:1px;margin-bottom:16px;">{dates_str}</div>\n'
-        + f'<div style="font-size:14px;color:#3d2b1f;line-height:2.1;font-style:italic;padding:0 8px;">{oneliner}</div>\n'
-        + voice_btn_html + '\n'
-        + f'<a href="{memorial_url}" style="display:block;margin:22px 0 0;padding:14px 0;'
-          'border:1.5px solid #c8a87a;font-size:13px;color:#2c2c2c;letter-spacing:2px;'
-          'background:#fff9f2;text-align:center;text-decoration:none;font-weight:500;border-radius:4px;">'
-          '메모리얼 페이지 방문하기</a>\n'
-        + '</div>\n\n'
+        + f'<div style="font-size:20px;color:#1a1a2e;letter-spacing:4px;margin-bottom:8px;font-weight:300;">故 {deceased_name}</div>'
+        + (f'<div style="font-size:12px;color:#8b7355;letter-spacing:1px;margin-bottom:14px;">{dates_str}</div>' if dates_str else '')
+        + f'<div style="font-size:14px;color:#3a3a3a;line-height:2.1;font-style:italic;padding:0 8px;">{oneliner}</div>'
+        + voice_btn_html
+        + f'<a href="{memorial_url}" style="display:block;margin:20px 0 0;padding:13px 0;'
+          'border:1px solid #c8a96e;font-size:12px;color:#8b7355;letter-spacing:2px;'
+          'background:#f9f6f0;text-align:center;text-decoration:none;border-radius:2px;">'
+          '메모리얼 페이지 방문하기</a>'
+        + '</div>'
 
-        # ── 3. 장례 사진 (조건부)
-        + photos_section
+        # 3. 상주 인사말 탭 (버전1 담담한 그리움 / 버전2 따뜻한 위로)
+        '<div style="background:#f9f6f0;padding:32px 20px;margin-top:1px;">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:14px;">상 주 인 사</div>'
+        '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 18px;"></div>'
+        '<div style="display:flex;gap:2px;background:rgba(24,22,15,.09);border-radius:4px;padding:3px;margin-bottom:18px;">'
+        '<button class="tab-btn" id="dj-tab-a" onclick="djTab(\'a\')" style="background:#1a1a2e;color:#c8a96e;">버전 1 · 담담한 그리움</button>'
+        '<button class="tab-btn" id="dj-tab-b" onclick="djTab(\'b\')" style="background:transparent;color:#8b7355;">버전 2 · 따뜻한 위로</button>'
+        '</div>'
+        '<div id="dj-msg-a" style="font-size:14px;line-height:2.4;color:#2c2c2c;'
+        'border-left:2px solid #c8a96e;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
+        + msg_a +
+        '</div>'
+        '<div id="dj-msg-b" style="display:none;font-size:14px;line-height:2.4;color:#2c2c2c;'
+        'border-left:2px solid #c8a96e;padding:14px 18px;background:#fff;border-radius:0 3px 3px 0;">'
+        + msg_b +
+        '</div>'
+        f'<div style="text-align:right;margin-top:16px;font-size:14px;color:#1a1a2e;letter-spacing:2px;font-weight:500;">— {chief_name} 올림</div>'
+        '</div>'
 
-        # ── 4. 유가족 사진 (조건부)
-        + chief_section
+        # 4. 장례 사진 슬라이드쇼 (조건부)
+        + slideshow_section
 
-        # ── 5. 상주 감사 인사 (조건부)
-        + chief_msg_section
+        # 5. 유가족 + 상주 육성 (조건부)
+        + chief_section_html
 
-        # ── 6. 유족에게 위로 보내기
-        + '<div style="background:#f0e6d8;padding:36px 20px;">\n'
-        '<div style="font-size:11px;letter-spacing:4px;color:#6b4530;text-align:center;margin-bottom:6px;font-weight:500;">유 족 에 게 위 로 보 내 기</div>\n'
-        + section_divider
-        + '<div style="background:#fff9f2;border:1.5px solid #c8a87a;border-radius:6px;padding:18px 20px;margin-bottom:22px;">\n'
-        '<div style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:12px;">위로 문구 예시</div>\n'
-        f'<div style="font-size:14px;color:#2c2c2c;line-height:2.2;">故 {deceased_name} 선생님의 명복을 빕니다.<br>\n'
-        '함께 자리하지 못해 마음이 무거웠습니다.<br>\n'
-        '가족분들 건강 잘 챙기시길 바랍니다.</div>\n'
-        '</div>\n'
-        + kakao_btn_html
-        + sms_btn_html
-        + '</div>\n\n'
+        # 6. 위로 전하기
+        + '<div style="background:#fff;padding:32px 20px;margin-top:1px;">'
+        '<div style="font-size:10px;letter-spacing:4px;color:#8b7355;text-align:center;margin-bottom:14px;">위 로 전 하 기</div>'
+        '<div style="width:36px;height:1px;background:#c8a96e;margin:0 auto 18px;"></div>'
+        '<div style="background:#f9f6f0;border:1px solid rgba(200,169,110,0.3);border-radius:3px;padding:16px 18px;margin-bottom:18px;">'
+        '<div style="font-size:11px;color:#8b7355;letter-spacing:1px;margin-bottom:10px;">위로 문구 예시</div>'
+        f'<div style="font-size:14px;color:#2c2c2c;line-height:2.1;">故 {deceased_name}님의 명복을 빕니다.<br>'
+        '함께 자리하지 못해 마음이 무거웠습니다.<br>'
+        '가족분들 건강 잘 챙기시길 바랍니다.</div>'
+        '</div>'
+        + comfort_btns
+        + '</div>'
 
-        # ── 7. 휴먼다큐 footer
-        '<div style="background:#3d2b1f;padding:30px 24px;text-align:center;">\n'
-        '<div style="font-size:12px;color:rgba(255,230,190,0.7);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>\n'
-        '<div style="font-size:11px;color:rgba(255,230,190,0.45);line-height:2.0;margin-bottom:16px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>\n'
-        '<a href="https://humandocu.com" style="display:inline-block;padding:9px 24px;'
-        'border:1px solid rgba(255,230,190,0.3);font-size:11px;color:rgba(255,230,190,0.65);'
-        'letter-spacing:2px;text-decoration:none;border-radius:2px;">humandocu.com</a>\n'
-        '<div style="font-size:9px;color:rgba(255,230,190,0.2);letter-spacing:4px;margin-top:18px;">HUMANDOCU MEMORIAL PLATFORM</div>\n'
-        '</div>\n\n'
+        # 7. 푸터
+        + '<div style="background:#1a1a2e;padding:28px 24px;text-align:center;margin-top:1px;">'
+        '<div style="font-size:11px;color:rgba(200,169,110,0.6);letter-spacing:4px;margin-bottom:10px;">휴 먼 다 큐</div>'
+        '<div style="font-size:11px;color:rgba(249,246,240,0.35);line-height:2.0;margin-bottom:14px;">소중한 분의 삶을 기록하고<br>영원히 기억합니다</div>'
+        '<a href="https://humandocu.com" style="display:inline-block;padding:8px 22px;'
+        'border:1px solid rgba(200,169,110,0.3);font-size:11px;color:rgba(249,246,240,0.5);'
+        'letter-spacing:2px;text-decoration:none;border-radius:2px;">humandocu.com</a>'
+        + edit_btn +
+        '</div>'
 
-        '<audio id="audioPlayer" style="display:none;"></audio>\n'
-        "<script>\n"
-        "var currentAudio = null;\n"
-        "function toggleAudio(url, svgId) {\n"
-        "  var svg = document.getElementById(svgId);\n"
-        "  if (currentAudio && !currentAudio.paused) {\n"
-        "    currentAudio.pause();\n"
-        "    if (svg) svg.innerHTML = '<polygon points=\"3,1 12,6.5 3,12\" fill=\"#fef0dc\"/>';\n"
-        "    if (currentAudio.src.includes(url)) { currentAudio = null; return; }\n"
-        "  }\n"
-        "  currentAudio = new Audio(url);\n"
-        "  currentAudio.play();\n"
-        "  if (svg) svg.innerHTML = '<rect x=\"2\" y=\"1\" width=\"3\" height=\"11\" fill=\"#fef0dc\"/><rect x=\"8\" y=\"1\" width=\"3\" height=\"11\" fill=\"#fef0dc\"/>';\n"
-        "  currentAudio.onended = function() {\n"
-        "    if (svg) svg.innerHTML = '<polygon points=\"3,1 12,6.5 3,12\" fill=\"#fef0dc\"/>';\n"
-        "  };\n"
-        "}\n"
-        "</script>\n"
-        "</body>\n"
-        "</html>"
+        '<script>'
+        "function djTab(v){"
+        "  document.getElementById('dj-msg-a').style.display=v==='a'?'block':'none';"
+        "  document.getElementById('dj-msg-b').style.display=v==='b'?'block':'none';"
+        "  document.getElementById('dj-tab-a').style.background=v==='a'?'#1a1a2e':'transparent';"
+        "  document.getElementById('dj-tab-a').style.color=v==='a'?'#c8a96e':'#8b7355';"
+        "  document.getElementById('dj-tab-b').style.background=v==='b'?'#1a1a2e':'transparent';"
+        "  document.getElementById('dj-tab-b').style.color=v==='b'?'#c8a96e':'#8b7355';"
+        "}"
+        + slideshow_js +
+        "var _ca=null;"
+        "function toggleAudio(url,svgId){"
+        "  var svg=document.getElementById(svgId);"
+        "  if(_ca&&!_ca.paused){_ca.pause();"
+        "    if(svg)svg.innerHTML='<polygon points=\"3,1 12,6.5 3,12\" fill=\"#c8a96e\"/>';"
+        "    if(_ca.src.includes(url)){_ca=null;return;}"
+        "  }"
+        "  _ca=new Audio(url);_ca.play();"
+        "  if(svg)svg.innerHTML='<rect x=\"2\" y=\"1\" width=\"3\" height=\"11\" fill=\"#c8a96e\"/><rect x=\"8\" y=\"1\" width=\"3\" height=\"11\" fill=\"#c8a96e\"/>';"
+        "  _ca.onended=function(){if(svg)svg.innerHTML='<polygon points=\"3,1 12,6.5 3,12\" fill=\"#c8a96e\"/>';};"
+        "}"
+        '</script></body></html>'
     )
     return html
 
@@ -4788,22 +4804,24 @@ def build_html_damnyejang(d_fields, adv_data, chief_msg):
 def send_email_damnyejang(to_email, deceased_name, pages_url):
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
-        '<div style="background:#3d2b1f;color:#fef0dc;padding:32px;text-align:center">'
-        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU</p>'
+        '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · 답례장</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
         '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">답례장이 완성되었습니다</p>'
         '</div>'
         '<div style="padding:32px;background:#fff">'
-        f'<p style="line-height:2;font-size:14px;">故 <strong>{deceased_name}</strong> 님의 디지털 답례장이 완성되었습니다.<br>카카오톡으로 공유해 주세요.</p>'
+        f'<p style="line-height:2;font-size:14px;">故 <strong>{deceased_name}</strong> 님의 디지털 답례장이 완성되었습니다.<br>'
+        '버전 1(담담한 그리움) / 버전 2(따뜻한 위로) 중 원하시는 버전을 선택해 카카오톡으로 공유해 주세요.</p>'
         '<div style="margin:24px 0;text-align:center">'
-        f'<a href="{pages_url}" style="display:inline-block;background:#3d2b1f;color:#fef0dc;padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;">📄 답례장 열기</a>'
+        f'<a href="{pages_url}" style="display:inline-block;background:#1a1a2e;color:#e8e0d0;'
+        'padding:14px 28px;text-decoration:none;letter-spacing:2px;font-size:13px;border-radius:4px;width:100%;text-align:center;">📄 답례장 열기</a>'
         '</div>'
-        '<div style="padding:16px;background:#f8f0e6;border-left:3px solid #c8a87a">'
-        '<p style="font-size:11px;color:#b08860;letter-spacing:2px;margin-bottom:6px;">📋 공유용 링크</p>'
-        f'<a href="{pages_url}" style="color:#3d2b1f;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
+        '<div style="padding:16px;background:#f5f0e8;border-left:3px solid #8b7355">'
+        '<p style="font-size:11px;color:#8b7355;letter-spacing:2px;margin-bottom:6px;">📋 카카오톡 공유용 링크</p>'
+        f'<a href="{pages_url}" style="color:#3a2010;word-break:break-all;font-size:13px;font-weight:bold">{pages_url}</a>'
         '</div></div>'
-        '<div style="background:#f8f0e6;padding:20px;text-align:center;font-size:11px;color:#b08860">'
-        '<a href="https://humandocu.com" style="color:#b08860;text-decoration:none">휴먼다큐닷컴</a>'
+        '<div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">'
+        '<a href="https://humandocu.com" style="color:#8b7355;text-decoration:none">휴먼다큐닷컴이 함께 합니다</a>'
         '</div></div>'
     )
     resp = requests.post(
@@ -4823,40 +4841,43 @@ def send_email_damnyejang(to_email, deceased_name, pages_url):
 
 @app.route("/webhook/damnyejang", methods=["POST"])
 def webhook_damnyejang():
+    """Tally 답례장 웹훅 - 비동기 파이프라인으로 처리"""
     try:
         payload = request.get_json(force=True)
-        print(f"[DAMNYEJANG] 수신 FULL: {json.dumps(payload, ensure_ascii=False)}")
+        print(f"[DAMNYEJANG] 웹훅 수신: {json.dumps(payload, ensure_ascii=False)[:500]}")
 
         d_fields = parse_tally_damnyejang(payload)
-        print(f"[DAMNYEJANG] 파싱: {list(d_fields.keys())}")
-
         deceased_name = d_fields.get("고인이름", "").strip()
         chief_name    = d_fields.get("상주 이름", "").strip()
-        chief_words = d_fields.get("상주가 대표로 하고 싶은 말씀", "").strip()
-        contact_email = d_fields.get("답례장 링크 받으실 이메일", "mongmong4i@gmail.com")
+        chief_words   = d_fields.get("상주가 대표로 하고 싶은 말", "").strip()
+        contact_email = d_fields.get("답례장 링크 받으실 이메일", "").strip() or "mongmong4i@gmail.com"
 
         if not deceased_name:
             return jsonify({"error": "고인이름 없음"}), 400
 
-        # Firebase에서 1차 어드밴스드 데이터 조회
-        adv_data = firebase_get_advanced(deceased_name)
+        def _run():
+            try:
+                adv_data = firebase_get_advanced(deceased_name)
+                print(f"[DAMNYEJANG] Firebase 조회: {list(adv_data.keys())}")
 
-        # 상주 인사말 Claude 생성
-        chief_msg = generate_damnyejang_message(deceased_name, chief_name, chief_words, adv_data)
-        print(f"[DAMNYEJANG] 인사말 생성 완료")
+                msg_a, msg_b = generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_data)
+                print(f"[DAMNYEJANG] 인사말 A 생성: {msg_a[:60]}...")
+                print(f"[DAMNYEJANG] 인사말 B 생성: {msg_b[:60]}...")
 
-        # HTML 생성
-        html = build_html_damnyejang(d_fields, adv_data, chief_msg)
+                html = build_html_damnyejang(d_fields, adv_data, msg_a, msg_b)
+                filename  = "damnyejang-" + safe_filename(deceased_name)
+                pages_url = upload_to_github(filename, html)
+                print(f"[DAMNYEJANG] 업로드 완료: {pages_url}")
 
-        # GitHub 업로드
-        filename  = "damnyejang-" + safe_filename(deceased_name)
-        pages_url = upload_to_github(filename, html)
-        print(f"[DAMNYEJANG] 업로드: {pages_url}")
+                send_email_damnyejang(contact_email, deceased_name, pages_url)
 
-        # 이메일 발송
-        send_email_damnyejang(contact_email, deceased_name, pages_url)
+            except Exception as e:
+                import traceback; traceback.print_exc()
+                print(f"[DAMNYEJANG] 파이프라인 오류: {e}")
 
-        return jsonify({"status": "success", "url": pages_url}), 200
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
+        return jsonify({"status": "ok"}), 200
 
     except Exception as e:
         import traceback; traceback.print_exc()
