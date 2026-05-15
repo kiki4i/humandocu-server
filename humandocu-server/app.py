@@ -7,11 +7,14 @@ import re
 import urllib.parse
 import bcrypt
 import secrets
+import logging
 import anthropic
 import firebase_admin
 from firebase_admin import credentials, firestore as fb_firestore
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone, timedelta
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -2352,7 +2355,7 @@ def generate_today_haiku(name, shots, today_one, last_msg):
         str(v) for v in shots.values() if v
     )
     lang = _detect_lang(detect_source)
-    print(f"[LANG DEBUG] detect_source={detect_source[:100]!r} → lang={lang}", flush=True)
+    logger.warning(f"[LANG DEBUG] detect_source={detect_source[:100]!r} → lang={lang}")
 
     OUTPUT_FORMAT = """[대표]
 (1행)
