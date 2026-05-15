@@ -2700,6 +2700,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         edit_label = "Edit →"
         edit_hint = "Upload new photos to create a new version."
         footer_label = "Made with Humandocu"
+        email_delete_label = "Delete"
     else:
         last_msg_label = "누군가에게 남기는 한 줄"
         album_cta_title = "매일을 담아보세요"
@@ -2714,6 +2715,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         edit_label = "수정하기 →"
         edit_hint = "사진 6장을 다시 올리면 새 버전이 생성됩니다"
         footer_label = "휴먼다큐로 만들었습니다"
+        email_delete_label = "삭제하기"
 
     last_msg_block = f"""
       <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
@@ -2731,6 +2733,8 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <div style="font-size:14px;color:#C8870A;font-weight:600;margin-bottom:6px;letter-spacing:.04em">{album_cta_title}</div>
         <div style="font-size:13px;color:#8A6A3A;line-height:1.8">{album_cta_sub}</div>
       </div>"""
+
+    delete_confirm_url = f"{page_url}/delete-confirm" if page_url else ""
 
     btn_block = f"""
       <div style="text-align:center;margin:0 0 20px">
@@ -2751,6 +2755,12 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
           {edit_label}
         </a>
         <div style="font-size:11px;color:#bbb;margin-top:8px">{edit_hint}</div>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <a href="{delete_confirm_url}"
+           style="font-size:11px;color:#ccc;text-decoration:none;letter-spacing:.02em">
+          {email_delete_label}
+        </a>
       </div>""" if page_url else ""
 
     html = f"""<!DOCTYPE html>
@@ -3889,6 +3899,8 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ Life Six Shot"
         nav_home_lbl        = "🏠 Back to humandocu.com"
         footer_text         = "Made with Humandocu · humandocu.com"
+        delete_label        = "Delete"
+        delete_confirm_msg  = "Delete this page? This cannot be undone."
         page_title_str      = f"Today Filmography · {display_name}"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
@@ -3929,6 +3941,8 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
         nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
+        delete_label        = "삭제하기"
+        delete_confirm_msg  = "정말 삭제하시겠어요? 복구할 수 없습니다."
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4422,6 +4436,12 @@ function switchVer(v) {{
     </a>
   </div>
 
+  <div style="text-align:center;padding:4px 0 20px">
+    <a href="/sixshot/{doc_id}/delete-confirm"
+       style="font-size:11px;color:#ccc;text-decoration:none;letter-spacing:.02em"
+       onclick="return confirm({json.dumps(delete_confirm_msg)})">{delete_label}</a>
+  </div>
+
   <div class="footer">
     <a href="https://humandocu.com">{footer_text}</a>
   </div>
@@ -4666,6 +4686,139 @@ def firebase_get_sixshot(doc_id):
     except Exception as e:
         print(f"[SIXSHOT-FB] 조회 오류: {e}")
         return None
+
+
+def firebase_delete_sixshot(doc_id):
+    """sixshot 컬렉션에서 문서 삭제"""
+    try:
+        _get_db().collection("sixshot").document(doc_id).delete()
+        print(f"[SIXSHOT-FB] 삭제 성공: {doc_id}")
+        return True
+    except Exception as e:
+        print(f"[SIXSHOT-FB] 삭제 오류: {e}")
+        return False
+
+
+def delete_github_sixshot(doc_id):
+    """GitHub bugo/{doc_id}.html 삭제 (파일이 존재할 때만)"""
+    try:
+        if not GITHUB_TOKEN:
+            return
+        path = f"bugo/{doc_id}.html"
+        api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+        headers = {
+            "Authorization": f"Bearer {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        r = requests.get(api_url, headers=headers)
+        if r.status_code != 200:
+            return  # 파일 없음 — 정상
+        sha = r.json().get("sha")
+        requests.delete(api_url, headers=headers,
+                        json={"message": f"delete sixshot: {doc_id}", "sha": sha, "branch": "main"})
+        print(f"[GITHUB-DEL] 삭제 완료: {path}")
+    except Exception as e:
+        print(f"[GITHUB-DEL] 오류: {e}")
+
+
+@app.route("/sixshot/<doc_id>/delete-confirm", methods=["GET"])
+def sixshot_delete_confirm(doc_id):
+    """삭제 전 확인 페이지"""
+    data = firebase_get_sixshot(doc_id)
+    if data is None:
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
+
+    lang = data.get("lang", "ko")
+    is_en = (lang == "en" and data.get("type", "sixshot") == "today")
+
+    if is_en:
+        title    = "Delete this page?"
+        body     = "This action cannot be undone.<br>Your filmography will be permanently deleted."
+        confirm  = "Yes, delete it"
+        cancel   = "Cancel"
+    else:
+        title    = "정말 삭제하시겠어요?"
+        body     = "삭제하면 복구할 수 없습니다.<br>투*필 페이지가 영구적으로 삭제됩니다."
+        confirm  = "삭제합니다"
+        cancel   = "취소"
+
+    html = f"""<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title>
+<style>
+body{{margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{max-width:400px;width:90%;background:#fff;border-radius:12px;padding:40px 32px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.08)}}
+h1{{font-size:20px;color:#1a1208;margin:0 0 16px;font-weight:600}}
+p{{font-size:14px;color:#6b5a3a;line-height:1.8;margin:0 0 32px}}
+.btn-del{{display:inline-block;padding:12px 36px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:12px;width:100%;box-sizing:border-box}}
+.btn-del:hover{{background:#a93226}}
+.btn-cancel{{display:inline-block;padding:12px 36px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;text-decoration:none;width:100%;box-sizing:border-box}}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>{title}</h1>
+  <p>{body}</p>
+  <form method="POST" action="/sixshot/{doc_id}/delete">
+    <button type="submit" class="btn-del">{confirm}</button>
+  </form>
+  <a href="/sixshot/{doc_id}" class="btn-cancel">{cancel}</a>
+</div>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.route("/sixshot/<doc_id>/delete", methods=["POST"])
+def sixshot_delete(doc_id):
+    """투*필 페이지 삭제 — Firebase + GitHub"""
+    data = firebase_get_sixshot(doc_id)
+    if data is None:
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>이미 삭제된 페이지입니다.</h2>", 404
+
+    lang = data.get("lang", "ko")
+    is_en = (lang == "en" and data.get("type", "sixshot") == "today")
+
+    ok = firebase_delete_sixshot(doc_id)
+    if not ok:
+        msg = "Deletion failed. Please try again." if is_en else "삭제에 실패했습니다. 다시 시도해주세요."
+        return f"<p style='font-family:sans-serif;text-align:center;margin-top:80px'>{msg}</p>", 500
+
+    delete_github_sixshot(doc_id)
+
+    if is_en:
+        title = "Deleted"
+        body  = "Your filmography has been deleted."
+        home  = "Go to humandocu.com"
+    else:
+        title = "삭제됐습니다"
+        body  = "투*필 페이지가 삭제됐습니다."
+        home  = "휴먼다큐닷컴으로"
+
+    html = f"""<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title>
+<style>
+body{{margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{max-width:400px;width:90%;background:#fff;border-radius:12px;padding:40px 32px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.08)}}
+h1{{font-size:22px;color:#1a1208;margin:0 0 16px}}
+p{{font-size:14px;color:#6b5a3a;margin:0 0 32px}}
+a{{display:inline-block;padding:12px 32px;background:#c8a96e;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600}}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>{title}</h1>
+  <p>{body}</p>
+  <a href="https://humandocu.com">{home}</a>
+</div>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
 @app.route("/admin/resend-advanced-email/<pending_id>", methods=["GET"])
