@@ -2266,7 +2266,7 @@ def webhook_today():
                         shots[shot_idx] = str(text).strip()
                     shot_idx = 0
         except Exception as e:
-            print(f"[TODAY] shots 파싱 오류: {e}")
+            import traceback; logger.warning(f"[TODAY] shots 파싱 오류: {e}\n{traceback.format_exc()}")
 
         today_one = fields.get("오늘 하루를 한 문장으로", "")
         last_to   = (
@@ -2290,7 +2290,7 @@ def webhook_today():
             try:
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 poems = generate_today_haiku(nickname, shots, today_one, last_msg)
-                print(f"[TODAY] 시 생성 완료")
+                logger.warning(f"[TODAY] 시 생성 완료")
 
                 # 투*필은 매일 쌓이는 일기 — 기존 것 비공개 처리 안 함
                 # 인생 식스샷만 기존 것 비공개 처리
@@ -2317,8 +2317,7 @@ def webhook_today():
                 page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
                 send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today")
             except Exception as e:
-                print(f"[TODAY] 백그라운드 오류: {e}")
-                import traceback; traceback.print_exc()
+                import traceback; logger.warning(f"[TODAY] 백그라운드 오류: {e}\n{traceback.format_exc()}")
         threading.Thread(target=process, daemon=True).start()
         return jsonify({"status": "processing", "name": name}), 200
 
