@@ -2687,6 +2687,9 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         body_text = "We captured today's you in 6 photos and a poem.<br>Click the button below to see it."
         header_label = "HUMANDOCU · TODAY FILMOGRAPHY"
         header_title = "Today's Filmography<br>has arrived ✦"
+        edit_label = "Edit →"
+        edit_hint = "Upload new photos to create a new version."
+        footer_label = "Made with Humandocu"
     else:
         last_msg_label = "누군가에게 남기는 한 줄"
         album_cta_title = "매일을 담아보세요"
@@ -2698,6 +2701,9 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         header_label = "HUMANDOCU · 투*필" if type == "today" else "HUMANDOCU · 필모그래피"
         header_title = ("투데이 필모그래피<br>도착했어요 ✦" if type == "today"
                         else f"{name}님의<br>필모그래피가<br>도착했습니다")
+        edit_label = "수정하기 →"
+        edit_hint = "사진 6장을 다시 올리면 새 버전이 생성됩니다"
+        footer_label = "휴먼다큐로 만들었습니다"
 
     last_msg_block = f"""
       <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
@@ -2732,9 +2738,9 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <a href="{edit_url}"
            style="display:inline-block;padding:10px 28px;background:#fff;border:1px solid #e0d4b8;
                   color:#9e8250;text-decoration:none;font-size:13px;border-radius:20px;letter-spacing:.04em">
-          수정하기 →
+          {edit_label}
         </a>
-        <div style="font-size:11px;color:#bbb;margin-top:8px">사진 6장을 다시 올리면 새 버전이 생성됩니다</div>
+        <div style="font-size:11px;color:#bbb;margin-top:8px">{edit_hint}</div>
       </div>""" if page_url else ""
 
     html = f"""<!DOCTYPE html>
@@ -2758,7 +2764,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
   </div>
 
   <div style="padding:24px 36px;background:#f9f6f0;text-align:center;border-top:1px solid #e5dece">
-    <div style="font-size:11px;color:#9e8250">휴먼다큐로 만들었습니다 · <a href="https://humandocu.com" style="color:#9e8250;text-decoration:none">humandocu.com</a></div>
+    <div style="font-size:11px;color:#9e8250">{footer_label} · <a href="https://humandocu.com" style="color:#9e8250;text-decoration:none">humandocu.com</a></div>
   </div>
 
 </div>
