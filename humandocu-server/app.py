@@ -2325,50 +2325,35 @@ def webhook_today():
         return jsonify({"error": str(e)}), 500
 
 
+def _detect_lang(text):
+    """한글/일본어/중국어/그 외(en) 감지"""
+    import unicodedata
+    has_cjk_unified = False
+    for ch in text:
+        cp = ord(ch)
+        if 0xAC00 <= cp <= 0xD7A3 or 0x1100 <= cp <= 0x11FF or 0x3130 <= cp <= 0x318F:
+            return 'ko'
+        if 0x3040 <= cp <= 0x309F or 0x30A0 <= cp <= 0x30FF:
+            return 'ja'
+        if (0x4E00 <= cp <= 0x9FFF or 0x3400 <= cp <= 0x4DBF or
+                0x20000 <= cp <= 0x2A6DF):
+            has_cjk_unified = True
+    return 'zh' if has_cjk_unified else 'en'
+
+
 def generate_today_haiku(name, shots, today_one, last_msg):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
         f"SHOT {i} : {shots.get(i, '(없음)')}"
         for i in range(1, 7)
     ])
-    last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
 
-    prompt = f"""당신은 일상의 순간을 포착하는 감각적인 시인입니다.
-아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
+    detect_source = (today_one or '') + ' '.join(
+        str(v) for v in shots.values() if v
+    )
+    lang = _detect_lang(detect_source)
 
-닉네임: {name}
-오늘 하루를 한 문장으로: {today_one}{last_msg_text}
-
-오늘의 장면들:
-{shots_text}
-
-다음을 작성해주세요.
-
-1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
-   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
-   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
-
-2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
-   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
-
-3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
-   짧지만 오늘의 온도가 느껴지는 하이쿠.
-
-4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
-   읽으면 피식 웃음이 나오는 하이쿠.
-
-5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
-   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
-   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 자조적이고 공감되는 톤. 너무 순하지 않게.
-   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
-
-시 작성 규칙:
-- 3행 구성
-- 거창한 의미 부여 금지 — 그냥 오늘이면 충분
-- 읽으면 "맞아, 오늘 그랬지" 하는 느낌
-
-출력 형식 (정확히 이 형식으로):
-[대표]
+    OUTPUT_FORMAT = """[대표]
 (1행)
 (2행)
 (3행)
@@ -2417,6 +2402,162 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 (하이쿠)
 [SHOT6유머]
 (하이쿠)"""
+
+    if lang == 'ko':
+        last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
+        prompt = f"""당신은 일상의 순간을 포착하는 감각적인 시인입니다.
+아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
+
+닉네임: {name}
+오늘 하루를 한 문장으로: {today_one}{last_msg_text}
+
+오늘의 장면들:
+{shots_text}
+
+다음을 작성해주세요.
+
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+
+3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
+   짧지만 오늘의 온도가 느껴지는 하이쿠.
+
+4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
+   읽으면 피식 웃음이 나오는 하이쿠.
+
+5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
+   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 자조적이고 공감되는 톤. 너무 순하지 않게.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+시 작성 규칙:
+- 3행 구성
+- 거창한 의미 부여 금지 — 그냥 오늘이면 충분
+- 읽으면 "맞아, 오늘 그랬지" 하는 느낌
+
+출력 형식 (정확히 이 형식으로):
+{OUTPUT_FORMAT}"""
+
+    elif lang == 'en':
+        last_msg_text = f"\nA word for someone: {last_msg}" if last_msg else ""
+        prompt = f"""You are a sensory poet who captures everyday moments.
+Below are 3–6 photos with short descriptions from today. (Only submitted shots are included)
+
+Nickname: {name}
+Today in one sentence: {today_one}{last_msg_text}
+
+Today's scenes:
+{shots_text}
+
+Please write the following:
+
+1. [대표] - A short poem capturing the whole day (poetic, sensory tone)
+   Nothing special about today — but something that lingers after reading.
+   Don't make it grand; capture the temperature of this one day.
+
+2. [대표2] - The same day in prose style, direct tone, 3 lines
+   Plain and quiet. Hits harder because of it.
+
+3. [하이쿠감성] - A haiku capturing the whole day. 5·7·5 syllables. Poetic, emotional tone.
+   Short, but the warmth of today should come through.
+
+4. [하이쿠유머] - A humorous haiku of the same day. 5·7·5 syllables. Tone that makes you smile.
+   A haiku that draws a quiet laugh.
+
+5. [SHOT별 하이쿠] - For each submitted SHOT, write two haiku.
+   [SHOT1감성] — A haiku for SHOT 1. 5·7·5 syllables. Read the emotional temperature of the scene freely.
+   [SHOT1유머] — A humorous haiku for the same scene. 5·7·5 syllables. Self-deprecating, relatable. Not too mild.
+   Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
+
+Poetry rules:
+- 3-line structure
+- No grand meaning — today as it was is enough
+- Should feel like "yeah, that was today"
+
+Output format (exactly this format):
+{OUTPUT_FORMAT}"""
+
+    elif lang == 'ja':
+        last_msg_text = f"\n誰かへの一言: {last_msg}" if last_msg else ""
+        prompt = f"""あなたは日常の瞬間を捉える感覚的な詩人です。
+以下は今日一日を記録した3〜6枚の写真と短い説明です。（提出された写真のみ）
+
+ニックネーム: {name}
+今日一日を一言で: {today_one}{last_msg_text}
+
+今日の場面:
+{shots_text}
+
+以下を作成してください。
+
+1. [대표] - 今日一日全体を捉えた短い詩1篇（詩的・感覚的なトーン）
+   特別でもない今日だけど、読むと何か心に残る感じ。
+   大げさにせず、今日という一日の温度を込めてください。
+
+2. [대표2] - 同じ今日を散文体・直接的なトーンで3行
+   飾らず、淡々と。だからこそ深く刺さる感じ。
+
+3. [하이쿠감성] - 今日一日を捉えた俳句1篇。5・7・5音節。感情的・詩的なトーン。
+   短いが、今日の温度が感じられる俳句。
+
+4. [하이쿠유머] - 同じ今日をユーモラスに捉えた俳句1篇。5・7・5音節。思わず笑えるトーン。
+   読むとくすっと笑える俳句。
+
+5. [SHOT별 하이쿠] - 提出された各SHOTごとに二つの俳句を書いてください。
+   [SHOT1감성] — SHOT 1の場面を捉えた俳句1篇。5・7・5音節。場面の感情温度を自由に調節。
+   [SHOT1유머] — 同じ場面をユーモラスに捉えた俳句1篇。5・7・5音節。自嘲的で共感できるトーン。
+   [SHOT2감성]〜[SHOT6유머]も同様に。提出されていないSHOTはスキップ。
+
+詩の作成ルール:
+- 3行構成
+- 大げさな意味付け禁止 — 今日のままで十分
+- 読んで「そう、今日そうだったな」という感じ
+
+出力形式（正確にこの形式で）:
+{OUTPUT_FORMAT}"""
+
+    else:  # zh
+        last_msg_text = f"\n对某人说的一句话: {last_msg}" if last_msg else ""
+        prompt = f"""你是一位捕捉日常瞬间的感性诗人。
+以下是今天的3至6张照片和简短描述。（仅包含已提交的照片）
+
+昵称: {name}
+用一句话描述今天: {today_one}{last_msg_text}
+
+今天的场景:
+{shots_text}
+
+请写以下内容:
+
+1. [대표] - 一首捕捉今日全天的短诗（诗意、感性的基调）
+   今天没什么特别，但读后有些东西萦绕心头。
+   不要宏大，只需捕捉这一天的温度。
+
+2. [대표2] - 用散文体、直白的语调写同一天，3行
+   朴素平静。正因如此，反而更有力量。
+
+3. [하이쿠감성] - 捕捉今日全天的俳句1首。5·7·5音节。感性、诗意的基调。
+   简短，但今天的温度要能感受到。
+
+4. [하이쿠유머] - 用幽默方式写同一天的俳句1首。5·7·5音节。令人会心一笑的基调。
+   读了能让人忍不住笑的俳句。
+
+5. [SHOT별 하이쿠] - 为每张提交的SHOT写两首俳句。
+   [SHOT1감성] — 捕捉SHOT 1场景的俳句1首。5·7·5音节。自由把握场景的情感温度。
+   [SHOT1유머] — 用幽默方式写同一场景的俳句1首。5·7·5音节。自嘲式，有共鸣感。不要太温和。
+   [SHOT2감성]〜[SHOT6유머]同上。未提交的SHOT跳过。
+
+诗歌创作规则:
+- 3行结构
+- 禁止赋予宏大意义 — 今天就是今天，已经足够
+- 读了有"对，今天就是这样"的感觉
+
+输出格式（严格按照此格式）:
+{OUTPUT_FORMAT}"""
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     message = client.messages.create(
