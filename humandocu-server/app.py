@@ -3839,19 +3839,85 @@ def sixshot_page(doc_id):
     lang        = data.get("lang", "ko")
     is_en       = (lang == "en" and page_type == "today")
 
-    # 타입/언어별 섹션 제목
+    # 타입/언어별 UI 레이블
     if is_en:
         poem_section_title  = "✦ A poem capturing today"
         scene_section_title = "Today's Six Shot"
         haiku_intro_label   = "A haiku capturing today in 5 · 7 · 5 syllables"
         haiku_s_label       = "🌸 Haiku · Emotional"
         haiku_h_label       = "😂 Haiku · Humorous"
+        hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+        hero_tagline        = f"{nickname}'s Today Filmography"
+        ver1_title          = "Version 1"
+        ver1_sub            = "Poetic · Metaphorical"
+        ver2_title          = "Version 2"
+        ver2_sub            = "Prose · Direct"
+        shot_s_label        = "🌸 Emotional"
+        shot_h_label        = "😂 Humorous"
+        to_nobody_label     = "A word for someone"
+        play_label          = "▶ Play"
+        pause_label         = "⏸ Pause"
+        link_section_label  = "My Filmography Link"
+        copy_link_label     = "🔗 Copy Link"
+        share_tagline       = "Record every day.<br>Collect them — that's you."
+        my_link_btn_label   = "📬 Get My Records Link"
+        my_link_sending     = "Sending..."
+        my_link_sent        = "✓ Email Sent"
+        my_link_sent_msg    = f"{mask_email(email)} — check your inbox."
+        my_link_error_pfx   = "Error: "
+        cta_tag             = "HUMANDOCU · TODAY FILMOGRAPHY"
+        cta_title           = "Your today<br>can be a poem too"
+        cta_sub             = "6 photos + one line · Free · Result by email"
+        cta_btn             = "Create My Filmography →"
+        nav_today_lbl       = "📽️ Browse Other Filmographies"
+        nav_sixshot_lbl     = "🎞️ Life Six Shot"
+        nav_home_lbl        = "🏠 Back to humandocu.com"
+        footer_text         = "Made with Humandocu · humandocu.com"
+        page_title_str      = f"Today Filmography · {display_name}"
+        kakao_view_btn      = "View Filmography"
+        kakao_create_btn    = "Create Mine"
+        copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
     else:
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
         haiku_intro_label   = "5 · 7 · 5 음절로 오늘을 포착한 시"
         haiku_s_label       = "🌸 하이쿠 · 감성"
         haiku_h_label       = "😂 하이쿠 · 유머"
+        hero_sub_label      = "HUMANDOCU · 필모그래피"
+        hero_tagline        = f"{nickname}님의 필모그래피"
+        ver1_title          = "버전 1"
+        ver1_sub            = "시적 · 은유적"
+        ver2_title          = "버전 2"
+        ver2_sub            = "담담 · 직접적"
+        shot_s_label        = "🌸 감성"
+        shot_h_label        = "😂 유머"
+        to_nobody_label     = "누군가에게 남기는 한 줄"
+        play_label          = "▶ 재생"
+        pause_label         = "⏸ 멈춤"
+        link_section_label  = "나의 필모그래피 링크"
+        copy_link_label     = "🔗 링크 복사"
+        share_tagline       = ("매일을 담아보세요.<br>모으면 그것이 당신이에요."
+                               if page_type == "today" else "카톡·인스타·명함에 담으세요")
+        my_link_btn_label   = "📬 내 기록 모음 링크 받기"
+        my_link_sending     = "전송 중..."
+        my_link_sent        = "✓ 이메일 발송 완료"
+        my_link_sent_msg    = f"{mask_email(email)} 으로 링크를 보냈어요. 메일함을 확인해주세요."
+        my_link_error_pfx   = "오류: "
+        cta_tag             = "HUMANDOCU · 투*필" if page_type == "today" else "HUMANDOCU · 식스샷"
+        cta_title           = ("오늘 당신의 하루도<br>시가 될 수 있어요" if page_type == "today"
+                               else "당신의 인생도<br>필모그래피가 될 수 있어요")
+        cta_sub             = ("사진 6장 + 한 줄 · 무료 · 결과는 이메일로" if page_type == "today"
+                               else "사진 6장 + 짧은 이야기 · AI가 시로 남겨드려요")
+        cta_btn             = "나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"
+        nav_today_lbl       = "📽️ 다른 투*필 둘러보기"
+        nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
+        nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
+        footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
+        page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
+                               else f"{display_name}님의 인생 이야기 · 휴먼다큐")
+        kakao_view_btn      = "필모그래피 보기"
+        kakao_create_btn    = "나도 만들기"
+        copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
 
     shot_titles = {
         "1": "SHOT 1",
@@ -4009,15 +4075,15 @@ def sixshot_page(doc_id):
     ver_script = ""
     if rep_poem2:
         rep_poem2_escaped = poem_html(rep_poem2).replace("'", "\\'").replace('"', '&quot;')
-        ver_toggle_html = '''<div style="margin-top:16px">
+        ver_toggle_html = f'''<div style="margin-top:16px">
   <div style="display:flex;gap:10px">
     <button onclick="switchVer(1)" id="ver1-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#C8870A;color:#fff;cursor:pointer;text-align:center;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">버전 1</div>
-      <div style="font-size:11px;opacity:.85;">시적 · 은유적</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">{ver1_title}</div>
+      <div style="font-size:11px;opacity:.85;">{ver1_sub}</div>
     </button>
     <button onclick="switchVer(2)" id="ver2-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#fff;color:#C8870A;cursor:pointer;text-align:center;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">버전 2</div>
-      <div style="font-size:11px;opacity:.7;">담담 · 직접적</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">{ver2_title}</div>
+      <div style="font-size:11px;opacity:.7;">{ver2_sub}</div>
     </button>
   </div>
 </div>'''
@@ -4067,14 +4133,14 @@ function switchVer(v) {{
                 dual = '<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
                 if shot_poem_s:
                     dual += (
-                        '<div style="color:#9e8250;margin-bottom:6px">🌸 감성</div>'
+                        f'<div style="color:#9e8250;margin-bottom:6px">{shot_s_label}</div>'
                         f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_s)}</div>'
                     )
                 if shot_poem_s and shot_poem_h:
                     dual += '<hr style="border:none;border-top:1px solid #e5d9c3;margin:12px 0">'
                 if shot_poem_h:
                     dual += (
-                        '<div style="color:#9e8250;margin-bottom:6px">😂 유머</div>'
+                        f'<div style="color:#9e8250;margin-bottom:6px">{shot_h_label}</div>'
                         f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_h)}</div>'
                     )
                 dual += '</div>'
@@ -4096,7 +4162,7 @@ function switchVer(v) {{
             f'{img_block}{card_inner}</div>'
         )
 
-    to_label = f"To. {last_to}" if last_to else "누군가에게 남기는 한 줄"
+    to_label = f"To. {last_to}" if last_to else to_nobody_label
     last_msg_block = f"""
         <div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
             <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">{to_label}</div>
@@ -4164,19 +4230,19 @@ function switchVer(v) {{
             "_playing=true;"
             "_bgm.play().catch(function(){});"
             "_timer=setInterval(nxSl,3500);"
-            "btn.textContent='⏸ 멈춤';"
+            f"btn.textContent='{pause_label}';"
             "}else{"
             "_playing=false;"
             "_bgm.pause();"
             "clearInterval(_timer);"
-            "btn.textContent='▶ 재생';"
+            f"btn.textContent='{play_label}';"
             "}"
             "}"
         )
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
-            '<button id="bgm-btn-ss" onclick="togglePlay()" style="'
+            f'<button id="bgm-btn-ss" onclick="togglePlay()" style="'
             'position:absolute;top:14px;right:14px;'
             'background:rgba(200,169,110,0.92);'
             'border:none;border-radius:28px;'
@@ -4186,7 +4252,7 @@ function switchVer(v) {{
             'letter-spacing:.06em;font-family:inherit;'
             'box-shadow:0 2px 12px rgba(0,0,0,0.4);'
             'min-width:100px;'
-            'z-index:10">▶ 재생</button>'
+            f'z-index:10">{play_label}</button>'
             + slides_html
             + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
             + f'<script>{slideshow_js}</script>'
@@ -4198,7 +4264,7 @@ function switchVer(v) {{
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{"투*필 · " + display_name + "님의 오늘" if page_type == "today" else display_name + "님의 인생 이야기 · 휴먼다큐"}</title>
+<title>{page_title_str}</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{og_desc}">
@@ -4231,9 +4297,9 @@ function switchVer(v) {{
 <div class="wrap">
 
   <div class="hero">
-    <div class="hero-sub">HUMANDOCU · 필모그래피</div>
+    <div class="hero-sub">{hero_sub_label}</div>
     <div class="hero-name">{nickname}</div>
-    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{nickname}님의 필모그래피</div>
+    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
@@ -4255,31 +4321,31 @@ function switchVer(v) {{
   {slideshow_section}
 
   <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
-    <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">나의 필모그래피 링크</div>
+    <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">{link_section_label}</div>
     <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
     <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <button onclick="kakaoShare()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#FEE500;border:none;border-radius:20px;font-size:13px;color:#3C1E1E;cursor:pointer;font-family:inherit;font-weight:600">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><ellipse cx="9" cy="8" rx="8" ry="6.5" fill="#3C1E1E"/><path d="M5.5 10.5c.3.7 1 1.2 2 1.5l-.5 2 2-1.5c.3 0 .7.1 1 .1 3.3 0 6-2 6-4.5S12.3 3.5 9 3.5 3 5.5 3 8c0 1 .6 2 1.5 2.5z" fill="#FEE500"/></svg>
-        카카오톡 공유
+        KakaoTalk
       </button>
       <button onclick="copyPageUrl()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:13px;color:#9e8250;cursor:pointer;font-family:inherit">
-        🔗 링크 복사
+        {copy_link_label}
       </button>
     </div>
     <div style="font-size:12px;color:#c8a96e;margin-top:4px;line-height:1.8">
-      {"매일을 담아보세요.<br>모으면 그것이 당신이에요." if page_type == "today" else "카톡·인스타·명함에 담으세요"}
+      {share_tagline}
     </div>
     <div style="margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
       <button onclick="sendMyLink()" id="my-link-btn"
          style="display:inline-block;padding:8px 20px;background:#C8870A;border:none;border-radius:20px;font-size:12px;color:#FFF8ED;cursor:pointer;font-family:inherit">
-        📬 내 기록 모음 링크 받기
+        {my_link_btn_label}
       </button>
     </div>
     <div id="my-link-msg" style="font-size:12px;color:#c8a96e;margin-top:10px;display:none;text-align:center"></div>
     <script>
     async function sendMyLink() {{
       const btn = document.getElementById('my-link-btn');
-      btn.textContent = '전송 중...';
+      btn.textContent = '{my_link_sending}';
       btn.disabled = true;
       try {{
         const res = await fetch('/api/my/send-link', {{
@@ -4291,52 +4357,52 @@ function switchVer(v) {{
         const msg = document.getElementById('my-link-msg');
         msg.style.display = 'block';
         if (data.ok) {{
-          btn.textContent = '✓ 이메일 발송 완료';
-          msg.textContent = '{mask_email(email)} 으로 링크를 보냈어요. 메일함을 확인해주세요.';
+          btn.textContent = '{my_link_sent}';
+          msg.textContent = '{my_link_sent_msg}';
         }} else {{
-          btn.textContent = '📬 내 기록 모음 링크 받기';
+          btn.textContent = '{my_link_btn_label}';
           btn.disabled = false;
-          msg.textContent = '오류: ' + (data.error || '다시 시도해주세요');
+          msg.textContent = '{my_link_error_pfx}' + (data.error || '');
         }}
       }} catch(e) {{
-        btn.textContent = '📬 내 기록 모음 링크 받기';
+        btn.textContent = '{my_link_btn_label}';
         btn.disabled = false;
       }}
     }}
     </script>
   </div>
 
-  <!-- 나도 만들기 CTA -->
+  <!-- CTA -->
   <div style="background:#C8870A;padding:36px 40px;text-align:center">
     <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">
-      {"HUMANDOCU · 투*필" if page_type == "today" else "HUMANDOCU · 식스샷"}
+      {cta_tag}
     </div>
     <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">
-      {"오늘 당신의 하루도<br>시가 될 수 있어요" if page_type == "today" else "당신의 인생도<br>필모그래피가 될 수 있어요"}
+      {cta_title}
     </div>
     <div style="font-size:13px;color:rgba(255,248,237,.75);margin-bottom:20px;line-height:1.7">
-      {"사진 6장 + 한 줄 · 무료 · 결과는 이메일로" if page_type == "today" else "사진 6장 + 짧은 이야기 · AI가 시로 남겨드려요"}
+      {cta_sub}
     </div>
     <a href="{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}"
        style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
-      {"나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"}
+      {cta_btn}
     </a>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:20px auto 0;">
     <a href="https://humandocu.com/today.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
-      📽️ 다른 투*필 둘러보기
+      {nav_today_lbl}
     </a>
     <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
-      🎞️ 인생 식스샷 둘러보기
+      {nav_sixshot_lbl}
     </a>
     <a href="https://humandocu.com" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
-      🏠 휴먼다큐닷컴 둘러보기
+      {nav_home_lbl}
     </a>
   </div>
 
   <div class="footer">
-    <a href="https://humandocu.com">휴먼다큐로 만들었습니다 · humandocu.com</a>
+    <a href="https://humandocu.com">{footer_text}</a>
   </div>
 
 </div>
@@ -4355,7 +4421,7 @@ function kakaoShare() {{
   Kakao.Share.sendDefault({{
     objectType: 'feed',
     content: {{
-      title: '{nickname}님의 {"오늘" if page_type == "today" else "인생"} 필모그래피 · 휴먼다큐',
+      title: '{og_title}',
       description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
       imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
       link: {{
@@ -4365,14 +4431,14 @@ function kakaoShare() {{
     }},
     buttons: [
       {{
-        title: '필모그래피 보기',
+        title: '{kakao_view_btn}',
         link: {{
           mobileWebUrl: '{page_url_kakao}',
           webUrl: '{page_url_kakao}',
         }},
       }},
       {{
-        title: '{"나도 만들기" if page_type == "today" else "나도 만들기"}',
+        title: '{kakao_create_btn}',
         link: {{
           mobileWebUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
           webUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
@@ -4386,7 +4452,7 @@ function copyPageUrl(){{
   var url = window.location.href;
   if (navigator.clipboard) {{
     navigator.clipboard.writeText(url).then(function() {{
-      alert("링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요");
+      alert("{copy_alert}");
     }});
   }} else {{
     var el = document.createElement("textarea");
@@ -4395,7 +4461,7 @@ function copyPageUrl(){{
     el.select();
     document.execCommand("copy");
     document.body.removeChild(el);
-    alert("링크가 복사됐어요!");
+    alert("{copy_alert}");
   }}
 }}
 </script>
