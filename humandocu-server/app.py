@@ -2232,18 +2232,20 @@ def webhook_today():
         fields = parse_tally(payload)
         print("[TODAY] 파싱:", json.dumps(fields, ensure_ascii=False)[:300])
 
-        name = fields.get("이름", "").strip()
+        name = (fields.get("이름", "") or fields.get("Name", "")).strip()
         nickname = (
             fields.get("닉네임", "").strip() or
             fields.get("Nickname", "").strip() or
             name
         )
-        email = fields.get("이메일", "").strip()
+        email = (fields.get("이메일", "") or fields.get("Email", "")).strip()
         if not name or not email:
             return jsonify({"error": "이름/이메일 없음"}), 400
 
-        # 사진 라벨 (투*필 폼 기준)
-        shot_labels = ["사진 01", "사진 02", "사진 03", "사진 04", "사진 05", "사진 06"]
+        # 사진 라벨 — 한국어/영어 폼 모두 지원
+        shot_labels_ko = ["사진 01", "사진 02", "사진 03", "사진 04", "사진 05", "사진 06"]
+        shot_labels_en = ["Photo 01", "Photo 02", "Photo 03", "Photo 04", "Photo 05", "Photo 06"]
+        desc_labels    = {"사진 설명 한줄", "One-line description"}
         shots = {}
         shot_images = {}
         shot_idx = 0
@@ -2254,13 +2256,19 @@ def webhook_today():
                 if lbl is not None: lbl = lbl.strip()
                 val = f.get("value", "")
                 ftype = f.get("type", "")
-                if lbl in shot_labels:
-                    shot_idx = shot_labels.index(lbl) + 1
+                if lbl in shot_labels_ko:
+                    shot_idx = shot_labels_ko.index(lbl) + 1
                     if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
                         img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
                         if img_url:
                             shot_images[shot_idx] = img_url
-                elif lbl == "사진 설명 한줄" and shot_idx > 0:
+                elif lbl in shot_labels_en:
+                    shot_idx = shot_labels_en.index(lbl) + 1
+                    if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
+                        img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
+                        if img_url:
+                            shot_images[shot_idx] = img_url
+                elif (lbl in desc_labels or (lbl and lbl.startswith("One-line description"))) and shot_idx > 0:
                     text = val[0] if isinstance(val, list) else val
                     if text:
                         shots[shot_idx] = str(text).strip()
@@ -2268,11 +2276,13 @@ def webhook_today():
         except Exception as e:
             import traceback; logger.warning(f"[TODAY] shots 파싱 오류: {e}\n{traceback.format_exc()}")
 
-        today_one = fields.get("오늘 하루를 한 문장으로", "")
+        today_one = (fields.get("오늘 하루를 한 문장으로", "") or
+                     fields.get("Today in one sentence", ""))
         last_to   = (
             fields.get("대상", "") or
             fields.get("누군가에게 한 마디", "") or
-            fields.get("누군가에게 한마디", "")
+            fields.get("누군가에게 한마디", "") or
+            fields.get("A word for someone", "")
         )
         last_msg  = (
             fields.get("메세지..", "") or
@@ -2280,8 +2290,8 @@ def webhook_today():
             fields.get("메시지", "") or
             fields.get("메시지..", "")
         )
-        is_public_raw = fields.get("공개 여부", "")
-        is_public = ("비공개" not in is_public_raw)  # 기본 공개, 비공개 선택시만 False
+        is_public_raw = (fields.get("공개 여부", "") or fields.get("Visibility", ""))
+        is_public = ("비공개" not in is_public_raw) and ("Private" not in is_public_raw)
 
         print(f"[TODAY] last_to:{last_to}, last_msg:{last_msg}, today_one:{today_one}")
 
