@@ -4437,9 +4437,9 @@ function switchVer(v) {{
   </div>
 
   <div style="text-align:center;padding:16px 0 24px">
-    <form method="POST" action="/sixshot/{doc_id}/delete" style="display:inline"
-          onsubmit="return confirm({json.dumps(delete_confirm_msg)})">
+    <form method="POST" action="/sixshot/{doc_id}/delete" style="display:inline">
       <button type="submit"
+              onclick="return confirm({json.dumps(delete_confirm_msg)})"
               style="background:transparent;border:1.5px solid #e74c3c;color:#e74c3c;
                      font-size:13px;font-weight:500;padding:8px 24px;border-radius:20px;
                      cursor:pointer;letter-spacing:.04em;font-family:inherit">
