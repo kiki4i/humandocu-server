@@ -4263,7 +4263,7 @@ function switchVer(v) {{
         )
 
     html = f"""<!DOCTYPE html>
-<html lang="ko">
+<html lang="{lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4273,6 +4273,8 @@ function switchVer(v) {{
 <meta property="og:description" content="{og_desc}">
 <meta property="og:image" content="{og_image}">
 <meta property="og:url" content="{page_url_self}">
+<meta property="og:site_name" content="{'humandocu.com' if is_en else '휴먼다큐'}">
+<meta property="og:locale" content="{'en_US' if is_en else 'ko_KR'}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{og_image}">
 <style>
