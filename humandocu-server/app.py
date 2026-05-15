@@ -4424,8 +4424,8 @@ function kakaoShare() {{
   Kakao.Share.sendDefault({{
     objectType: 'feed',
     content: {{
-      title: '{og_title}',
-      description: '{og_desc}',
+      title: {json.dumps(og_title)},
+      description: {json.dumps(og_desc)},
       imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
       link: {{
         mobileWebUrl: '{page_url_kakao}',
@@ -4434,14 +4434,14 @@ function kakaoShare() {{
     }},
     buttons: [
       {{
-        title: '{kakao_view_btn}',
+        title: {json.dumps(kakao_view_btn)},
         link: {{
           mobileWebUrl: '{page_url_kakao}',
           webUrl: '{page_url_kakao}',
         }},
       }},
       {{
-        title: '{kakao_create_btn}',
+        title: {json.dumps(kakao_create_btn)},
         link: {{
           mobileWebUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
           webUrl: '{"https://humandocu.com/today.html" if page_type == "today" else "https://humandocu.com/sixshot.html"}',
@@ -4455,7 +4455,7 @@ function copyPageUrl(){{
   var url = window.location.href;
   if (navigator.clipboard) {{
     navigator.clipboard.writeText(url).then(function() {{
-      alert("{copy_alert}");
+      alert({json.dumps(copy_alert)});
     }});
   }} else {{
     var el = document.createElement("textarea");
@@ -4464,7 +4464,7 @@ function copyPageUrl(){{
     el.select();
     document.execCommand("copy");
     document.body.removeChild(el);
-    alert("{copy_alert}");
+    alert({json.dumps(copy_alert)});
   }}
 }}
 </script>
