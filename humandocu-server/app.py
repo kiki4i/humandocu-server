@@ -3899,8 +3899,8 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ Life Six Shot"
         nav_home_lbl        = "🏠 Back to humandocu.com"
         footer_text         = "Made with Humandocu · humandocu.com"
-        delete_label        = "Delete"
-        delete_confirm_msg  = "Delete this page? This cannot be undone."
+        delete_label        = "🗑 Delete"
+        delete_confirm_msg  = "Delete this Today Filmography? This cannot be undone."
         page_title_str      = f"Today Filmography · {display_name}"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
@@ -3941,8 +3941,8 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
         nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
-        delete_label        = "삭제하기"
-        delete_confirm_msg  = "정말 삭제하시겠어요? 복구할 수 없습니다."
+        delete_label        = "🗑 삭제하기"
+        delete_confirm_msg  = "이 투·필을 삭제하시겠어요? 복구할 수 없습니다."
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4436,10 +4436,16 @@ function switchVer(v) {{
     </a>
   </div>
 
-  <div style="text-align:center;padding:4px 0 20px">
-    <a href="/sixshot/{doc_id}/delete-confirm"
-       style="font-size:11px;color:#ccc;text-decoration:none;letter-spacing:.02em"
-       onclick="return confirm({json.dumps(delete_confirm_msg)})">{delete_label}</a>
+  <div style="text-align:center;padding:16px 0 24px">
+    <form method="POST" action="/sixshot/{doc_id}/delete" style="display:inline"
+          onsubmit="return confirm({json.dumps(delete_confirm_msg)})">
+      <button type="submit"
+              style="background:transparent;border:1.5px solid #e74c3c;color:#e74c3c;
+                     font-size:13px;font-weight:500;padding:8px 24px;border-radius:20px;
+                     cursor:pointer;letter-spacing:.04em;font-family:inherit">
+        {delete_label}
+      </button>
+    </form>
   </div>
 
   <div class="footer">
