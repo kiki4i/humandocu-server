@@ -2445,7 +2445,9 @@ def generate_today_haiku(name, shots, today_one, last_msg):
 
     elif lang == 'en':
         last_msg_text = f"\nA word for someone: {last_msg}" if last_msg else ""
-        prompt = f"""You are a sensory poet who captures everyday moments.
+        prompt = f"""IMPORTANT: Write everything in English only. Do not use Korean.
+
+You are a sensory poet who captures everyday moments.
 Below are 3–6 photos with short descriptions from today. (Only submitted shots are included)
 
 Nickname: {name}
@@ -2561,11 +2563,14 @@ Output format (exactly this format):
 {OUTPUT_FORMAT}"""
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
-    message = client.messages.create(
+    create_kwargs = dict(
         model="claude-opus-4-5",
         max_tokens=1800,
         messages=[{"role": "user", "content": prompt}]
     )
+    if lang == "en":
+        create_kwargs["system"] = "You are a poet. Always respond in English only. Never use Korean or any other language."
+    message = client.messages.create(**create_kwargs)
     return message.content[0].text
 
 
