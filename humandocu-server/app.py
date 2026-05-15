@@ -2289,13 +2289,10 @@ def webhook_today():
         def process():
             try:
                 doc_id = "td" + uuid.uuid4().hex[:10]
+                detect_source = (today_one or '') + ' '.join(str(v) for v in shots.values() if v)
+                lang = _detect_lang(detect_source)
                 poems = generate_today_haiku(nickname, shots, today_one, last_msg)
-                logger.warning(f"[TODAY] 시 생성 완료")
-
-                # 투*필은 매일 쌓이는 일기 — 기존 것 비공개 처리 안 함
-                # 인생 식스샷만 기존 것 비공개 처리
-                if today_one is None:  # webhook_sixshot에서만 실행
-                    pass
+                logger.warning(f"[TODAY] 시 생성 완료 lang={lang}")
 
                 import datetime
                 shots_str  = {str(k): v for k, v in shots.items()}
@@ -2312,10 +2309,11 @@ def webhook_today():
                     "poems": poems,
                     "is_public": is_public,
                     "type": "today",
+                    "lang": lang,
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
                 page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
-                send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today")
+                send_email_sixshot(email, nickname, poems, today_one, last_msg, page_url, type="today", lang=lang)
             except Exception as e:
                 import traceback; logger.warning(f"[TODAY] 백그라운드 오류: {e}\n{traceback.format_exc()}")
         threading.Thread(target=process, daemon=True).start()
@@ -2671,25 +2669,46 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
     return message.content[0].text
 
 
-def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None, type="sixshot"):
+def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url=None, type="sixshot", lang="ko"):
     """식스샷 알림 이메일 - 버튼 클릭 시 개인 페이지로 이동"""
+
+    is_en = (lang == "en" and type == "today")
+
+    if is_en:
+        last_msg_label = "A word for someone"
+        album_cta_title = "Keep recording every day"
+        album_cta_sub = "Collected, it becomes you.<br>Today's record accumulates into your own filmography album."
+        open_label = "Open My Today Filmography"
+        body_text = "We captured today's you in 6 photos and a poem.<br>Click the button below to see it."
+        header_label = "HUMANDOCU · TODAY FILMOGRAPHY"
+        header_title = "Today's Filmography<br>has arrived ✦"
+    else:
+        last_msg_label = "누군가에게 남기는 한 줄"
+        album_cta_title = "매일을 담아보세요"
+        album_cta_sub = "모으면 그것이 당신이에요.<br>오늘의 기록이 쌓여 나만의 필모그래피 앨범이 됩니다."
+        open_label = "나의 투*필 열기" if type == "today" else "나의 식스샷 열기"
+        body_text = ("오늘 하루를 담은 6장의 사진,<br>AI가 오늘의 당신을 시로 남겼어요.<br>아래 버튼을 눌러 확인하세요."
+                     if type == "today" else
+                     "사진 6장면과 그 이야기를 담은<br>나만의 필모그래피 페이지가 완성됐어요.<br>아래 버튼을 눌러 확인하세요.")
+        header_label = "HUMANDOCU · 투*필" if type == "today" else "HUMANDOCU · 필모그래피"
+        header_title = ("투데이 필모그래피<br>도착했어요 ✦" if type == "today"
+                        else f"{name}님의<br>필모그래피가<br>도착했습니다")
 
     last_msg_block = f"""
       <div style="margin:0 0 32px;padding:20px 24px;border-left:3px solid #c8a96e;background:#faf7f2">
-        <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">누군가에게 남기는 한 줄</div>
+        <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">{last_msg_label}</div>
         <div style="font-size:15px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
       </div>""" if last_msg else ""
 
     edit_url = f"https://tally.so/r/Bz8LbR" if type == "today" else "https://tally.so/r/ZjGpk0"
-    open_label = "나의 투*필 열기" if type == "today" else "나의 식스샷 열기"
 
     today_album_block = ""
     if type == "today":
         today_album_block = f"""
       <div style="text-align:center;margin-top:24px;padding:20px 28px;background:#FFF8ED;border-radius:8px;border:1px solid rgba(200,135,10,.15)">
         <div style="font-size:18px;margin-bottom:8px">🎞️</div>
-        <div style="font-size:14px;color:#C8870A;font-weight:600;margin-bottom:6px;letter-spacing:.04em">매일을 담아보세요</div>
-        <div style="font-size:13px;color:#8A6A3A;line-height:1.8">모으면 그것이 당신이에요.<br>오늘의 기록이 쌓여 나만의 필모그래피 앨범이 됩니다.</div>
+        <div style="font-size:14px;color:#C8870A;font-weight:600;margin-bottom:6px;letter-spacing:.04em">{album_cta_title}</div>
+        <div style="font-size:13px;color:#8A6A3A;line-height:1.8">{album_cta_sub}</div>
       </div>"""
 
     btn_block = f"""
@@ -2714,20 +2733,20 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
       </div>""" if page_url else ""
 
     html = f"""<!DOCTYPE html>
-<html lang="ko">
+<html lang="{lang}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif">
 <div style="max-width:560px;margin:0 auto;background:#fff">
 
   <div style="background:#0f0d09;padding:52px 36px;text-align:center">
-    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">{"HUMANDOCU · 투*필" if type == "today" else "HUMANDOCU · 필모그래피"}</div>
-    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{"투데이 필모그래피" if type == "today" else f"{name}님의<br>필모그래피가"}<br>{"도착했어요 ✦" if type == "today" else "도착했습니다"}</div>
+    <div style="font-size:11px;color:rgba(200,169,110,.6);letter-spacing:.25em;margin-bottom:16px">{header_label}</div>
+    <div style="font-family:Georgia,serif;font-size:32px;color:#f9f6f0;font-weight:300;margin-bottom:12px">{header_title}</div>
     <div style="font-size:13px;color:rgba(249,246,240,.45);line-height:1.8;font-style:italic">{identity}</div>
   </div>
 
   <div style="padding:40px 36px">
     <div style="font-size:14px;color:#6b6050;line-height:1.9;margin-bottom:28px">
-      {"오늘 하루를 담은 6장의 사진,<br>AI가 오늘의 당신을 시로 남겼어요.<br>아래 버튼을 눌러 확인하세요." if type == "today" else "사진 6장면과 그 이야기를 담은<br>나만의 필모그래피 페이지가 완성됐어요.<br>아래 버튼을 눌러 확인하세요."}
+      {body_text}
     </div>
     {last_msg_block}
     {btn_block}
@@ -2741,13 +2760,20 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
 </body>
 </html>"""
 
+    if is_en:
+        email_subject = "[Humandocu] Your Today Filmography has arrived ✦"
+    elif type == "today":
+        email_subject = "[휴먼다큐] 오늘의 투*필이 도착했어요 ✦"
+    else:
+        email_subject = f"[휴먼다큐] {name}님의 필모그래피가 도착했습니다"
+
     resp = requests.post("https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
         json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-              "subject": f"[휴먼다큐] {'오늘의 투*필이 도착했어요 ✦' if type == 'today' else f'{name}님의 필모그래피가 도착했습니다'}", "html": html},
+              "subject": email_subject, "html": html},
         timeout=30)
     resp.raise_for_status()
-    print(f"[SIXSHOT] 이메일 발송 완료 빈칸 {to_email}")
+    print(f"[SIXSHOT] 이메일 발송 완료 {to_email}")
 
 
 def _render_haiku_block(section, lines, shot_titles):
@@ -3805,10 +3831,22 @@ def sixshot_page(doc_id):
     shot_images = data.get("shot_images", {})
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
+    lang        = data.get("lang", "ko")
+    is_en       = (lang == "en" and page_type == "today")
 
-    # 타입별 섹션 제목
-    poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
-    scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
+    # 타입/언어별 섹션 제목
+    if is_en:
+        poem_section_title  = "✦ A poem capturing today"
+        scene_section_title = "Today's Six Shot"
+        haiku_intro_label   = "A haiku capturing today in 5 · 7 · 5 syllables"
+        haiku_s_label       = "🌸 Haiku · Emotional"
+        haiku_h_label       = "😂 Haiku · Humorous"
+    else:
+        poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
+        scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
+        haiku_intro_label   = "5 · 7 · 5 음절로 오늘을 포착한 시"
+        haiku_s_label       = "🌸 하이쿠 · 감성"
+        haiku_h_label       = "😂 하이쿠 · 유머"
 
     shot_titles = {
         "1": "SHOT 1",
@@ -3947,15 +3985,15 @@ def sixshot_page(doc_id):
         if haiku_s:
             haiku_block_html += (
                 '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px;margin-bottom:12px">'
-                '<p style="font-size:12px;color:#8B7355;text-align:center;margin-bottom:16px;letter-spacing:.05em;">5 · 7 · 5 음절로 오늘을 포착한 시</p>'
-                '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">🌸 하이쿠 · 감성</div>'
+                f'<p style="font-size:12px;color:#8B7355;text-align:center;margin-bottom:16px;letter-spacing:.05em;">{haiku_intro_label}</p>'
+                f'<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">{haiku_s_label}</div>'
                 f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2">{haiku_lines_html(haiku_s)}</div>'
                 '</div>'
             )
         if haiku_h:
             haiku_block_html += (
                 '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px">'
-                '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">😂 하이쿠 · 유머</div>'
+                f'<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:10px">{haiku_h_label}</div>'
                 f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2">{haiku_lines_html(haiku_h)}</div>'
                 '</div>'
             )
