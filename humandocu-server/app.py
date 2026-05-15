@@ -3985,7 +3985,10 @@ def sixshot_page(doc_id):
     except:
         pass
 
-    if page_type == "today":
+    if is_en:
+        og_title = f"{nickname or name}'s Today Filmography · Humandocu"
+        og_desc  = "AI captured today in 6 photos and a poem."
+    elif page_type == "today":
         og_title = f"{nickname or name}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
         og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
     else:
@@ -4422,7 +4425,7 @@ function kakaoShare() {{
     objectType: 'feed',
     content: {{
       title: '{og_title}',
-      description: '{identity[:50] if identity else "사진 6장으로 만든 나만의 이야기"}',
+      description: '{og_desc}',
       imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
       link: {{
         mobileWebUrl: '{page_url_kakao}',
