@@ -4010,6 +4010,14 @@ def sixshot_page(doc_id):
         nav_home_lbl        = "🏠 Back to humandocu.com"
         footer_text         = "Made with Humandocu · humandocu.com"
         delete_label        = "🗑 Delete"
+        delete_modal_title  = "Verify to delete"
+        delete_modal_sent   = "A 4-digit code has been sent to your email."
+        delete_sending      = "Sending code..."
+        delete_code_ph      = "Enter 4-digit code"
+        delete_code_btn     = "Confirm"
+        delete_cancel_btn   = "Cancel"
+        delete_success_msg  = "Deleted."
+        delete_error_msg    = "Code is invalid or expired."
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -4052,6 +4060,14 @@ def sixshot_page(doc_id):
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
         delete_label        = "🗑 삭제하기"
         delete_confirm_msg  = "이 투·필을 삭제하시겠어요? 복구할 수 없습니다."
+        delete_modal_title  = "삭제 인증"
+        delete_modal_sent   = "등록된 이메일로 4자리 인증코드를 발송했습니다."
+        delete_sending      = "인증코드 발송 중..."
+        delete_code_ph      = "인증코드 4자리"
+        delete_code_btn     = "확인"
+        delete_cancel_btn   = "취소"
+        delete_success_msg  = "삭제되었습니다."
+        delete_error_msg    = "코드가 올바르지 않거나 만료되었습니다."
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4504,16 +4520,30 @@ function switchVer(v) {{
     </a>
   </div>
 
+  <!-- 삭제 인증 모달 -->
+  <div id="del-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:32px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.18)">
+      <h3 style="margin:0 0 12px;font-size:16px;color:#1a1208;font-weight:600">{delete_modal_title}</h3>
+      <p id="del-msg" style="font-size:13px;color:#6b5a3a;margin:0 0 18px;line-height:1.7"></p>
+      <input id="del-code" type="text" inputmode="numeric" maxlength="4" placeholder="{delete_code_ph}"
+             style="display:none;width:100%;padding:12px;border:1px solid #e0d4b8;border-radius:6px;font-size:20px;text-align:center;box-sizing:border-box;margin-bottom:14px;font-family:inherit;letter-spacing:.18em">
+      <div id="del-btns" style="display:none">
+        <button onclick="confirmDelete()" style="width:100%;padding:12px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:inherit">{delete_code_btn}</button>
+        <button onclick="closeDelModal()" style="width:100%;padding:12px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
+      </div>
+      <div id="del-cancel-only" style="display:none;margin-top:12px">
+        <button onclick="closeDelModal()" style="padding:10px 28px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
+      </div>
+    </div>
+  </div>
+
   <div style="text-align:center;padding:16px 0 24px">
-    <form method="POST" action="/sixshot/{doc_id}/delete" style="display:inline">
-      <button type="submit"
-              onclick='return confirm({json.dumps(delete_confirm_msg, ensure_ascii=False)})'
-              style="background:transparent;border:1.5px solid #e74c3c;color:#e74c3c;
-                     font-size:13px;font-weight:500;padding:8px 24px;border-radius:20px;
-                     cursor:pointer;letter-spacing:.04em;font-family:inherit">
-        {delete_label}
-      </button>
-    </form>
+    <button type="button" onclick="openDelModal()"
+            style="background:transparent;border:1.5px solid #e74c3c;color:#e74c3c;
+                   font-size:13px;font-weight:500;padding:8px 24px;border-radius:20px;
+                   cursor:pointer;letter-spacing:.04em;font-family:inherit">
+      {delete_label}
+    </button>
   </div>
 
   <div class="footer">
@@ -4578,6 +4608,58 @@ function copyPageUrl(){{
     document.body.removeChild(el);
     alert({json.dumps(copy_alert)});
   }}
+}}
+
+function openDelModal(){{
+  var modal = document.getElementById('del-modal');
+  modal.style.display = 'flex';
+  document.getElementById('del-msg').textContent = {json.dumps(delete_sending, ensure_ascii=False)};
+  document.getElementById('del-code').style.display = 'none';
+  document.getElementById('del-btns').style.display = 'none';
+  document.getElementById('del-cancel-only').style.display = 'block';
+  fetch('/api/delete-request/{doc_id}', {{method:'POST'}})
+    .then(function(r){{return r.json();}})
+    .then(function(d){{
+      document.getElementById('del-msg').textContent = {json.dumps(delete_modal_sent, ensure_ascii=False)};
+      document.getElementById('del-code').style.display = '';
+      document.getElementById('del-btns').style.display = '';
+      document.getElementById('del-cancel-only').style.display = 'none';
+      document.getElementById('del-code').value = '';
+      document.getElementById('del-code').focus();
+    }})
+    .catch(function(){{
+      modal.style.display = 'none';
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
+    }});
+}}
+
+function closeDelModal(){{
+  document.getElementById('del-modal').style.display = 'none';
+}}
+
+function confirmDelete(){{
+  var code = document.getElementById('del-code').value.replace(/[^0-9]/g,'').trim();
+  if(!code)return;
+  fetch('/api/delete-confirm/{doc_id}', {{
+    method:'POST',
+    headers:{{'Content-Type':'application/json'}},
+    body:JSON.stringify({{code:code}})
+  }})
+  .then(function(r){{return r.json();}})
+  .then(function(d){{
+    if(d.status==='deleted'){{
+      document.getElementById('del-msg').textContent = {json.dumps(delete_success_msg, ensure_ascii=False)};
+      document.getElementById('del-code').style.display = 'none';
+      document.getElementById('del-btns').style.display = 'none';
+      document.getElementById('del-cancel-only').style.display = 'none';
+      setTimeout(function(){{window.location.href='https://humandocu.com';}},2000);
+    }}else{{
+      document.getElementById('del-msg').textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+    }}
+  }})
+  .catch(function(){{
+    document.getElementById('del-msg').textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+  }});
 }}
 </script>
 {ver_script}
@@ -4773,6 +4855,30 @@ def firebase_delete_sixshot(doc_id):
         return False
 
 
+def send_email_delete_code(to_email: str, code: str):
+    """투*필 삭제 인증코드 이메일 발송"""
+    try:
+        html_body = (
+            f"<div style='font-family:\"Noto Sans KR\",sans-serif;max-width:480px;margin:0 auto;"
+            f"padding:32px 24px;background:#fff;color:#1a1208'>"
+            f"<p style='font-size:15px;margin:0 0 20px'>투*필 삭제를 위한 인증코드입니다.</p>"
+            f"<div style='font-size:36px;font-weight:700;letter-spacing:.2em;text-align:center;"
+            f"padding:24px;background:#f5f2eb;border-radius:8px;margin:0 0 20px'>{code}</div>"
+            f"<p style='font-size:13px;color:#6b5a3a;margin:0'>이 코드는 10분 후 만료됩니다.<br>"
+            f"본인이 요청하지 않은 경우 무시하세요.</p></div>"
+        )
+        requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
+                  "subject": "투.필 삭제 인증코드", "html": html_body},
+            timeout=10,
+        )
+        print(f"[DELETE_CODE] 인증코드 발송 완료: {to_email}")
+    except Exception as e:
+        print(f"[DELETE_CODE] 발송 오류: {e}")
+
+
 def delete_github_sixshot(doc_id):
     """GitHub bugo/{doc_id}.html 삭제 (파일이 존재할 때만)"""
     try:
@@ -4793,6 +4899,55 @@ def delete_github_sixshot(doc_id):
         print(f"[GITHUB-DEL] 삭제 완료: {path}")
     except Exception as e:
         print(f"[GITHUB-DEL] 오류: {e}")
+
+
+@app.route("/api/delete-request/<doc_id>", methods=["POST", "OPTIONS"])
+def api_delete_request(doc_id):
+    """삭제 인증코드 발송 요청"""
+    if request.method == "OPTIONS":
+        return "", 204
+    data = firebase_get_sixshot(doc_id)
+    if data is None:
+        return jsonify({"status": "error", "message": "not found"}), 404
+    email = data.get("email", "")
+    if not email:
+        return jsonify({"status": "error", "message": "no email"}), 400
+    code = str(secrets.randbelow(10000)).zfill(4)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    _get_db().collection("delete_codes").document(doc_id).set({
+        "code": code,
+        "expires_at": expires_at,
+        "doc_id": doc_id,
+    })
+    send_email_delete_code(email, code)
+    return jsonify({"status": "sent"})
+
+
+@app.route("/api/delete-confirm/<doc_id>", methods=["POST", "OPTIONS"])
+def api_delete_confirm(doc_id):
+    """인증코드 확인 후 투*필 삭제"""
+    if request.method == "OPTIONS":
+        return "", 204
+    body = request.get_json(silent=True) or {}
+    code = str(body.get("code", "")).strip()
+    if not code:
+        return jsonify({"status": "error", "message": "코드를 입력해주세요."}), 400
+    ref = _get_db().collection("delete_codes").document(doc_id)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
+    stored = snap.to_dict()
+    if stored.get("code") != code:
+        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
+    if datetime.now(timezone.utc) > stored["expires_at"]:
+        ref.delete()
+        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
+    ok = firebase_delete_sixshot(doc_id)
+    ref.delete()
+    if not ok:
+        return jsonify({"status": "error", "message": "삭제 실패"}), 500
+    delete_github_sixshot(doc_id)
+    return jsonify({"status": "deleted"})
 
 
 @app.route("/sixshot/<doc_id>/delete-confirm", methods=["GET"])
