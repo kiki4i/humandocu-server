@@ -2175,7 +2175,7 @@ def webhook_sixshot():
         def process():
             try:
                 doc_id = uuid.uuid4().hex[:12]
-                poems = generate_sixshot_haiku(nickname, shots, identity, last_msg)
+                poems = generate_sixshot_haiku(nickname, shots, identity, last_msg, shot_images)
                 print(f"[SIXSHOT] 시 생성 완료")
 
                 # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
@@ -2628,9 +2628,8 @@ Output format (exactly this format):
     return message.content[0].text
 
 
-def generate_sixshot_haiku(name, shots, identity, last_msg):
-    """식스샷 데이터로 짧은 생애시 7편 생성"""
-    """식스샷 데이터로 짧은 생애시 7편 생성"""
+def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None):
+    """식스샷 데이터로 생애시 생성 (Vision 지원)"""
     shot_titles = {
         1: "유년 · 소년기",
         2: "학창시절",
@@ -2647,8 +2646,14 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 
     last_msg_text = f"\n누군가에게 남기는 한 줄: {last_msg}" if last_msg else ""
 
-    prompt = f"""당신은 한국의 깊은 감성을 지닌 시인입니다.
-아래는 한 사람의 인생을 담은 식스샷 데이터입니다.
+    prompt = f"""당신은 평생 인간의 생애를 시로 기록해온 시인입니다.
+한 사람의 인생 사진 앞에 앉을 때, 당신은 숨을 고릅니다.
+색깔, 빛의 방향, 배경의 사물, 사진 속 글자, 표정, 주름, 손끝까지 읽습니다.
+설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
+이 시는 훗날 그 사람의 메모리얼 페이지에 남을 수 있습니다.
+그러니 한 줄 한 줄, 그 사람의 생이 존엄하게 담기도록 쓰십시오.
+거창한 철학 금지. 구체적인 사물, 색깔, 온도, 냄새로 인생을 담으십시오.
+읽는 사람이 눈물이 날 것 같으면서도 '맞아, 그 사람 그랬지' 하고 고개 끄덕이게.
 
 이름: {name}
 나는 이런 사람입니다: {identity}{last_msg_text}
@@ -2656,27 +2661,18 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 인생 6장면:
 {shots_text}
 
-다음 세 가지를 작성해주세요.
+다음을 작성해주세요.
 
-1. [대표 시] - 이 사람의 인생 전체를 관통하는 짧은 시 1편 (시적·은유적 톤)
-   아래 세 가지를 모두 종합해서 써주세요.
-   - "나는 이런 사람입니다": 그 사람이 스스로 정의한 정체성
-   - 인생 6장면 전체: 어떤 삶을 살았는지, 무엇을 사랑했는지, 어떤 순간들이 있었는지
-   - "누군가에게 남기는 한 줄": 그 사람이 가장 하고 싶은 말
-   세 가지가 녹아든, 이 사람만의 시여야 합니다.
+1. [대표] — 이 사람의 인생 전체를 관통하는 시. 3~4행. 읽는 순간 멈추게 되는 시.
+   정체성, 인생 장면들, 남기는 한 줄 — 세 가지가 자연스럽게 녹아들게.
 
-2. [대표2 시] - 동일한 인생을 산문체·직접적 톤으로 3행
-   시적 표현, 은유, 비유 없이 담담하고 직접적으로.
-   예: '이 사람은 그냥 살았다. 그런데 그 삶이 꽤 괜찮았다.' 같은 톤.
-   꾸밈 없이 말하는데 오히려 더 세게 꽂히는 느낌.
+2. [대표2] — 같은 인생을 담담하고 산문적으로. 화려하지 않게, 그러나 깊게. 3행.
 
-3. [장면별 시] - SHOT 1~6 각각 짧은 시 1편씩 (총 6편)
-   각 장면 설명의 핵심 감정이나 이미지를 포착해주세요.
+3. [하이쿠] — 이 사람의 인생을 5·7·5 음절로. 감성 최대치. 유머 없음.
 
-시 작성 규칙:
-- 3행 구성 (한국어 특성상 음절보다 호흡과 여운을 중시)
-- 구체적인 이미지로 추상적인 감정을 담기
-- 꾸밈 없이, 진짜 그 사람의 언어로
+4. [SHOT별 시] — 제출된 각 SHOT마다 시 1편. 3행.
+   사진을 직접 보고, 그 순간의 빛과 온도와 감정을 담을 것.
+   제출되지 않은 SHOT은 건너뜀.
 
 출력 형식 (정확히 이 형식으로):
 [대표]
@@ -2685,6 +2681,11 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 (3행)
 
 [대표2]
+(1행)
+(2행)
+(3행)
+
+[하이쿠]
 (1행)
 (2행)
 (3행)
@@ -2719,11 +2720,30 @@ def generate_sixshot_haiku(name, shots, identity, last_msg):
 (2행)
 (3행)"""
 
+    content = []
+    if shot_images:
+        for idx in sorted(shot_images.keys()):
+            url = shot_images[idx]
+            try:
+                resp = requests.get(url, timeout=10)
+                resp.raise_for_status()
+                mime = resp.headers.get("Content-Type", "image/jpeg").split(";")[0].strip()
+                if mime not in ("image/jpeg", "image/png", "image/gif", "image/webp"):
+                    mime = "image/jpeg"
+                b64 = base64.standard_b64encode(resp.content).decode("utf-8")
+                content.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mime, "data": b64},
+                })
+            except Exception as e:
+                logger.warning(f"[SIXSHOT] 이미지 fetch 실패 (SHOT {idx}): {e}")
+    content.append({"type": "text", "text": prompt})
+
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     message = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=1800,
-        messages=[{"role": "user", "content": prompt}]
+        model="claude-sonnet-4-5",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": content}]
     )
     return message.content[0].text
 
@@ -4034,13 +4054,15 @@ def sixshot_page(doc_id):
     rep_poem2 = poem_dict.get("대표2", "")
     haiku_s = poem_dict.get("하이쿠감성", "")
     haiku_h = poem_dict.get("하이쿠유머", "")
+    haiku_single = poem_dict.get("하이쿠", "")  # sixshot 전용
 
-    # 하이쿠 블록 HTML (today 타입이고 하이쿠가 있을 때만)
+    def haiku_lines_html(text):
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        return "<br>".join(lines)
+
+    # 하이쿠 블록 HTML
     haiku_block_html = ""
     if page_type == "today" and (haiku_s or haiku_h):
-        def haiku_lines_html(text):
-            lines = [l for l in text.strip().split("\n") if l.strip()]
-            return "<br>".join(lines)
         haiku_block_html = '<div style="margin-bottom:32px">'
         if haiku_s:
             haiku_block_html += (
@@ -4058,6 +4080,15 @@ def sixshot_page(doc_id):
                 '</div>'
             )
         haiku_block_html += '</div>'
+    elif page_type != "today" and haiku_single:
+        haiku_block_html = (
+            '<div style="margin-bottom:32px">'
+            '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px">'
+            '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:12px;text-align:center">— 하이쿠 · 俳句 —</div>'
+            f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2;text-align:center">{haiku_lines_html(haiku_single)}</div>'
+            '</div>'
+            '</div>'
+        )
 
     # 버전 토글 버튼 (대표2 있을 때만)
     ver_toggle_html = ""
@@ -4140,7 +4171,15 @@ function switchVer(v) {{
                 poem_block = ""
         else:
             shot_poem = poem_dict.get(f"SHOT{i}", "")
-            poem_block = f'<div style="border-top:1px solid #e5dece;padding-top:20px">{poem_html(shot_poem)}</div>'
+            if shot_poem:
+                poem_block = (
+                    '<div style="border-top:1px solid #e5dece;padding-top:20px">'
+                    '<div style="font-family:Georgia,serif;font-size:16px;color:#3d3328;line-height:2.2;letter-spacing:.02em">'
+                    + "<br>".join(l for l in shot_poem.strip().split("\n") if l.strip())
+                    + '</div></div>'
+                )
+            else:
+                poem_block = ""
         card_inner = (
             f'<div style="padding:24px 28px">'
             f'<div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d} · {title}</div>'
