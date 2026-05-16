@@ -857,7 +857,7 @@ def send_email_advanced(to_email, deceased_name, pages_url, edit_url=""):
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
-        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · MEMORIAL</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
         '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고문이 완성되었습니다</p>'
         '</div>'
@@ -902,7 +902,7 @@ def send_email_edit_complete(to_email, deceased_name, pages_url, edit_url=""):
     html_body = (
         '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
         '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
-        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · ADVANCED</p>'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">HUMANDOCU · MEMORIAL</p>'
         f'<h2 style="font-weight:300;letter-spacing:3px;font-size:22px;margin-bottom:6px">故 {deceased_name}</h2>'
         '<p style="font-size:12px;opacity:0.45;letter-spacing:2px">부고문이 수정되었습니다</p>'
         '</div>'
@@ -1370,7 +1370,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '</div>'
         '<div class="adv-banner">'
         '<div class="adv-eyebrow">HUMANDOCU</div>'
-        '<div class="adv-title">어드밴스드 · 프리미엄 부고</div>'
+        '<div class="adv-title">메모리얼</div>'
         '<div class="adv-desc">고인의 사진, 동영상과 함께<br>더 깊고 따뜻한 추모의 공간을 마련합니다</div>'
         '<div class="adv-tags"><span class="adv-tag">온라인 추모관</span><span class="adv-tag">디지털 방명록</span><span class="adv-tag">휴먼 아카이브</span></div>'
         '</div>'
@@ -2206,6 +2206,7 @@ def webhook_sixshot():
                     "shot_images": images_str,
                     "poems": poems,
                     "is_public": is_public,
+                    "type": "sixshot",
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
@@ -3064,7 +3065,7 @@ def payment_advanced_page():
         return redirect(f"/payment/advanced?pending_id={pending_id}")
 
     amount = "29000"
-    label  = "어드밴스드 부고 페이지"
+    label  = "메모리얼 페이지"
     name   = ""
 
     html = f"""<!DOCTYPE html>
@@ -3409,7 +3410,7 @@ def webhook_advanced_edit_form():
 </head>
 <body>
 <div class="card">
-  <div class="hdr"><small>HUMANDOCU · ADVANCED</small><h1>故 {dn}</h1></div>
+  <div class="hdr"><small>HUMANDOCU · MEMORIAL</small><h1>故 {dn}</h1></div>
   <div class="body">
     <div class="icon">✅</div>
     <p>수정 내용을 처리 중입니다.<br>완료되면 이메일로 알려드립니다.</p>
@@ -3562,13 +3563,13 @@ def _damnyejang_auth_html(name, error):
 <body>
 <div class="card">
   <div class="header">
-    <div class="header-sub">HUMANDOCU · 어드밴스드</div>
+    <div class="header-sub">HUMANDOCU · MEMORIAL</div>
     <div class="header-title">답례장 신청</div>
   </div>
   <div class="body">
     {error_block}
     <div class="desc">
-      어드밴스드 부고 완성 이메일에 포함된<br>
+      메모리얼 완성 이메일에 포함된<br>
       <strong>6자리 비밀번호</strong>를 입력해주세요.
     </div>
     <form method="POST" action="/damnyejang/auth">
