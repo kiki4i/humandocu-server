@@ -4855,23 +4855,36 @@ def firebase_delete_sixshot(doc_id):
         return False
 
 
-def send_email_delete_code(to_email: str, code: str):
-    """투*필 삭제 인증코드 이메일 발송"""
+def send_email_delete_code(to_email: str, code: str, doc_id: str):
+    """투*필 삭제 인증코드 + 바로 삭제 링크 이메일 발송"""
     try:
+        delete_link = (
+            f"https://humandocu-server-production.up.railway.app"
+            f"/api/delete-confirm/{doc_id}?code={code}"
+        )
         html_body = (
             f"<div style='font-family:\"Noto Sans KR\",sans-serif;max-width:480px;margin:0 auto;"
-            f"padding:32px 24px;background:#fff;color:#1a1208'>"
-            f"<p style='font-size:15px;margin:0 0 20px'>투*필 삭제를 위한 인증코드입니다.</p>"
+            f"padding:32px 24px;background:#fff;color:#1a1208;line-height:1.8'>"
+            f"<p style='font-size:15px;margin:0 0 8px'>안녕하세요.</p>"
+            f"<p style='font-size:15px;margin:0 0 24px'>투.필 삭제 요청이 접수되었습니다.</p>"
+            f"<p style='font-size:14px;margin:0 0 8px;color:#6b5a3a'>인증코드</p>"
             f"<div style='font-size:36px;font-weight:700;letter-spacing:.2em;text-align:center;"
-            f"padding:24px;background:#f5f2eb;border-radius:8px;margin:0 0 20px'>{code}</div>"
-            f"<p style='font-size:13px;color:#6b5a3a;margin:0'>이 코드는 10분 후 만료됩니다.<br>"
-            f"본인이 요청하지 않은 경우 무시하세요.</p></div>"
+            f"padding:24px;background:#f5f2eb;border-radius:8px;margin:0 0 24px'>{code}</div>"
+            f"<p style='font-size:14px;margin:0 0 12px;color:#6b5a3a'>"
+            f"또는 아래 링크를 눌러 바로 삭제하세요 (10분 내):</p>"
+            f"<a href='{delete_link}' style='display:block;padding:14px;background:#c0392b;"
+            f"color:#fff;text-align:center;border-radius:6px;text-decoration:none;"
+            f"font-size:14px;font-weight:700;margin-bottom:24px'>바로 삭제하기</a>"
+            f"<p style='font-size:12px;color:#aaa;margin:0'>"
+            f"요청하지 않으셨다면 이 이메일을 무시해주세요.</p>"
+            f"<p style='font-size:12px;color:#aaa;margin:8px 0 0'>휴먼다큐</p>"
+            f"</div>"
         )
         requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
             json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-                  "subject": "투.필 삭제 인증코드", "html": html_body},
+                  "subject": "[투.필] 삭제 인증코드", "html": html_body},
             timeout=10,
         )
         print(f"[DELETE_CODE] 인증코드 발송 완료: {to_email}")
@@ -4919,35 +4932,83 @@ def api_delete_request(doc_id):
         "expires_at": expires_at,
         "doc_id": doc_id,
     })
-    send_email_delete_code(email, code)
+    send_email_delete_code(email, code, doc_id)
     return jsonify({"status": "sent"})
 
 
-@app.route("/api/delete-confirm/<doc_id>", methods=["POST", "OPTIONS"])
+def _delete_confirm_logic(doc_id: str, code: str):
+    """코드 검증 + 삭제 공통 로직. 성공 시 True, 실패 시 오류 메시지 반환."""
+    ref = _get_db().collection("delete_codes").document(doc_id)
+    snap = ref.get()
+    if not snap.exists:
+        return "코드가 올바르지 않거나 만료되었습니다."
+    stored = snap.to_dict()
+    if stored.get("code") != code:
+        return "코드가 올바르지 않거나 만료되었습니다."
+    if datetime.now(timezone.utc) > stored["expires_at"]:
+        ref.delete()
+        return "코드가 올바르지 않거나 만료되었습니다."
+    ok = firebase_delete_sixshot(doc_id)
+    ref.delete()
+    if not ok:
+        return "삭제에 실패했습니다. 다시 시도해주세요."
+    delete_github_sixshot(doc_id)
+    return True
+
+
+def _delete_confirm_html(success: bool, message: str = "") -> str:
+    if success:
+        title = "삭제되었습니다"
+        body  = "투*필 페이지가 삭제되었습니다."
+        color = "#2ecc71"
+        redirect = "<script>setTimeout(function(){window.location.href='https://humandocu.com';},3000);</script>"
+    else:
+        title = "오류"
+        body  = message
+        color = "#e74c3c"
+        redirect = ""
+    return (
+        f"<!DOCTYPE html><html lang='ko'><head><meta charset='UTF-8'>"
+        f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        f"<title>{title}</title>"
+        f"<style>body{{margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;"
+        f"display:flex;align-items:center;justify-content:center;min-height:100vh}}"
+        f".box{{max-width:380px;width:90%;background:#fff;border-radius:12px;padding:40px 32px;"
+        f"text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.08)}}"
+        f"h1{{font-size:22px;color:{color};margin:0 0 16px}}"
+        f"p{{font-size:14px;color:#6b5a3a;margin:0 0 8px;line-height:1.7}}"
+        f"small{{font-size:12px;color:#aaa}}"
+        f"</style></head><body><div class='box'>"
+        f"<h1>{title}</h1><p>{body}</p>"
+        f"{'<small>3초 후 humandocu.com으로 이동합니다.</small>' if success else ''}"
+        f"</div>{redirect}</body></html>"
+    )
+
+
+@app.route("/api/delete-confirm/<doc_id>", methods=["GET", "POST", "OPTIONS"])
 def api_delete_confirm(doc_id):
-    """인증코드 확인 후 투*필 삭제"""
+    """인증코드 확인 후 투*필 삭제 (GET: 링크 클릭, POST: 모달 입력)"""
     if request.method == "OPTIONS":
         return "", 204
+
+    if request.method == "GET":
+        code = request.args.get("code", "").strip()
+        if not code:
+            return _delete_confirm_html(False, "코드가 올바르지 않거나 만료되었습니다."), 400, {"Content-Type": "text/html; charset=utf-8"}
+        result = _delete_confirm_logic(doc_id, code)
+        if result is True:
+            return _delete_confirm_html(True), 200, {"Content-Type": "text/html; charset=utf-8"}
+        return _delete_confirm_html(False, result), 400, {"Content-Type": "text/html; charset=utf-8"}
+
+    # POST
     body = request.get_json(silent=True) or {}
     code = str(body.get("code", "")).strip()
     if not code:
         return jsonify({"status": "error", "message": "코드를 입력해주세요."}), 400
-    ref = _get_db().collection("delete_codes").document(doc_id)
-    snap = ref.get()
-    if not snap.exists:
-        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
-    stored = snap.to_dict()
-    if stored.get("code") != code:
-        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
-    if datetime.now(timezone.utc) > stored["expires_at"]:
-        ref.delete()
-        return jsonify({"status": "error", "message": "코드가 올바르지 않거나 만료되었습니다."}), 400
-    ok = firebase_delete_sixshot(doc_id)
-    ref.delete()
-    if not ok:
-        return jsonify({"status": "error", "message": "삭제 실패"}), 500
-    delete_github_sixshot(doc_id)
-    return jsonify({"status": "deleted"})
+    result = _delete_confirm_logic(doc_id, code)
+    if result is True:
+        return jsonify({"status": "deleted"})
+    return jsonify({"status": "error", "message": result}), 400
 
 
 @app.route("/sixshot/<doc_id>/delete-confirm", methods=["GET"])
