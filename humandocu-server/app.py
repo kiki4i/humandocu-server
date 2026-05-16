@@ -2133,6 +2133,23 @@ def webhook_sixshot():
         except Exception as e:
             import traceback; logger.warning(f"[SIXSHOT] shots 파싱 오류: {e}\n{traceback.format_exc()}")
 
+        # Positional fallback: label 매칭 실패 시 FILE_UPLOAD 순서대로 shot_images 보완
+        try:
+            _file_uploads = []
+            for f in payload["data"]["fields"]:
+                if f.get("type") == "FILE_UPLOAD":
+                    val = f.get("value", "")
+                    url = ""
+                    if isinstance(val, list) and val:
+                        url = val[0].get("url", "") if isinstance(val[0], dict) else ""
+                    _file_uploads.append(url)
+            for i, url in enumerate(_file_uploads[:6], 1):
+                if url and i not in shot_images:
+                    shot_images[i] = url
+                    logger.warning(f"[SIXSHOT] positional fallback shot_images[{i}] applied")
+        except Exception as e:
+            import traceback; logger.warning(f"[SIXSHOT] positional fallback 오류: {e}\n{traceback.format_exc()}")
+
         identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
         last_to    = fields.get("대상", "") or fields.get("도슨이", "")
         last_msg   = fields.get("메세지", "") or fields.get("메시지", "")
@@ -2693,7 +2710,7 @@ Who I am: {identity}{last_msg_text}
 Six scenes of a life:
 {shots_text}
 
-Please write the following:
+Please write the following. Use the EXACT bracket tags shown — they are structural markers, do NOT translate or rename them:
 
 1. [대표] — A poem that runs through the entirety of this person's life. 3-4 lines. The kind that makes you stop.
    The identity, the scenes, the parting words — let them dissolve into each other naturally.
@@ -2702,9 +2719,10 @@ Please write the following:
 
 3. [하이쿠] — A haiku (5-7-5 syllables) distilling this life. Maximum emotion. No humor.
 
-4. [SHOT별 시] — A 3-line poem for each photo you see. Capture the light, temperature, and feeling of that moment. Skip missing shots.
+4. For each submitted SHOT write a 3-line poem under its own tag [SHOT1], [SHOT2], [SHOT3], [SHOT4], [SHOT5], [SHOT6].
+   Capture the light, temperature, and feeling of that moment. Skip shots marked (not submitted).
 
-Output format (exactly this format):
+Output format — use EXACTLY these tags, no variations:
 {OUTPUT_FORMAT}"""
     else:
         shot_titles = shot_titles_ko
