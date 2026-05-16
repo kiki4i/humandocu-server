@@ -2618,7 +2618,11 @@ Output format (exactly this format):
         messages=[{"role": "user", "content": content}]
     )
     if lang == "en":
-        create_kwargs["system"] = "You are a poet. Write all poem content in English. The structural bracket tags ([대표], [대표2], [하이쿠], [SHOT1] through [SHOT6]) must appear exactly as written — do NOT translate or replace them."
+        create_kwargs["system"] = "You are a poet. Write all poem content in English. The structural bracket tags ([대표], [대표2], [하이쿠감성], [하이쿠유머], [SHOT1감성] through [SHOT6유머]) must appear exactly as written — do NOT translate or replace them."
+    elif lang == "ja":
+        create_kwargs["system"] = "あなたは詩人です。詩の内容はすべて日本語で書いてください。構造タグ（[대표]、[대표2]、[하이쿠감성]、[하이쿠유머]、[SHOT1감성]〜[SHOT6유머]）は正確にこの通りに出力してください — 翻訳や変更は禁止です。"
+    elif lang == "zh":
+        create_kwargs["system"] = "你是一位诗人。请用中文写所有诗歌内容。结构标签（[대표]、[대표2]、[하이쿠감성]、[하이쿠유머]、[SHOT1감성]至[SHOT6유머]）必须严格按原样输出 — 禁止翻译或替换。"
     message = client.messages.create(**create_kwargs)
     return message.content[0].text
 
