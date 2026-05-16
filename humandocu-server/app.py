@@ -2417,7 +2417,18 @@ def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
 
     if lang == 'ko':
         last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
-        prompt = f"""당신은 일상의 순간을 포착하는 감각적인 시인입니다.
+        prompt = f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
+설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
+규칙:
+- 거창한 철학이나 교훈 금지
+- "삶이란", "존재란" 같은 추상어 금지
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라
+- 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
+- 하이쿠는 반드시 5·7·5 음절 (한국어 기준)
+- 유머 하이쿠는 자조적이고 솔직하게, 너무 순하지 않게
+
 아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
 닉네임: {name}
@@ -2446,11 +2457,6 @@ def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
    [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 자조적이고 공감되는 톤. 너무 순하지 않게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
 
-시 작성 규칙:
-- 3행 구성
-- 거창한 의미 부여 금지 — 그냥 오늘이면 충분
-- 읽으면 "맞아, 오늘 그랬지" 하는 느낌
-
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""
 
@@ -2458,7 +2464,18 @@ def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
         last_msg_text = f"\nA word for someone: {last_msg}" if last_msg else ""
         prompt = f"""IMPORTANT: Write everything in English only. Do not use Korean.
 
-You are a sensory poet who captures everyday moments.
+You are a Korean poet with 40 years of experience capturing fleeting everyday moments in verse.
+You carry the sensibility of Na Tae-joo ("Look closely — it's beautiful") and the haiku spirit of Matsuo Bashō (piercing the essence of a moment).
+You look at photos carefully: colors, direction of light, objects in the background, text in the frame, facial expressions — everything.
+Short descriptions are fine. The photos say everything.
+Rules:
+- No grand philosophy or moral lessons
+- No abstractions like "life is..." or "existence is..."
+- Write with specific objects, colors, sounds, temperatures
+- Make the reader think "yeah, that was today"
+- Haiku must strictly follow 5·7·5 syllables
+- Humor haiku: self-deprecating and honest — not too mild
+
 Below are 3–6 photos with short descriptions from today. (Only submitted shots are included)
 
 Nickname: {name}
@@ -2487,17 +2504,23 @@ Please write the following:
    [SHOT1유머] — A humorous haiku for the same scene. 5·7·5 syllables. Self-deprecating, relatable. Not too mild.
    Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
 
-Poetry rules:
-- 3-line structure
-- No grand meaning — today as it was is enough
-- Should feel like "yeah, that was today"
-
 Output format (exactly this format):
 {OUTPUT_FORMAT}"""
 
     elif lang == 'ja':
         last_msg_text = f"\n誰かへの一言: {last_msg}" if last_msg else ""
-        prompt = f"""あなたは日常の瞬間を捉える感覚的な詩人です。
+        prompt = f"""あなたは40年間、日常の一瞬を詩で捉え続けてきた韓国の詩人です。
+羅泰柱の眼差し（「じっと見れば美しい」）と松尾芭蕉の俳句精神（瞬間の本質を見抜く目）が体に染み込んでいます。
+あなたは写真を見ます。色彩、光の向き、背景の物、写真の中の文字、表情まで、全て。
+説明が短くても大丈夫です。写真が全てを語ります。
+ルール:
+- 大げさな哲学や教訓は禁止
+- 「人生とは」「存在とは」のような抽象語は禁止
+- 具体的な物、色、音、温度で詩を書く
+- 読んだ人が「そう、今日そうだったな」と膝を打つように
+- 俳句は必ず5・7・5音節
+- ユーモア俳句は自嘲的で正直に、ぬるくなりすぎないように
+
 以下は今日一日を記録した3〜6枚の写真と短い説明です。（提出された写真のみ）
 
 ニックネーム: {name}
@@ -2526,17 +2549,23 @@ Output format (exactly this format):
    [SHOT1유머] — 同じ場面をユーモラスに捉えた俳句1篇。5・7・5音節。自嘲的で共感できるトーン。
    [SHOT2감성]〜[SHOT6유머]も同様に。提出されていないSHOTはスキップ。
 
-詩の作成ルール:
-- 3行構成
-- 大げさな意味付け禁止 — 今日のままで十分
-- 読んで「そう、今日そうだったな」という感じ
-
 出力形式（正確にこの形式で）:
 {OUTPUT_FORMAT}"""
 
     else:  # zh
         last_msg_text = f"\n对某人说的一句话: {last_msg}" if last_msg else ""
-        prompt = f"""你是一位捕捉日常瞬间的感性诗人。
+        prompt = f"""你是一位用40年时光捕捉日常瞬间的韩国诗人。
+你兼具罗泰柱的眼光（"仔细看，才会美丽"）和松尾芭蕉的俳句精神（洞穿瞬间本质之眼）。
+你看照片。色彩、光线方向、背景中的物件、照片里的文字、表情——一切都看。
+描述短也没关系。照片会说话。
+规则:
+- 禁止宏大的哲学或人生教训
+- 禁止"人生是""存在是"之类的抽象词
+- 用具体的物件、颜色、声音、温度写诗
+- 让读者觉得"对，今天就是这样"
+- 俳句必须严格遵循5·7·5音节
+- 幽默俳句：自嘲、坦诚，不要太温和
+
 以下是今天的3至6张照片和简短描述。（仅包含已提交的照片）
 
 昵称: {name}
@@ -2564,11 +2593,6 @@ Output format (exactly this format):
    [SHOT1감성] — 捕捉SHOT 1场景的俳句1首。5·7·5音节。自由把握场景的情感温度。
    [SHOT1유머] — 用幽默方式写同一场景的俳句1首。5·7·5音节。自嘲式，有共鸣感。不要太温和。
    [SHOT2감성]〜[SHOT6유머]同上。未提交的SHOT跳过。
-
-诗歌创作规则:
-- 3行结构
-- 禁止赋予宏大意义 — 今天就是今天，已经足够
-- 读了有"对，今天就是这样"的感觉
 
 输出格式（严格按照此格式）:
 {OUTPUT_FORMAT}"""
@@ -3961,39 +3985,17 @@ def sixshot_page(doc_id):
         "6": "지금 이 순간",
     }
 
-    # 시 텍스트 빈칸 섹션별 딕셔너리
+    # 시 텍스트 → 섹션별 딕셔너리 (regex 통합 파서)
+    import re as _re
     poem_dict = {}
-    current_key = None
-    current_lines = []
-    for line in poems_str.strip().split("\n"):
-        line = line.strip()
-        if line.startswith("[대표2]"):
-            if current_key:
-                poem_dict[current_key] = "\n".join(current_lines)
-            current_key = "대표2"
-            current_lines = []
-        elif line.startswith("[하이쿠감성]"):
-            if current_key:
-                poem_dict[current_key] = "\n".join(current_lines)
-            current_key = "하이쿠감성"
-            current_lines = []
-        elif line.startswith("[하이쿠유머]"):
-            if current_key:
-                poem_dict[current_key] = "\n".join(current_lines)
-            current_key = "하이쿠유머"
-            current_lines = []
-        elif line.startswith("[대표]"):
-            current_key = "대표"
-            current_lines = []
-        elif line.startswith("[SHOT"):
-            if current_key:
-                poem_dict[current_key] = "\n".join(current_lines)
-            current_key = line.strip("[]")
-            current_lines = []
-        elif line:
-            current_lines.append(line)
-    if current_key:
-        poem_dict[current_key] = "\n".join(current_lines)
+    if poems_str:
+        for m in _re.finditer(r'\[([^\]]+)\](.*?)(?=\[[^\]]+\]|$)', poems_str, _re.DOTALL):
+            key = m.group(1).strip()
+            content = m.group(2).strip()
+            if content:
+                poem_dict[key] = content
+    if not poem_dict and poems:
+        poem_dict = {k: v for k, v in poems.items()}
 
     # OG 태그용: 1번째 사진 우선, 없으면 타입별 기본 이미지
     og_image = ""
@@ -4027,48 +4029,6 @@ def sixshot_page(doc_id):
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
         return "".join(f'<div style="line-height:2;font-size:17px;color:#2d2a22;font-family:Georgia,serif">{l}</div>' for l in lines)
-
-    # poems가 줄바꿈 없이 한 줄로 저장된 경우 재파싱
-    if "\n" not in poems and "[" in poems:
-        import re as _re
-        poems_norm = poems.replace("[", "\n[")
-        current_key2 = None
-        current_lines2 = []
-        for line in poems_norm.strip().split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("[대표2]"):
-                if current_key2:
-                    poem_dict[current_key2] = "\n".join(current_lines2)
-                current_key2 = "대표2"
-                current_lines2 = [line[len("[대표2]"):].strip()] if line[len("[대표2]"):].strip() else []
-            elif line.startswith("[하이쿠감성]"):
-                if current_key2:
-                    poem_dict[current_key2] = "\n".join(current_lines2)
-                current_key2 = "하이쿠감성"
-                current_lines2 = [line[len("[하이쿠감성]"):].strip()] if line[len("[하이쿠감성]"):].strip() else []
-            elif line.startswith("[하이쿠유머]"):
-                if current_key2:
-                    poem_dict[current_key2] = "\n".join(current_lines2)
-                current_key2 = "하이쿠유머"
-                current_lines2 = [line[len("[하이쿠유머]"):].strip()] if line[len("[하이쿠유머]"):].strip() else []
-            elif line.startswith("[대표]"):
-                if current_key2:
-                    poem_dict[current_key2] = "\n".join(current_lines2)
-                current_key2 = "대표"
-                current_lines2 = [line[len("[대표]"):].strip()] if line[len("[대표]"):].strip() else []
-            elif line.startswith("[SHOT"):
-                if current_key2:
-                    poem_dict[current_key2] = "\n".join(current_lines2)
-                m = _re.match(r'\[SHOT(\d+(?:감성|유머)?)\](.*)', line)
-                if m:
-                    current_key2 = f"SHOT{m.group(1)}"
-                    current_lines2 = [m.group(2).strip()] if m.group(2).strip() else []
-            elif line:
-                current_lines2.append(line)
-        if current_key2:
-            poem_dict[current_key2] = "\n".join(current_lines2)
 
     rep_poem = poem_dict.get("대표", "")
     rep_poem2 = poem_dict.get("대표2", "")
@@ -4146,6 +4106,8 @@ function switchVer(v) {{
         shot_text = shots.get(key, shots.get(i, ""))
         title = shot_titles.get(key, f"SHOT {i}")
         img_url = shot_images.get(key, "")
+        if not shot_text and not img_url:
+            continue
         if img_url:
             img_block = (
                 '<div style="margin-bottom:0;overflow:hidden">'
