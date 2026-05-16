@@ -2167,15 +2167,18 @@ def webhook_sixshot():
         is_public_text = fields.get("이 식스샷을 공개할까요? (공개 — 다른 사람들도 내 이야기를 볼 수 있어요)", "")
         is_public = (is_public_text.lower() == "true" or "공개" in is_public_raw)
 
+        detect_source = (identity or '') + ' ' + ' '.join(str(v) for v in shots.values() if v)
+        lang = _detect_lang(detect_source)
+
         print(f"[SIXSHOT] shots: {shots}")
         print(f"[SIXSHOT] shot_images: { {k: v[:60]+'...' for k,v in shot_images.items()} }")
-        print(f"[SIXSHOT] identity: {identity}")
+        print(f"[SIXSHOT] identity: {identity}, lang: {lang}")
 
         import threading, uuid
         def process():
             try:
                 doc_id = uuid.uuid4().hex[:12]
-                poems = generate_sixshot_haiku(nickname, shots, identity, last_msg, shot_images)
+                poems = generate_sixshot_haiku(nickname, shots, identity, last_msg, shot_images, lang)
                 print(f"[SIXSHOT] 시 생성 완료")
 
                 # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
@@ -2207,6 +2210,7 @@ def webhook_sixshot():
                     "poems": poems,
                     "is_public": is_public,
                     "type": "sixshot",
+                    "lang": lang,
                     "created_at": datetime.datetime.utcnow().isoformat(),
                 })
 
@@ -2628,9 +2632,54 @@ Output format (exactly this format):
     return message.content[0].text
 
 
-def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None):
-    """식스샷 데이터로 생애시 생성 (Vision 지원)"""
-    shot_titles = {
+def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None, lang="ko"):
+    """식스샷 데이터로 생애시 생성 (Vision 지원, 다국어)"""
+    OUTPUT_FORMAT = """[대표]
+(line 1)
+(line 2)
+(line 3)
+
+[대표2]
+(line 1)
+(line 2)
+(line 3)
+
+[하이쿠]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT1]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT2]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT3]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT4]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT5]
+(line 1)
+(line 2)
+(line 3)
+
+[SHOT6]
+(line 1)
+(line 2)
+(line 3)"""
+
+    shot_titles_ko = {
         1: "유년 · 소년기",
         2: "학창시절",
         3: "청년기 · 삶의 절정",
@@ -2638,15 +2687,60 @@ def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None):
         5: "그냥 좋았던 날",
         6: "화양연화",
     }
+    shot_titles_en = {
+        1: "Childhood · Youth",
+        2: "School Years",
+        3: "Prime of Life",
+        4: "What I Loved Most",
+        5: "A Good Ordinary Day",
+        6: "The Golden Years",
+    }
 
-    shots_text = "\n".join([
-        f"SHOT {i} ({shot_titles.get(i, '')}) : {shots.get(i, '(없음)')}"
-        for i in range(1, 7)
-    ])
+    if lang == "en":
+        shot_titles = shot_titles_en
+        shots_text = "\n".join([
+            f"SHOT {i} ({shot_titles.get(i, '')}) : {shots.get(i, shots.get(str(i), '(not submitted)'))}"
+            for i in range(1, 7)
+        ])
+        last_msg_text = f"\nA parting word for someone: {last_msg}" if last_msg else ""
+        prompt = f"""IMPORTANT: Write everything in English only.
 
-    last_msg_text = f"\n누군가에게 남기는 한 줄: {last_msg}" if last_msg else ""
+You are a poet who has spent a lifetime recording human lives in verse.
+When you sit before the photographs of someone's life, you take a breath.
+You read the colors, the direction of light, the objects in the background, the text in the photos, the expressions, the wrinkles, the fingertips.
+Short descriptions are fine. The photos say everything.
+These poems may one day remain on this person's memorial page.
+So write each line with dignity, so that the whole of their life is held within it.
+No grand philosophy. Capture a life through specific objects, colors, temperatures, smells.
+Make the reader feel close to tears — and nod, thinking: "Yes, that was them."
 
-    prompt = f"""당신은 평생 인간의 생애를 시로 기록해온 시인입니다.
+Name: {name}
+Who I am: {identity}{last_msg_text}
+
+Six scenes of a life:
+{shots_text}
+
+Please write the following:
+
+1. [대표] — A poem that runs through the entirety of this person's life. 3-4 lines. The kind that makes you stop.
+   The identity, the scenes, the parting words — let them dissolve into each other naturally.
+
+2. [대표2] — The same life, in plain and quiet prose. 3 lines. No flourish, just depth.
+
+3. [하이쿠] — A haiku (5-7-5 syllables) distilling this life. Maximum emotion. No humor.
+
+4. [SHOT별 시] — A 3-line poem for each photo you see. Capture the light, temperature, and feeling of that moment. Skip missing shots.
+
+Output format (exactly this format):
+{OUTPUT_FORMAT}"""
+    else:
+        shot_titles = shot_titles_ko
+        shots_text = "\n".join([
+            f"SHOT {i} ({shot_titles.get(i, '')}) : {shots.get(i, shots.get(str(i), '(없음)'))}"
+            for i in range(1, 7)
+        ])
+        last_msg_text = f"\n누군가에게 남기는 한 줄: {last_msg}" if last_msg else ""
+        prompt = f"""당신은 평생 인간의 생애를 시로 기록해온 시인입니다.
 한 사람의 인생 사진 앞에 앉을 때, 당신은 숨을 고릅니다.
 색깔, 빛의 방향, 배경의 사물, 사진 속 글자, 표정, 주름, 손끝까지 읽습니다.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
@@ -2675,50 +2769,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None):
    제출되지 않은 SHOT은 건너뜀.
 
 출력 형식 (정확히 이 형식으로):
-[대표]
-(1행)
-(2행)
-(3행)
-
-[대표2]
-(1행)
-(2행)
-(3행)
-
-[하이쿠]
-(1행)
-(2행)
-(3행)
-
-[SHOT1]
-(1행)
-(2행)
-(3행)
-
-[SHOT2]
-(1행)
-(2행)
-(3행)
-
-[SHOT3]
-(1행)
-(2행)
-(3행)
-
-[SHOT4]
-(1행)
-(2행)
-(3행)
-
-[SHOT5]
-(1행)
-(2행)
-(3행)
-
-[SHOT6]
-(1행)
-(2행)
-(3행)"""
+{OUTPUT_FORMAT}"""
 
     content = []
     if shot_images:
@@ -2740,11 +2791,14 @@ def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None):
     content.append({"type": "text", "text": prompt})
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
-    message = client.messages.create(
+    create_kwargs = dict(
         model="claude-sonnet-4-5",
         max_tokens=4000,
         messages=[{"role": "user", "content": content}]
     )
+    if lang == "en":
+        create_kwargs["system"] = "You are a poet. Always respond in English only. Never use Korean or any other language."
+    message = client.messages.create(**create_kwargs)
     return message.content[0].text
 
 
@@ -3903,17 +3957,42 @@ def sixshot_page(doc_id):
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
     lang        = data.get("lang", "ko")
-    is_en       = (lang == "en" and page_type == "today")
+    is_en       = (lang == "en")
 
     # 타입/언어별 UI 레이블
     if is_en:
-        poem_section_title  = "✦ A poem capturing today"
-        scene_section_title = "Today's Six Shot"
-        haiku_intro_label   = "A haiku capturing today in 5 · 7 · 5 syllables"
+        if page_type == "today":
+            poem_section_title  = "✦ A poem capturing today"
+            scene_section_title = "Today's Six Shot"
+            haiku_intro_label   = "A haiku capturing today in 5 · 7 · 5 syllables"
+            haiku_single_label  = "— Haiku —"
+            hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+            hero_tagline        = f"{nickname}'s Today Filmography"
+            share_tagline       = "Record every day.<br>Collect them — that's you."
+            cta_tag             = "HUMANDOCU · TODAY FILMOGRAPHY"
+            cta_title           = "Your today<br>can be a poem too"
+            cta_sub             = "6 photos + one line · Free · Result by email"
+            cta_btn             = "Create My Filmography →"
+            nav_today_lbl       = "📽️ Browse Other Filmographies"
+            delete_confirm_msg  = "Delete this Today Filmography? This cannot be undone."
+            page_title_str      = f"Today Filmography · {display_name}"
+        else:
+            poem_section_title  = "✦ A poem capturing your life"
+            scene_section_title = "My Six Shot"
+            haiku_intro_label   = "A haiku distilling a life in 5 · 7 · 5 syllables"
+            haiku_single_label  = "— Haiku —"
+            hero_sub_label      = "HUMANDOCU · SIX SHOT"
+            hero_tagline        = f"{nickname}'s Life Six Shot"
+            share_tagline       = "Your life story, in six photos."
+            cta_tag             = "HUMANDOCU · SIX SHOT"
+            cta_title           = "Your life<br>can be a poem too"
+            cta_sub             = "6 photos + short stories · AI writes your memorial poem"
+            cta_btn             = "Create My Six Shot →"
+            nav_today_lbl       = "📽️ Browse Today Filmographies"
+            delete_confirm_msg  = "Delete this Six Shot? This cannot be undone."
+            page_title_str      = f"Life Six Shot · {display_name}"
         haiku_s_label       = "🌸 Haiku · Emotional"
         haiku_h_label       = "😂 Haiku · Humorous"
-        hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
-        hero_tagline        = f"{nickname}'s Today Filmography"
         ver1_title          = "Version 1"
         ver1_sub            = "Poetic · Metaphorical"
         ver2_title          = "Version 2"
@@ -3925,23 +4004,15 @@ def sixshot_page(doc_id):
         pause_label         = "⏸ Pause"
         link_section_label  = "My Filmography Link"
         copy_link_label     = "🔗 Copy Link"
-        share_tagline       = "Record every day.<br>Collect them — that's you."
         my_link_btn_label   = "📬 Get My Records Link"
         my_link_sending     = "Sending..."
         my_link_sent        = "✓ Email Sent"
         my_link_sent_msg    = f"{mask_email(email)} — check your inbox."
         my_link_error_pfx   = "Error: "
-        cta_tag             = "HUMANDOCU · TODAY FILMOGRAPHY"
-        cta_title           = "Your today<br>can be a poem too"
-        cta_sub             = "6 photos + one line · Free · Result by email"
-        cta_btn             = "Create My Filmography →"
-        nav_today_lbl       = "📽️ Browse Other Filmographies"
         nav_sixshot_lbl     = "🎞️ Life Six Shot"
         nav_home_lbl        = "🏠 Back to humandocu.com"
         footer_text         = "Made with Humandocu · humandocu.com"
         delete_label        = "🗑 Delete"
-        delete_confirm_msg  = "Delete this Today Filmography? This cannot be undone."
-        page_title_str      = f"Today Filmography · {display_name}"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -3949,6 +4020,7 @@ def sixshot_page(doc_id):
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
         haiku_intro_label   = "5 · 7 · 5 음절로 오늘을 포착한 시"
+        haiku_single_label  = "— 하이쿠 · 俳句 —"
         haiku_s_label       = "🌸 하이쿠 · 감성"
         haiku_h_label       = "😂 하이쿠 · 유머"
         hero_sub_label      = "HUMANDOCU · 필모그래피"
@@ -4084,7 +4156,7 @@ def sixshot_page(doc_id):
         haiku_block_html = (
             '<div style="margin-bottom:32px">'
             '<div style="background:#faf7f2;border-radius:4px;padding:20px 24px">'
-            '<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:12px;text-align:center">— 하이쿠 · 俳句 —</div>'
+            f'<div style="font-size:11px;color:#9e8250;letter-spacing:.12em;margin-bottom:12px;text-align:center">{haiku_single_label}</div>'
             f'<div style="font-family:Georgia,serif;font-size:17px;color:#2d2a22;line-height:2;text-align:center">{haiku_lines_html(haiku_single)}</div>'
             '</div>'
             '</div>'
