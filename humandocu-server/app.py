@@ -4009,15 +4009,18 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ Life Six Shot"
         nav_home_lbl        = "🏠 Back to humandocu.com"
         footer_text         = "Made with Humandocu · humandocu.com"
-        delete_label        = "🗑 Delete"
-        delete_modal_title  = "Verify to delete"
-        delete_modal_sent   = "A 4-digit code has been sent to your email."
-        delete_sending      = "Sending code..."
-        delete_code_ph      = "Enter 4-digit code"
-        delete_code_btn     = "Confirm"
-        delete_cancel_btn   = "Cancel"
-        delete_success_msg  = "Deleted."
-        delete_error_msg    = "Code is invalid or expired."
+        delete_label         = "🗑 Delete"
+        delete_sending       = "Sending verification email..."
+        delete_cancel_btn    = "Cancel"
+        delete_sent_title    = "✉️ Verification email sent"
+        delete_sent_sub      = "Check your registered email."
+        delete_method1_title = "Option 1 — Delete directly from email"
+        delete_method1_desc  = 'Tap &ldquo;Delete now&rdquo; in the email —<br>no need to return to this page.'
+        delete_method2_title = "Option 2 — Enter code here"
+        delete_code_btn      = "Confirm"
+        delete_success_msg   = "Deleted."
+        delete_done_sub      = "Redirecting to humandocu.com..."
+        delete_error_msg     = "Code is invalid or expired."
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -4059,15 +4062,18 @@ def sixshot_page(doc_id):
         nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
         delete_label        = "🗑 삭제하기"
-        delete_confirm_msg  = "이 투·필을 삭제하시겠어요? 복구할 수 없습니다."
-        delete_modal_title  = "삭제 인증"
-        delete_modal_sent   = "등록된 이메일로 4자리 인증코드를 발송했습니다."
-        delete_sending      = "인증코드 발송 중..."
-        delete_code_ph      = "인증코드 4자리"
-        delete_code_btn     = "확인"
-        delete_cancel_btn   = "취소"
-        delete_success_msg  = "삭제되었습니다."
-        delete_error_msg    = "코드가 올바르지 않거나 만료되었습니다."
+        delete_confirm_msg   = "이 투·필을 삭제하시겠어요? 복구할 수 없습니다."
+        delete_sending       = "인증 이메일 발송 중..."
+        delete_cancel_btn    = "취소"
+        delete_sent_title    = "✉️ 인증 이메일을 발송했습니다"
+        delete_sent_sub      = "등록된 이메일에서 확인해주세요."
+        delete_method1_title = "방법 1 — 이메일에서 바로 삭제"
+        delete_method1_desc  = '이메일의 &ldquo;바로 삭제하기&rdquo; 버튼을 누르시면<br>이 페이지로 돌아오지 않아도 바로 삭제됩니다.'
+        delete_method2_title = "방법 2 — 여기서 코드 입력"
+        delete_code_btn      = "확인"
+        delete_success_msg   = "삭제되었습니다."
+        delete_done_sub      = "humandocu.com으로 이동합니다..."
+        delete_error_msg     = "코드가 올바르지 않거나 만료되었습니다."
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4521,19 +4527,45 @@ function switchVer(v) {{
   </div>
 
   <!-- 삭제 인증 모달 -->
-  <div id="del-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:32px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.18)">
-      <h3 style="margin:0 0 12px;font-size:16px;color:#1a1208;font-weight:600">{delete_modal_title}</h3>
-      <p id="del-msg" style="font-size:13px;color:#6b5a3a;margin:0 0 18px;line-height:1.7"></p>
-      <input id="del-code" type="text" inputmode="numeric" maxlength="4" placeholder="{delete_code_ph}"
-             style="display:none;width:100%;padding:12px;border:1px solid #e0d4b8;border-radius:6px;font-size:20px;text-align:center;box-sizing:border-box;margin-bottom:14px;font-family:inherit;letter-spacing:.18em">
-      <div id="del-btns" style="display:none">
-        <button onclick="confirmDelete()" style="width:100%;padding:12px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:inherit">{delete_code_btn}</button>
-        <button onclick="closeDelModal()" style="width:100%;padding:12px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
-      </div>
-      <div id="del-cancel-only" style="display:none;margin-top:12px">
+  <div id="del-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+    <div style="background:#fff;border-radius:14px;padding:28px 22px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+
+      <!-- 발송 중 -->
+      <div id="del-sending" style="text-align:center">
+        <p style="font-size:15px;color:#6b5a3a;margin:0 0 22px;line-height:1.7">{delete_sending}</p>
         <button onclick="closeDelModal()" style="padding:10px 28px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
       </div>
+
+      <!-- 발송 완료 -->
+      <div id="del-sent" style="display:none">
+        <p style="font-size:18px;font-weight:700;color:#1a1208;margin:0 0 4px;text-align:center">{delete_sent_title}</p>
+        <p style="font-size:13px;color:#9e8250;margin:0 0 20px;text-align:center">{delete_sent_sub}</p>
+
+        <div style="background:#fdf8f0;border:1.5px solid #e8c97a;border-radius:10px;padding:16px 18px;margin-bottom:14px">
+          <p style="font-size:13px;font-weight:700;color:#b8860b;margin:0 0 8px">{delete_method1_title}</p>
+          <p style="font-size:13px;color:#6b5a3a;margin:0;line-height:1.75">{delete_method1_desc}</p>
+        </div>
+
+        <div style="border:1px solid #e0d4b8;border-radius:10px;padding:16px 18px;margin-bottom:16px">
+          <p style="font-size:13px;font-weight:600;color:#4a3f2f;margin:0 0 12px">{delete_method2_title}</p>
+          <input id="del-code" type="text" inputmode="numeric" maxlength="4" placeholder="_ _ _ _"
+                 style="width:100%;padding:14px;border:1.5px solid #e0d4b8;border-radius:8px;font-size:26px;text-align:center;box-sizing:border-box;margin-bottom:10px;font-family:inherit;letter-spacing:.3em;color:#1a1208">
+          <button onclick="confirmDelete()" style="width:100%;padding:13px;background:#1a1208;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em">{delete_code_btn}</button>
+        </div>
+
+        <p id="del-err" style="display:none;font-size:13px;color:#c0392b;text-align:center;margin:0 0 14px;line-height:1.6"></p>
+
+        <div style="text-align:center">
+          <button onclick="closeDelModal()" style="padding:10px 28px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
+        </div>
+      </div>
+
+      <!-- 삭제 완료 -->
+      <div id="del-done" style="display:none;text-align:center;padding:8px 0">
+        <p style="font-size:24px;font-weight:700;color:#1a1208;margin:0 0 10px">{delete_success_msg}</p>
+        <p style="font-size:13px;color:#9e8250;margin:0">{delete_done_sub}</p>
+      </div>
+
     </div>
   </div>
 
@@ -4613,19 +4645,16 @@ function copyPageUrl(){{
 function openDelModal(){{
   var modal = document.getElementById('del-modal');
   modal.style.display = 'flex';
-  document.getElementById('del-msg').textContent = {json.dumps(delete_sending, ensure_ascii=False)};
-  document.getElementById('del-code').style.display = 'none';
-  document.getElementById('del-btns').style.display = 'none';
-  document.getElementById('del-cancel-only').style.display = 'block';
+  document.getElementById('del-sending').style.display = 'block';
+  document.getElementById('del-sent').style.display = 'none';
+  document.getElementById('del-done').style.display = 'none';
   fetch('/api/delete-request/{doc_id}', {{method:'POST'}})
     .then(function(r){{return r.json();}})
-    .then(function(d){{
-      document.getElementById('del-msg').textContent = {json.dumps(delete_modal_sent, ensure_ascii=False)};
-      document.getElementById('del-code').style.display = '';
-      document.getElementById('del-btns').style.display = '';
-      document.getElementById('del-cancel-only').style.display = 'none';
+    .then(function(){{
+      document.getElementById('del-sending').style.display = 'none';
+      document.getElementById('del-sent').style.display = 'block';
       document.getElementById('del-code').value = '';
-      document.getElementById('del-code').focus();
+      document.getElementById('del-err').style.display = 'none';
     }})
     .catch(function(){{
       modal.style.display = 'none';
@@ -4639,7 +4668,7 @@ function closeDelModal(){{
 
 function confirmDelete(){{
   var code = document.getElementById('del-code').value.replace(/[^0-9]/g,'').trim();
-  if(!code)return;
+  if(code.length !== 4) return;
   fetch('/api/delete-confirm/{doc_id}', {{
     method:'POST',
     headers:{{'Content-Type':'application/json'}},
@@ -4648,17 +4677,19 @@ function confirmDelete(){{
   .then(function(r){{return r.json();}})
   .then(function(d){{
     if(d.status==='deleted'){{
-      document.getElementById('del-msg').textContent = {json.dumps(delete_success_msg, ensure_ascii=False)};
-      document.getElementById('del-code').style.display = 'none';
-      document.getElementById('del-btns').style.display = 'none';
-      document.getElementById('del-cancel-only').style.display = 'none';
+      document.getElementById('del-sent').style.display = 'none';
+      document.getElementById('del-done').style.display = 'block';
       setTimeout(function(){{window.location.href='https://humandocu.com';}},2000);
     }}else{{
-      document.getElementById('del-msg').textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+      var err = document.getElementById('del-err');
+      err.textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+      err.style.display = 'block';
     }}
   }})
   .catch(function(){{
-    document.getElementById('del-msg').textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+    var err = document.getElementById('del-err');
+    err.textContent = {json.dumps(delete_error_msg, ensure_ascii=False)};
+    err.style.display = 'block';
   }});
 }}
 </script>
