@@ -2104,9 +2104,9 @@ def webhook_sixshot():
         shots = {}        # {1: "설명텍스트", ...}
         shot_images = {}  # {1: "https://tally.so/...", ...}
         shot_labels = [
-            "사진01 · 유년 · 소년기",
-            "사진02 · 학창시절",
-            "사진03 · 청년기 — 삶의 절정",
+            "사진01 · 예 : 유년 · 소년기",
+            "사진02 · 예 : 학창시절",
+            "사진03 · 예 : 청년기 — 삶의 절정",
             "사진04 · 내가 가장 사랑하는 것",
             "사진05 · 그냥 좋았던 날",
             "사진06 · 화양연화 — 나의 베스트 인생샷",
@@ -2169,7 +2169,7 @@ def webhook_sixshot():
             try:
                 doc_id = uuid.uuid4().hex[:12]
                 poems = generate_sixshot_haiku(nickname, shots, identity, last_msg, shot_images, lang)
-                logger.info("[SIXSHOT RAW] " + str(poems))
+                logger.warning("[SIXSHOT RAW] " + str(poems)[:500])
                 print(f"[SIXSHOT] 시 생성 완료")
 
                 # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
@@ -4081,7 +4081,7 @@ def sixshot_page(doc_id):
                 poem_dict[key] = content
     if not poem_dict and poems:
         poem_dict = {k: v for k, v in poems.items()}
-    logger.info("[SIXSHOT DICT] " + str(poem_dict))
+    logger.warning("[SIXSHOT DICT] " + str(poem_dict)[:500])
 
     # OG 태그용: 1번째 사진 우선, 없으면 타입별 기본 이미지
     og_image = ""
