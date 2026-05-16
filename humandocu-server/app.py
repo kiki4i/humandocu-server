@@ -2617,7 +2617,7 @@ Output format (exactly this format):
         messages=[{"role": "user", "content": content}]
     )
     if lang == "en":
-        create_kwargs["system"] = "You are a poet. Always respond in English only. Never use Korean or any other language."
+        create_kwargs["system"] = "You are a poet. Write all poem content in English. The structural bracket tags ([대표], [대표2], [하이쿠], [SHOT1] through [SHOT6]) must appear exactly as written — do NOT translate or replace them."
     message = client.messages.create(**create_kwargs)
     return message.content[0].text
 
@@ -2693,9 +2693,7 @@ def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None, la
             for i in range(1, 7)
         ])
         last_msg_text = f"\nA parting word for someone: {last_msg}" if last_msg else ""
-        prompt = f"""IMPORTANT: Write everything in English only.
-
-You are a poet who has spent a lifetime recording human lives in verse.
+        prompt = f"""You are a poet who has spent a lifetime recording human lives in verse.
 When you sit before the photographs of someone's life, you take a breath.
 You read the colors, the direction of light, the objects in the background, the text in the photos, the expressions, the wrinkles, the fingertips.
 Short descriptions are fine. The photos say everything.
@@ -2710,7 +2708,10 @@ Who I am: {identity}{last_msg_text}
 Six scenes of a life:
 {shots_text}
 
-Please write the following. Use the EXACT bracket tags shown — they are structural markers, do NOT translate or rename them:
+Write the following sections in English. The bracket tags are structural markers — output them EXACTLY as shown below. Do NOT translate the bracket tags into English.
+
+Output tags must be exactly: [대표], [대표2], [하이쿠], [SHOT1]~[SHOT6]
+Do NOT translate these tags into English. Use Korean bracket tags exactly as shown.
 
 1. [대표] — A poem that runs through the entirety of this person's life. 3-4 lines. The kind that makes you stop.
    The identity, the scenes, the parting words — let them dissolve into each other naturally.
@@ -2719,10 +2720,10 @@ Please write the following. Use the EXACT bracket tags shown — they are struct
 
 3. [하이쿠] — A haiku (5-7-5 syllables) distilling this life. Maximum emotion. No humor.
 
-4. For each submitted SHOT write a 3-line poem under its own tag [SHOT1], [SHOT2], [SHOT3], [SHOT4], [SHOT5], [SHOT6].
+4. For each submitted SHOT write a 3-line poem under its own tag: [SHOT1], [SHOT2], [SHOT3], [SHOT4], [SHOT5], [SHOT6].
    Capture the light, temperature, and feeling of that moment. Skip shots marked (not submitted).
 
-Output format — use EXACTLY these tags, no variations:
+Output format — copy these tags verbatim, write poem content in English:
 {OUTPUT_FORMAT}"""
     else:
         shot_titles = shot_titles_ko
@@ -2788,7 +2789,7 @@ Output format — use EXACTLY these tags, no variations:
         messages=[{"role": "user", "content": content}]
     )
     if lang == "en":
-        create_kwargs["system"] = "You are a poet. Always respond in English only. Never use Korean or any other language."
+        create_kwargs["system"] = "You are a poet. Write all poem content in English. The structural bracket tags ([대표], [대표2], [하이쿠], [SHOT1] through [SHOT6]) must appear exactly as written — do NOT translate or replace them."
     message = client.messages.create(**create_kwargs)
     return message.content[0].text
 
