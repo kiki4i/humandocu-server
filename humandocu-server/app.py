@@ -2595,7 +2595,7 @@ Output format (exactly this format):
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     create_kwargs = dict(
         model="claude-sonnet-4-5",
-        max_tokens=1800,
+        max_tokens=4000,
         messages=[{"role": "user", "content": content}]
     )
     if lang == "en":
