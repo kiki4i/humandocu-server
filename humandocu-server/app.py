@@ -2302,7 +2302,7 @@ def webhook_today():
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 detect_source = (today_one or '') + ' '.join(str(v) for v in shots.values() if v)
                 lang = _detect_lang(detect_source)
-                poems = generate_today_haiku(nickname, shots, today_one, last_msg)
+                poems = generate_today_haiku(nickname, shots, today_one, last_msg, shot_images)
                 logger.warning(f"[TODAY] 시 생성 완료 lang={lang}")
 
                 import datetime
@@ -2352,7 +2352,7 @@ def _detect_lang(text):
     return 'zh' if has_cjk_unified else 'en'
 
 
-def generate_today_haiku(name, shots, today_one, last_msg):
+def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
         f"SHOT {i} : {shots.get(i, '(없음)')}"
@@ -2573,11 +2573,30 @@ Output format (exactly this format):
 输出格式（严格按照此格式）:
 {OUTPUT_FORMAT}"""
 
+    content = []
+    if shot_images:
+        for idx in sorted(shot_images.keys()):
+            url = shot_images[idx]
+            try:
+                resp = requests.get(url, timeout=10)
+                resp.raise_for_status()
+                mime = resp.headers.get("Content-Type", "image/jpeg").split(";")[0].strip()
+                if mime not in ("image/jpeg", "image/png", "image/gif", "image/webp"):
+                    mime = "image/jpeg"
+                b64 = base64.standard_b64encode(resp.content).decode("utf-8")
+                content.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mime, "data": b64},
+                })
+            except Exception as e:
+                logger.warning(f"[TODAY] 이미지 fetch 실패 (SHOT {idx}): {e}")
+    content.append({"type": "text", "text": prompt})
+
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
     create_kwargs = dict(
-        model="claude-opus-4-5",
+        model="claude-sonnet-4-5",
         max_tokens=1800,
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": content}]
     )
     if lang == "en":
         create_kwargs["system"] = "You are a poet. Always respond in English only. Never use Korean or any other language."
