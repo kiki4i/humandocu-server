@@ -4886,39 +4886,56 @@ def firebase_delete_sixshot(doc_id):
         return False
 
 
-def send_email_delete_code(to_email: str, code: str, doc_id: str):
-    """투*필 삭제 인증코드 + 바로 삭제 링크 이메일 발송"""
+def send_email_delete_code(to_email: str, code: str, doc_id: str, lang: str = "ko"):
+    """투*필 삭제 인증코드 + 바로 삭제 링크 이메일 발송 (한/영 분기)"""
     try:
+        is_en = (lang == "en")
         delete_link = (
             f"https://humandocu-server-production.up.railway.app"
             f"/api/delete-confirm/{doc_id}?code={code}"
         )
+        if is_en:
+            subject     = "[To.Fil] Deletion Verification Code"
+            greeting    = "Hello."
+            desc        = "Your filmography deletion request has been received."
+            code_label  = "Your verification code"
+            link_label  = "Or click the button below to delete immediately (within 10 minutes):"
+            btn_label   = "Delete Now"
+            ignore_note = "If you didn't request this, please ignore this email."
+            brand       = "Humandocu"
+        else:
+            subject     = "[투.필] 삭제 인증코드"
+            greeting    = "안녕하세요."
+            desc        = "투.필 삭제 요청이 접수되었습니다."
+            code_label  = "인증코드"
+            link_label  = "또는 아래 링크를 눌러 바로 삭제하세요 (10분 내):"
+            btn_label   = "바로 삭제하기"
+            ignore_note = "요청하지 않으셨다면 이 이메일을 무시해주세요."
+            brand       = "휴먼다큐"
         html_body = (
             f"<div style='font-family:\"Noto Sans KR\",sans-serif;max-width:480px;margin:0 auto;"
             f"padding:32px 24px;background:#fff;color:#1a1208;line-height:1.8'>"
-            f"<p style='font-size:15px;margin:0 0 8px'>안녕하세요.</p>"
-            f"<p style='font-size:15px;margin:0 0 24px'>투.필 삭제 요청이 접수되었습니다.</p>"
-            f"<p style='font-size:14px;margin:0 0 8px;color:#6b5a3a'>인증코드</p>"
+            f"<p style='font-size:15px;margin:0 0 8px'>{greeting}</p>"
+            f"<p style='font-size:15px;margin:0 0 24px'>{desc}</p>"
+            f"<p style='font-size:14px;margin:0 0 8px;color:#6b5a3a'>{code_label}</p>"
             f"<div style='font-size:36px;font-weight:700;letter-spacing:.2em;text-align:center;"
             f"padding:24px;background:#f5f2eb;border-radius:8px;margin:0 0 24px'>{code}</div>"
-            f"<p style='font-size:14px;margin:0 0 12px;color:#6b5a3a'>"
-            f"또는 아래 링크를 눌러 바로 삭제하세요 (10분 내):</p>"
+            f"<p style='font-size:14px;margin:0 0 12px;color:#6b5a3a'>{link_label}</p>"
             f"<a href='{delete_link}' style='display:block;padding:14px;background:#c0392b;"
             f"color:#fff;text-align:center;border-radius:6px;text-decoration:none;"
-            f"font-size:14px;font-weight:700;margin-bottom:24px'>바로 삭제하기</a>"
-            f"<p style='font-size:12px;color:#aaa;margin:0'>"
-            f"요청하지 않으셨다면 이 이메일을 무시해주세요.</p>"
-            f"<p style='font-size:12px;color:#aaa;margin:8px 0 0'>휴먼다큐</p>"
+            f"font-size:14px;font-weight:700;margin-bottom:24px'>{btn_label}</a>"
+            f"<p style='font-size:12px;color:#aaa;margin:0'>{ignore_note}</p>"
+            f"<p style='font-size:12px;color:#aaa;margin:8px 0 0'>{brand}</p>"
             f"</div>"
         )
         requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
             json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": [to_email],
-                  "subject": "[투.필] 삭제 인증코드", "html": html_body},
+                  "subject": subject, "html": html_body},
             timeout=10,
         )
-        print(f"[DELETE_CODE] 인증코드 발송 완료: {to_email}")
+        print(f"[DELETE_CODE] 인증코드 발송 완료: {to_email} lang={lang}")
     except Exception as e:
         print(f"[DELETE_CODE] 발송 오류: {e}")
 
@@ -4956,14 +4973,16 @@ def api_delete_request(doc_id):
     email = data.get("email", "")
     if not email:
         return jsonify({"status": "error", "message": "no email"}), 400
+    lang = data.get("lang", "ko")
     code = str(secrets.randbelow(10000)).zfill(4)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     _get_db().collection("delete_codes").document(doc_id).set({
         "code": code,
         "expires_at": expires_at,
         "doc_id": doc_id,
+        "lang": lang,
     })
-    send_email_delete_code(email, code, doc_id)
+    send_email_delete_code(email, code, doc_id, lang=lang)
     return jsonify({"status": "sent"})
 
 
@@ -4987,19 +5006,23 @@ def _delete_confirm_logic(doc_id: str, code: str):
     return True
 
 
-def _delete_confirm_html(success: bool, message: str = "") -> str:
+def _delete_confirm_html(success: bool, message: str = "", lang: str = "ko") -> str:
+    is_en = (lang == "en")
     if success:
-        title = "삭제되었습니다"
-        body  = "투*필 페이지가 삭제되었습니다."
-        color = "#2ecc71"
-        redirect = "<script>setTimeout(function(){window.location.href='https://humandocu.com';},3000);</script>"
+        title        = "Deleted." if is_en else "삭제되었습니다"
+        body         = "Your filmography has been deleted." if is_en else "투*필 페이지가 삭제되었습니다."
+        redirect_sub = "Redirecting to humandocu.com..." if is_en else "3초 후 humandocu.com으로 이동합니다."
+        color        = "#2ecc71"
+        redirect     = "<script>setTimeout(function(){window.location.href='https://humandocu.com';},3000);</script>"
     else:
-        title = "오류"
-        body  = message
-        color = "#e74c3c"
-        redirect = ""
+        title        = "Error" if is_en else "오류"
+        body         = message
+        redirect_sub = ""
+        color        = "#e74c3c"
+        redirect     = ""
+    html_lang = "en" if is_en else "ko"
     return (
-        f"<!DOCTYPE html><html lang='ko'><head><meta charset='UTF-8'>"
+        f"<!DOCTYPE html><html lang='{html_lang}'><head><meta charset='UTF-8'>"
         f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
         f"<title>{title}</title>"
         f"<style>body{{margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif;"
@@ -5011,7 +5034,7 @@ def _delete_confirm_html(success: bool, message: str = "") -> str:
         f"small{{font-size:12px;color:#aaa}}"
         f"</style></head><body><div class='box'>"
         f"<h1>{title}</h1><p>{body}</p>"
-        f"{'<small>3초 후 humandocu.com으로 이동합니다.</small>' if success else ''}"
+        f"{f'<small>{redirect_sub}</small>' if success else ''}"
         f"</div>{redirect}</body></html>"
     )
 
@@ -5024,12 +5047,17 @@ def api_delete_confirm(doc_id):
 
     if request.method == "GET":
         code = request.args.get("code", "").strip()
+        # lang은 delete_codes 문서에서 읽음 (sixshot 삭제 전에 확인 가능)
+        code_snap = _get_db().collection("delete_codes").document(doc_id).get()
+        lang = (code_snap.to_dict() or {}).get("lang", "ko") if code_snap.exists else "ko"
+        is_en = (lang == "en")
+        err_invalid = "Invalid or expired code." if is_en else "코드가 올바르지 않거나 만료되었습니다."
         if not code:
-            return _delete_confirm_html(False, "코드가 올바르지 않거나 만료되었습니다."), 400, {"Content-Type": "text/html; charset=utf-8"}
+            return _delete_confirm_html(False, err_invalid, lang=lang), 400, {"Content-Type": "text/html; charset=utf-8"}
         result = _delete_confirm_logic(doc_id, code)
         if result is True:
-            return _delete_confirm_html(True), 200, {"Content-Type": "text/html; charset=utf-8"}
-        return _delete_confirm_html(False, result), 400, {"Content-Type": "text/html; charset=utf-8"}
+            return _delete_confirm_html(True, lang=lang), 200, {"Content-Type": "text/html; charset=utf-8"}
+        return _delete_confirm_html(False, err_invalid, lang=lang), 400, {"Content-Type": "text/html; charset=utf-8"}
 
     # POST
     body = request.get_json(silent=True) or {}
