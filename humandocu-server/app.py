@@ -2101,26 +2101,6 @@ def webhook_sixshot():
         if not name or not email:
             return jsonify({"error": "이름/이메일 없음"}), 400
 
-        shot1 = fields.get("사진 설명 (단답형, 30자 이내)", "")
-        # Tally에서 같은 라벨이 반복되면 마지막 값만 남으므로 인덱스로 추출
-        all_fields = []
-        try:
-            for f in payload["data"]["fields"]:
-                lbl = f.get("label")
-                if lbl is not None: lbl = lbl.strip()
-                val = f.get("value", "")
-                ftype = f.get("type", "")
-                if ftype == "FILE_UPLOAD":
-                    if isinstance(val, list) and val:
-                        val = val[0].get("url", "") if isinstance(val[0], dict) else ""
-                    else:
-                        val = ""
-                elif isinstance(val, list):
-                    val = val[0] if val else ""
-                all_fields.append((lbl, str(val).strip() if val else ""))
-        except Exception as e:
-            print(f"[SIXSHOT] all_fields 파싱 오류: {e}")
-
         shots = {}        # {1: "설명텍스트", ...}
         shot_images = {}  # {1: "https://tally.so/...", ...}
         shot_labels = [
@@ -2131,7 +2111,7 @@ def webhook_sixshot():
             "사진05 · 그냥 좋았던 날",
             "사진06 · 화양연화 — 나의 베스트 인생샷",
         ]
-        # all_fields 재구성: FILE_UPLOAD URL도 별도로 추출
+        desc_labels = {"사진 설명 (단답형, 30자 이내)", "사진 설명"}
         shot_idx = 0
         try:
             for f in payload["data"]["fields"]:
@@ -2140,25 +2120,18 @@ def webhook_sixshot():
                 val = f.get("value", "")
                 ftype = f.get("type", "")
                 if lbl in shot_labels:
-                    idx = shot_labels.index(lbl) + 1
-                    shot_idx = idx
-                    # FILE_UPLOAD 빈칸 URL 추출
+                    shot_idx = shot_labels.index(lbl) + 1
                     if ftype == "FILE_UPLOAD" and isinstance(val, list) and val:
                         img_url = val[0].get("url", "") if isinstance(val[0], dict) else ""
                         if img_url:
-                            shot_images[idx] = img_url
-                elif lbl is None and shot_idx > 0:
-                    # label=null 바로 다음 텍스트 필드 = 사진 설명
-                    text = ""
-                    if isinstance(val, list):
-                        text = val[0] if val else ""
-                    elif isinstance(val, str):
-                        text = val
+                            shot_images[shot_idx] = img_url
+                elif (lbl in desc_labels or lbl is None) and shot_idx > 0:
+                    text = val[0] if isinstance(val, list) else val
                     if text:
                         shots[shot_idx] = str(text).strip()
                     shot_idx = 0
         except Exception as e:
-            print(f"[SIXSHOT] shots 파싱 오류: {e}")
+            import traceback; logger.warning(f"[SIXSHOT] shots 파싱 오류: {e}\n{traceback.format_exc()}")
 
         identity   = fields.get("나는 이런 사람입니다 (단답형, 필수)", "")
         last_to    = fields.get("대상", "") or fields.get("도슨이", "")
