@@ -2169,6 +2169,7 @@ def webhook_sixshot():
             try:
                 doc_id = uuid.uuid4().hex[:12]
                 poems = generate_sixshot_haiku(nickname, shots, identity, last_msg, shot_images, lang)
+                logger.info("[SIXSHOT RAW] " + str(poems))
                 print(f"[SIXSHOT] 시 생성 완료")
 
                 # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
@@ -4080,6 +4081,7 @@ def sixshot_page(doc_id):
                 poem_dict[key] = content
     if not poem_dict and poems:
         poem_dict = {k: v for k, v in poems.items()}
+    logger.info("[SIXSHOT DICT] " + str(poem_dict))
 
     # OG 태그용: 1번째 사진 우선, 없으면 타입별 기본 이미지
     og_image = ""
