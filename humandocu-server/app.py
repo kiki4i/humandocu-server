@@ -4182,6 +4182,7 @@ def sixshot_page(doc_id):
     rep_poem = poem_dict.get("대표", "")
     rep_poem2 = poem_dict.get("대표2", "")
     logger.warning(f"[SIXSHOT REP] doc={doc_id} type={page_type} rep={repr(rep_poem[:80])} rep2={repr(rep_poem2[:40])}")
+    logger.warning("[REP DEBUG] rep=%r rep2=%r" % (rep_poem[:50] if rep_poem else None, rep_poem2[:50] if rep_poem2 else None))
     haiku_s = poem_dict.get("하이쿠감성", "")
     haiku_h = poem_dict.get("하이쿠유머", "")
     haiku_single = poem_dict.get("하이쿠", "")  # sixshot 전용
