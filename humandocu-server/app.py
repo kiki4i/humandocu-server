@@ -2419,7 +2419,10 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 [SHOT6감성]
 (하이쿠)
 [SHOT6유머]
-(하이쿠)"""
+(하이쿠)
+
+[이모지]
+(이모지 5개, 한 줄)"""
 
     if lang == 'ko':
         last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
@@ -2465,6 +2468,14 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
    [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
    [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 진짜 웃긴 거. 날것의 현실 자조. 너무 시적으로 포장하지 말 것.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
+   - ☀️😊🌙✨ 같은 뻔한 것 금지
+   - 이 사람만의 오늘이 느껴지게
+   - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
+   - 이모지만 5개, 설명 없이, 한 줄로
+   예: 😮‍💨💼🍱🚇🫠
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""
@@ -2515,6 +2526,14 @@ Please write the following:
    [SHOT1감성] — A haiku for SHOT 1. 5·7·5 syllables. Read the emotional temperature of the scene freely.
    [SHOT1유머] — A humorous haiku for the same scene. 5·7·5 syllables. Actually funny, raw self-deprecation. Don't over-poeticize.
    Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
+
+6. [이모지] - 5 emojis that best capture this person's day.
+   Rules:
+   - No generic ones (☀️😊🌙✨)
+   - Must feel specific to THIS person's today
+   - Consider nickname, photos, feelings, and summary together
+   - Just 5 emojis, no explanation, one line
+   Example: 😮‍💨💼🍱🚇🫠
 
 Output format (exactly this format):
 {OUTPUT_FORMAT}"""
@@ -4142,12 +4161,14 @@ def sixshot_page(doc_id):
     except:
         pass
 
+    today_emojis = poem_dict.get("이모지", "").strip()
+
     if is_en:
         og_title = f"{nickname or name}'s Today Filmography · Humandocu"
-        og_desc  = "AI captured today in 6 photos and a poem."
+        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
     elif page_type == "today":
         og_title = f"{nickname or name}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
-        og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
+        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
     else:
         og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
         og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
@@ -4443,6 +4464,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
+    {"<div style='margin-top:16px;font-size:32px;letter-spacing:4px;text-align:center'>" + today_emojis + "</div>" if today_emojis and page_type == "today" else ""}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
