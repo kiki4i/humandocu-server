@@ -4224,7 +4224,8 @@ def sixshot_page(doc_id):
     ver_toggle_html = ""
     ver_script = ""
     if rep_poem2:
-        rep_poem2_escaped = poem_html(rep_poem2).replace("'", "\\'").replace('"', '&quot;')
+        import json as _json
+        rep_poem2_json = _json.dumps(poem_html(rep_poem2), ensure_ascii=False)
         ver_toggle_html = f'''<div style="margin-top:16px">
   <div style="display:flex;gap:10px">
     <button onclick="switchVer(1)" id="ver1-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#C8870A;color:#fff;cursor:pointer;text-align:center;">
@@ -4240,7 +4241,7 @@ def sixshot_page(doc_id):
         ver_script = f"""
 <script>
 var _ver1 = document.getElementById('rep-poem-box').innerHTML;
-var _ver2 = '{rep_poem2_escaped}';
+var _ver2 = {rep_poem2_json};
 function switchVer(v) {{
   var box = document.getElementById('rep-poem-box');
   var b1 = document.getElementById('ver1-btn');
@@ -4463,7 +4464,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
-    {"<div style='margin-top:16px;font-size:32px;letter-spacing:4px;text-align:center'>" + today_emojis + "</div>" if today_emojis and page_type == "today" else ""}
+    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">AI가 읽은 오늘의 나 (이모지)</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
