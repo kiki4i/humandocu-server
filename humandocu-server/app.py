@@ -4737,6 +4737,29 @@ function confirmDelete(){{
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
+@app.route("/api/check-today", methods=["GET"])
+def check_today():
+    """today 타입 결과물 생성 완료 여부 폴링 — today-wait.html 에서 사용"""
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"status": "waiting"})
+    try:
+        from datetime import datetime, timezone, timedelta
+        window_start = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        db = _get_db()
+        docs = db.collection("sixshot")\
+            .where("type", "==", "today")\
+            .where("email", "==", email)\
+            .where("created_at", ">=", window_start)\
+            .order_by("created_at", direction="DESCENDING")\
+            .limit(1).get()
+        for doc in docs:
+            return jsonify({"status": "ready", "doc_id": doc.id})
+    except Exception as e:
+        logger.error(f"[CHECK-TODAY] error: {e}")
+    return jsonify({"status": "waiting"})
+
+
 @app.route("/api/next-today/<current_doc_id>", methods=["GET"])
 def next_today(current_doc_id):
     """현재 투*필 제외하고 공개된 투*필 중 랜덤 1개로 redirect"""
