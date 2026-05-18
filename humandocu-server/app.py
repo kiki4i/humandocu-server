@@ -2360,6 +2360,17 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
     lang = _detect_lang(detect_source)
     logger.warning(f"[LANG DEBUG] detect_source={detect_source[:100]!r} → lang={lang}")
 
+    import pytz
+    _kst = pytz.timezone('Asia/Seoul')
+    _now = datetime.now(_kst)
+    _weekdays_ko = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+    _weekdays_en = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    _ampm_ko = "오전" if _now.hour < 12 else "오후"
+    _h = _now.hour if _now.hour <= 12 else _now.hour - 12
+    if _h == 0: _h = 12
+    submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_weekdays_ko[_now.weekday()]} {_ampm_ko} {_h}시 {_now.minute:02d}분"
+    submit_time_en = f"{_weekdays_en[_now.weekday()]}, {_now.strftime('%B %-d, %Y')} {'AM' if _now.hour < 12 else 'PM'} {_h}:{_now.minute:02d}"
+
     OUTPUT_FORMAT = """[대표]
 (1행)
 (2행)
@@ -2412,7 +2423,9 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 
     if lang == 'ko':
         last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
-        prompt = f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+        prompt = f"""제출 시각: {submit_time_ko}
+
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
 당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
@@ -2458,7 +2471,9 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 
     elif lang == 'en':
         last_msg_text = f"\nA word for someone: {last_msg}" if last_msg else ""
-        prompt = f"""IMPORTANT: Write everything in English only. Do not use Korean.
+        prompt = f"""Submitted at: {submit_time_en} (KST)
+
+IMPORTANT: Write everything in English only. Do not use Korean.
 
 You are a Korean poet with 40 years of experience capturing fleeting everyday moments in verse.
 You carry the sensibility of Na Tae-joo ("Look closely — it's beautiful") and the haiku spirit of Matsuo Bashō (piercing the essence of a moment).
