@@ -2297,7 +2297,7 @@ def webhook_today():
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 detect_source = (today_one or '') + ' '.join(str(v) for v in shots.values() if v)
                 lang = _detect_lang(detect_source)
-                poems = generate_today_haiku(nickname, shots, today_one, last_msg, shot_images)
+                poems = generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images)
                 logger.warning(f"[TODAY] 시 생성 완료 lang={lang}")
 
                 import datetime
@@ -2347,7 +2347,7 @@ def _detect_lang(text):
     return 'zh' if has_cjk_unified else 'en'
 
 
-def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
+def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
         f"SHOT {i} : {shots.get(i, '(없음)')}"
@@ -2422,11 +2422,12 @@ def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
 - 구체적인 사물, 색깔, 소리, 온도로 시를 써라
 - 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
 - 하이쿠는 반드시 5·7·5 음절 (한국어 기준)
-- 유머 하이쿠는 자조적이고 솔직하게, 너무 순하지 않게
+- 유머 하이쿠는 진짜 웃긴 거. 공감되는 현실 자조. '맞아 나도 그래' 하고 피식 웃게. 너무 시적으로 포장하지 말고 날것으로. 예: '출근길에 / 오늘만 참자 했는데 / 내일도 출근'
 
+각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
 아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-닉네임: {name}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
 오늘 하루를 한 문장으로: {today_one}{last_msg_text}
 
 오늘의 장면들:
@@ -2449,7 +2450,7 @@ def generate_today_haiku(name, shots, today_one, last_msg, shot_images=None):
 
 5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
    [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
-   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 자조적이고 공감되는 톤. 너무 순하지 않게.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 진짜 웃긴 거. 날것의 현실 자조. 너무 시적으로 포장하지 말 것.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
 
 출력 형식 (정확히 이 형식으로):
@@ -2469,11 +2470,12 @@ Rules:
 - Write with specific objects, colors, sounds, temperatures
 - Make the reader think "yeah, that was today"
 - Haiku must strictly follow 5·7·5 syllables
-- Humor haiku: self-deprecating and honest — not too mild
+- Humor haiku: actually funny. Relatable real-life self-deprecation. The kind that makes you go "yeah, same" and smile. Don't over-poeticize — keep it raw. E.g., "On the commute / told myself just today / same again tomorrow"
 
+Each photo description is an honest, unfiltered thought from that moment. Capture the raw emotion as-is in the poem.
 Below are 3–6 photos with short descriptions from today. (Only submitted shots are included)
 
-Nickname: {name}
+Name: {name} / Today's nickname: {nickname} (weave the feeling and nuance of this nickname into the poem)
 Today in one sentence: {today_one}{last_msg_text}
 
 Today's scenes:
@@ -2496,7 +2498,7 @@ Please write the following:
 
 5. [SHOT별 하이쿠] - For each submitted SHOT, write two haiku.
    [SHOT1감성] — A haiku for SHOT 1. 5·7·5 syllables. Read the emotional temperature of the scene freely.
-   [SHOT1유머] — A humorous haiku for the same scene. 5·7·5 syllables. Self-deprecating, relatable. Not too mild.
+   [SHOT1유머] — A humorous haiku for the same scene. 5·7·5 syllables. Actually funny, raw self-deprecation. Don't over-poeticize.
    Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
 
 Output format (exactly this format):
