@@ -4515,7 +4515,7 @@ function switchVer(v) {{
   </div>
 
   <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:20px auto 0;">
-    <a href="https://humandocu.com/today.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+    <a href="/api/next-today/{doc_id}" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
       {nav_today_lbl}
     </a>
     <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
@@ -4696,6 +4696,26 @@ function confirmDelete(){{
 {ver_script}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+@app.route("/api/next-today/<current_doc_id>", methods=["GET"])
+def next_today(current_doc_id):
+    """현재 투*필 제외하고 공개된 투*필 중 랜덤 1개로 redirect"""
+    from flask import redirect
+    import random
+    try:
+        db = _get_db()
+        docs = db.collection("sixshot")\
+            .where("type", "==", "today")\
+            .where("is_public", "==", True)\
+            .limit(50).get()
+        candidates = [d.id for d in docs if d.id != current_doc_id]
+        if candidates:
+            chosen = random.choice(candidates)
+            return redirect(f"/sixshot/{chosen}")
+    except Exception as e:
+        logger.error(f"[NEXT-TODAY] error: {e}")
+    return redirect("https://humandocu.com/today.html")
+
 
 @app.route("/", methods=["GET"])
 def health():
