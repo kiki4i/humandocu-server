@@ -3819,9 +3819,10 @@ def my_send_link():
             return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
 
         db = _get_db()
-        # 해당 이름+이메일 조합이 sixshot에 존재하는지 확인
-        docs = db.collection("sixshot").where("name", "==", name).where("email", "==", email).limit(1).get()
-        if not docs:
+        # 해당 이메일이 sixshot 또는 today(투*필) 컬렉션에 존재하는지 확인
+        docs_six = db.collection("sixshot").where("email", "==", email).limit(1).get()
+        docs_today = db.collection("today").where("email", "==", email).limit(1).get()
+        if not docs_six and not docs_today:
             return jsonify({"ok": False, "error": "등록된 이메일이 없어요"}), 404
 
         # 토큰 생성 및 저장 (24시간 유효)
@@ -3884,14 +3885,31 @@ def my_filmography_verified(name):
         if verified_name != name:
             return "<h3 style='font-family:sans-serif;text-align:center;margin-top:80px'>잘못된 접근이에요</h3>", 403
 
-        # 본인 이메일 기준으로 모든 기록 조회 (비공개 포함)
-        docs = db.collection("sixshot").where("email", "==", verified_email).limit(100).get()
-        items = []
-        for doc in docs:
+        # 본인 이메일 기준으로 모든 기록 조회 (비공개 포함) — 투*필(today) + 식스샷(sixshot)
+        docs_today = db.collection("today").where("email", "==", verified_email).limit(100).get()
+        docs_six   = db.collection("sixshot").where("email", "==", verified_email).limit(100).get()
+        today_items = []
+        six_items   = []
+        for doc in docs_today:
             d = doc.to_dict() or {}
             imgs = d.get("shot_images", {})
             created = (d.get("created_at", "") or "")
-            items.append({
+            today_items.append({
+                "doc_id": doc.id,
+                "nickname": d.get("nickname", "") or name,
+                "identity": d.get("identity", ""),
+                "created_at": created,
+                "date_label": created[:10] if created else "",
+                "time_label": created[11:16] if len(created) > 15 else "",
+                "type": "today",
+                "is_public": d.get("is_public", False),
+                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
+            })
+        for doc in docs_six:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            created = (d.get("created_at", "") or "")
+            six_items.append({
                 "doc_id": doc.id,
                 "nickname": d.get("nickname", "") or name,
                 "identity": d.get("identity", ""),
@@ -3902,7 +3920,9 @@ def my_filmography_verified(name):
                 "is_public": d.get("is_public", False),
                 "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
             })
-        items.sort(key=lambda x: x["created_at"], reverse=True)
+        today_items.sort(key=lambda x: x["created_at"], reverse=True)
+        six_items.sort(key=lambda x: x["created_at"], reverse=True)
+        items = today_items + six_items
 
         cards_html = ""
         for item in items:
@@ -3914,8 +3934,11 @@ def my_filmography_verified(name):
                 f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
                 for url in item["imgs"][:3]
             ])
+            record_url = (f"https://humandocu-server-production.up.railway.app/today/{item['doc_id']}"
+                          if item["type"] == "today"
+                          else f"https://humandocu-server-production.up.railway.app/sixshot/{item['doc_id']}")
             cards_html += f"""
-<a href="https://humandocu-server-production.up.railway.app/sixshot/{item['doc_id']}"
+<a href="{record_url}"
    style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
     <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px">{type_label}</span>
@@ -4565,9 +4588,45 @@ function switchVer(v) {{
   </div>
 
   <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:20px auto 0;">
-    <a href="/api/next-today/{doc_id}" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+    <button id="btn-next-today" onclick="goNextToday()" style="display:block;width:100%;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;cursor:pointer;font-family:inherit;">
       {nav_today_lbl}
-    </a>
+    </button>
+    <script>
+    (function(){{
+      var SEEN_KEY = 'seen_today_ids';
+      var CUR_ID   = '{doc_id}';
+      function getSeen() {{
+        try {{ return JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]'); }} catch(e) {{ return []; }}
+      }}
+      function addSeen(id) {{
+        var seen = getSeen();
+        if (seen.indexOf(id) === -1) seen.push(id);
+        sessionStorage.setItem(SEEN_KEY, JSON.stringify(seen));
+      }}
+      addSeen(CUR_ID);
+      window.goNextToday = function() {{
+        var btn = document.getElementById('btn-next-today');
+        btn.disabled = true;
+        var seen = getSeen();
+        var url = '/api/sixshot/random?type=today' + seen.map(function(id){{ return '&exclude='+encodeURIComponent(id); }}).join('');
+        fetch(url)
+          .then(function(r){{ return r.json(); }})
+          .then(function(d){{
+            if (d.reset) {{
+              var msg = {json.dumps("모든 투*필을 다 보셨어요! 처음부터 다시 시작합니다." if not is_en else "You've seen all Today Filmographies! Starting over.")};
+              alert(msg);
+              sessionStorage.removeItem(SEEN_KEY);
+            }}
+            if (d.status === 'ok' && d.data && d.data.doc_id) {{
+              window.location.href = '/today/' + d.data.doc_id;
+            }} else {{
+              btn.disabled = false;
+            }}
+          }})
+          .catch(function(){{ btn.disabled = false; }});
+      }};
+    }})();
+    </script>
     <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
       {nav_sixshot_lbl}
     </a>
@@ -6578,28 +6637,27 @@ def debug_set_admin_password():
 
 @app.route("/api/sixshot/random", methods=["GET"])
 def sixshot_random():
-    """공개된 식스샷 중 1개 랜덤 반환. ?type=today|sixshot, ?exclude=doc_id 지원"""
+    """공개된 식스샷/투*필 중 1개 랜덤 반환.
+    ?type=today|sixshot, ?exclude=id1&exclude=id2 (복수 지원)"""
     try:
         import random
-        filter_type = request.args.get("type", "")
-        exclude_id  = request.args.get("exclude", "")
+        filter_type  = request.args.get("type", "")
+        exclude_ids  = set(request.args.getlist("exclude"))
         db = _get_db()
         from google.cloud.firestore_v1.base_query import FieldFilter
         if filter_type == "today":
-            raw_docs = db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()
+            raw_docs = db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(200).get()
         elif filter_type == "sixshot":
-            raw_docs = db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()
+            raw_docs = db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(200).get()
         else:
             raw_docs = (
-                list(db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()) +
-                list(db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(50).get())
+                list(db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(200).get()) +
+                list(db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(200).get())
             )
-        items = []
+        all_items = []
         for doc in raw_docs:
-            if doc.id == exclude_id:
-                continue
             d = doc.to_dict() or {}
-            items.append({
+            all_items.append({
                 "doc_id": doc.id,
                 "name": d.get("nickname", "") or d.get("name", ""),
                 "identity": d.get("identity", ""),
@@ -6609,10 +6667,16 @@ def sixshot_random():
                 "type": d.get("type", filter_type or "sixshot"),
                 "created_at": d.get("created_at", ""),
             })
-        if not items:
+        candidates = [it for it in all_items if it["doc_id"] not in exclude_ids]
+        reset = False
+        if not candidates:
+            # 전부 봤으면 초기화 후 처음부터
+            candidates = all_items
+            reset = True
+        if not candidates:
             return jsonify({"status": "empty"}), 200
-        picked = random.choice(items)
-        return jsonify({"status": "ok", "data": picked}), 200
+        picked = random.choice(candidates)
+        return jsonify({"status": "ok", "data": picked, "reset": reset}), 200
     except Exception as e:
         print(f"[SIXSHOT_RANDOM] 오류: {e}")
         return jsonify({"status": "error"}), 500
