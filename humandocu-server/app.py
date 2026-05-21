@@ -3968,7 +3968,8 @@ nav{{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(249,246,240
 @app.route("/sixshot/<doc_id>", methods=["GET"])
 def sixshot_page(doc_id):
     """개인 식스샷 페이지 - Firebase에서 데이터 읽어 HTML 렌더링"""
-    data = firebase_get_sixshot(doc_id)
+    from flask import g as _g
+    data = getattr(_g, "_doc_data_override", None) or firebase_get_sixshot(doc_id)
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
 
@@ -4736,6 +4737,18 @@ function confirmDelete(){{
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
+
+@app.route("/today/<doc_id>", methods=["GET"])
+def today_page(doc_id):
+    """today 컬렉션 조회 후 sixshot_page 렌더러 재사용"""
+    from flask import g as _g
+    data = firebase_get_today(doc_id)
+    if data is None:
+        return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
+    _g._doc_data_override = data
+    return sixshot_page(doc_id)
+
+
 @app.route("/api/check-today", methods=["GET"])
 def check_today():
     """today 타입 결과물 생성 완료 여부 폴링 — today-wait.html 에서 사용"""
@@ -4982,6 +4995,18 @@ def firebase_get_sixshot(doc_id):
         return None
     except Exception as e:
         print(f"[SIXSHOT-FB] 조회 오류: {e}")
+        return None
+
+
+def firebase_get_today(doc_id):
+    """today 컬렉션 문서 조회"""
+    try:
+        doc = _get_db().collection("today").document(doc_id).get()
+        if doc.exists:
+            return doc.to_dict() or {}
+        return None
+    except Exception as e:
+        print(f"[TODAY-FB] 조회 오류: {e}")
         return None
 
 
