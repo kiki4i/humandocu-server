@@ -37,6 +37,14 @@ def add_cors_headers(response):
 def guestbook_preflight(doc_id=None):
     return "", 204
 
+@app.route("/api/today/submit-b64", methods=["OPTIONS"])
+@app.route("/api/today/submit-url", methods=["OPTIONS"])
+@app.route("/api/today/submit", methods=["OPTIONS"])
+@app.route("/api/today/profile", methods=["OPTIONS"])
+@app.route("/api/check-today", methods=["OPTIONS"])
+def today_preflight():
+    return "", 204
+
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO    = "kiki4i/humandocu"
