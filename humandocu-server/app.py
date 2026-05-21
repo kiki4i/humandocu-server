@@ -6881,6 +6881,7 @@ def today_submit():
             "poems": poems,
             "identity": identity,
             "overall": overall,
+            "lang": lang,
             "created_at": now,
         })
 
@@ -7101,6 +7102,7 @@ def today_submit_url():
             "today_sentence":  today_sentence,
             "last_to":         last_to,
             "last_msg":        last_msg,
+            "lang":            lang,
             "created_at":      now,
         })
 
@@ -7321,6 +7323,7 @@ def today_submit_b64():
             "today_sentence":  today_sentence,
             "last_to":         last_to,
             "last_msg":        last_msg,
+            "lang":            lang,
             "created_at":      now,
         })
 
