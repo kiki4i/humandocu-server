@@ -2455,6 +2455,8 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 오늘의 장면들:
 {shots_text}
 
+{lang_instruction}
+
 다음을 작성해주세요.
 
 1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
@@ -6695,7 +6697,7 @@ def today_submit():
         is_public = data.get("is_public", True)
         shots    = data.get("shots", [])  # [{image_b64, caption}, ...]
         lang     = (data.get("lang") or "ko").strip().lower()
-        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
+        lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
         if not name or not email or not shots:
             return jsonify({"ok": False, "error": "이름, 이메일, 사진을 모두 입력해주세요"}), 400
@@ -6817,6 +6819,8 @@ def today_submit():
 오늘의 장면들:
 {shots_text}
 
+{lang_instruction}
+
 다음을 작성해주세요.
 
 1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
@@ -6844,6 +6848,8 @@ def today_submit():
    - 닉네임, 사진, 속마음 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
    예: 😮‍💨💼🍱🚇🫠
+
+{lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""})
@@ -6925,7 +6931,7 @@ def today_submit_url():
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
         lang     = (data.get("lang") or "ko").strip().lower()
-        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
+        lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
         for shot in shots[:6]:
             idx     = str(shot.get("index", 1))
@@ -7030,6 +7036,8 @@ def today_submit_url():
 오늘의 장면들:
 {shots_text}
 
+{lang_instruction}
+
 다음을 작성해주세요.
 
 1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
@@ -7057,6 +7065,8 @@ def today_submit_url():
    - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
    예: 😮‍💨💼🍱🚇🫠
+
+{lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""})
@@ -7130,7 +7140,7 @@ def today_submit_b64():
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
         lang     = (data.get("lang") or "ko").strip().lower()
-        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
+        lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
         if not name or not email:
             return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
@@ -7247,6 +7257,8 @@ def today_submit_b64():
 오늘의 장면들:
 {shots_text}
 
+{lang_instruction}
+
 다음을 작성해주세요.
 
 1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
@@ -7274,6 +7286,8 @@ def today_submit_b64():
    - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
    예: 😮‍💨💼🍱🚇🫠
+
+{lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""})
