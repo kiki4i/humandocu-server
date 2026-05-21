@@ -42,6 +42,7 @@ def guestbook_preflight(doc_id=None):
 @app.route("/api/today/submit", methods=["OPTIONS"])
 @app.route("/api/today/profile", methods=["OPTIONS"])
 @app.route("/api/check-today", methods=["OPTIONS"])
+@app.route("/api/today/public-photos", methods=["OPTIONS"])
 def today_preflight():
     return "", 204
 
@@ -4839,6 +4840,29 @@ def check_today():
     except Exception as e:
         logger.error(f"[CHECK-TODAY] error: {e}")
     return jsonify({"status": "waiting"})
+
+
+@app.route("/api/today/public-photos", methods=["GET"])
+def today_public_photos():
+    """공개 투*필 사진 URL 랜덤 최대 20장 반환"""
+    import random as _random
+    try:
+        db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        docs = db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()
+        urls = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            for i in range(1, 7):
+                url = imgs.get(str(i), "")
+                if url:
+                    urls.append(url)
+        _random.shuffle(urls)
+        return jsonify({"photos": urls[:20]}), 200
+    except Exception as e:
+        logger.error(f"[PUBLIC-PHOTOS] error: {e}")
+        return jsonify({"photos": []}), 200
 
 
 @app.route("/api/today/profile", methods=["GET"])
