@@ -4757,6 +4757,33 @@ def check_today():
     return jsonify({"status": "waiting"})
 
 
+@app.route("/api/today/profile", methods=["GET"])
+def today_profile():
+    """email로 가장 최근 today 문서의 기본 정보 반환 — 폼 자동완성용"""
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"found": False})
+    try:
+        docs = _get_db().collection("today")\
+            .where("email", "==", email)\
+            .order_by("created_at", direction="DESCENDING")\
+            .limit(1).get()
+        for doc in docs:
+            d = doc.to_dict() or {}
+            return jsonify({
+                "found": True,
+                "name": d.get("name", ""),
+                "nickname": d.get("nickname", ""),
+                "identity": d.get("identity", ""),
+                "last_to": d.get("last_to", ""),
+                "last_msg": d.get("last_msg", ""),
+                "is_public": d.get("is_public", True),
+            })
+    except Exception as e:
+        logger.error(f"[TODAY-PROFILE] error: {e}")
+    return jsonify({"found": False})
+
+
 @app.route("/api/next-today/<current_doc_id>", methods=["GET"])
 def next_today(current_doc_id):
     """현재 투*필 제외하고 공개된 투*필 중 랜덤 1개로 redirect"""
