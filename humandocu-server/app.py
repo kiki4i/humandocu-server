@@ -7008,6 +7008,7 @@ def today_submit_b64():
             return jsonify({"ok": False, "error": "사진을 올려주세요"}), 400
 
         # Claude API 메시지 구성
+        doc_id = uuid.uuid4().hex[:12]
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
         content_parts = []
         shot_images = {}
@@ -7020,7 +7021,12 @@ def today_submit_b64():
             shot_captions[idx] = caption
             if b64:
                 raw = b64.split(",")[1] if "," in b64 else b64
-                shot_images[idx] = f"[base64_image_{idx}]"
+                try:
+                    fname = f"{doc_id}_shot{idx}_{uuid.uuid4().hex[:6]}.jpg"
+                    url = _upload_to_firebase_storage(b64, fname)
+                    shot_images[idx] = url if url else f"[base64_image_{idx}]"
+                except Exception:
+                    shot_images[idx] = f"[base64_image_{idx}]"
                 content_parts.append({
                     "type": "image",
                     "source": {"type": "base64", "media_type": "image/jpeg", "data": raw}
@@ -7104,7 +7110,6 @@ def today_submit_b64():
             poems[current_key] = "\n".join(current_lines).strip()
 
         # Firestore 저장
-        doc_id = uuid.uuid4().hex[:12]
         now    = dt.datetime.utcnow().isoformat()
         _get_db().collection("today").document(doc_id).set({
             "doc_id":          doc_id,
