@@ -6694,6 +6694,8 @@ def today_submit():
         email    = (data.get("email") or "").strip().lower()
         is_public = data.get("is_public", True)
         shots    = data.get("shots", [])  # [{image_b64, caption}, ...]
+        lang     = (data.get("lang") or "ko").strip().lower()
+        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
 
         if not name or not email or not shots:
             return jsonify({"ok": False, "error": "이름, 이메일, 사진을 모두 입력해주세요"}), 400
@@ -6794,7 +6796,8 @@ def today_submit():
 
 [이모지]
 (이모지 5개, 한 줄)"""
-        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
 당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
@@ -6921,6 +6924,8 @@ def today_submit_url():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
+        lang     = (data.get("lang") or "ko").strip().lower()
+        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
 
         for shot in shots[:6]:
             idx     = str(shot.get("index", 1))
@@ -7004,7 +7009,8 @@ def today_submit_url():
 
 [이모지]
 (이모지 5개, 한 줄)"""
-        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
 당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
@@ -7123,6 +7129,8 @@ def today_submit_b64():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
+        lang     = (data.get("lang") or "ko").strip().lower()
+        lang_instruction = {"en": "Write all poems in English.", "ko": "모든 시는 한국어로 작성해주세요.", "ja": "全ての詩は日本語で書いてください。", "zh": "请用中文写所有诗歌。"}.get(lang, "모든 시는 한국어로 작성해주세요.")
 
         if not name or not email:
             return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
@@ -7218,7 +7226,8 @@ def today_submit_b64():
 
 [이모지]
 (이모지 5개, 한 줄)"""
-        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
 당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
