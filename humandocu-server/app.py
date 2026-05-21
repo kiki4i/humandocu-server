@@ -4760,13 +4760,14 @@ def check_today():
 @app.route("/api/today/profile", methods=["GET"])
 def today_profile():
     """email로 가장 최근 today 문서의 기본 정보 반환 — 폼 자동완성용"""
+    from google.cloud.firestore_v1.base_query import FieldFilter
     email = request.args.get("email", "").strip().lower()
     if not email:
         return jsonify({"found": False})
     try:
         docs = _get_db().collection("today")\
-            .where("email", "==", email)\
-            .order_by("created_at", direction="DESCENDING")\
+            .where(filter=FieldFilter("email", "==", email))\
+            .order_by("created_at", direction=fb_firestore.Query.DESCENDING)\
             .limit(1).get()
         for doc in docs:
             d = doc.to_dict() or {}
