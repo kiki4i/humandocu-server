@@ -2179,10 +2179,8 @@ def webhook_sixshot():
                         .where("email", "==", email)\
                         .where("is_public", "==", True).get()
                     for old_doc in old_docs:
-                        d = old_doc.to_dict() or {}
-                        if d.get("type", "sixshot") != "today":
-                            db.collection("sixshot").document(old_doc.id).update({"is_public": False})
-                            print(f"[SIXSHOT] 기존 공개 doc 비공개 처리: {old_doc.id}")
+                        db.collection("sixshot").document(old_doc.id).update({"is_public": False})
+                        print(f"[SIXSHOT] 기존 공개 doc 비공개 처리: {old_doc.id}")
                 except Exception as e:
                     print(f"[SIXSHOT] 기존 doc 비공개 처리 오류: {e}")
 
@@ -2303,7 +2301,7 @@ def webhook_today():
                 import datetime
                 shots_str  = {str(k): v for k, v in shots.items()}
                 images_str = {str(k): v for k, v in shot_images.items()}
-                firebase_save_sixshot(doc_id, {
+                _get_db().collection("today").document(doc_id).set({
                     "name": name,
                     "nickname": nickname,
                     "email": email,
@@ -4747,8 +4745,7 @@ def check_today():
         from datetime import datetime, timezone, timedelta
         window_start = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
         db = _get_db()
-        docs = db.collection("sixshot")\
-            .where("type", "==", "today")\
+        docs = db.collection("today")\
             .where("email", "==", email)\
             .where("created_at", ">=", window_start)\
             .order_by("created_at", direction="DESCENDING")\
@@ -4767,8 +4764,7 @@ def next_today(current_doc_id):
     import random
     try:
         db = _get_db()
-        docs = db.collection("sixshot")\
-            .where("type", "==", "today")\
+        docs = db.collection("today")\
             .where("is_public", "==", True)\
             .limit(50).get()
         candidates = [d.id for d in docs if d.id != current_doc_id]
@@ -6507,17 +6503,21 @@ def sixshot_random():
         import random
         filter_type = request.args.get("type", "")
         exclude_id  = request.args.get("exclude", "")
-        docs = _get_db().collection("sixshot").where("is_public", "==", True).limit(50).get()
+        db = _get_db()
+        if filter_type == "today":
+            raw_docs = db.collection("today").where("is_public", "==", True).limit(50).get()
+        elif filter_type == "sixshot":
+            raw_docs = db.collection("sixshot").where("is_public", "==", True).limit(50).get()
+        else:
+            raw_docs = (
+                list(db.collection("sixshot").where("is_public", "==", True).limit(50).get()) +
+                list(db.collection("today").where("is_public", "==", True).limit(50).get())
+            )
         items = []
-        for doc in docs:
-            d = doc.to_dict() or {}
-            doc_type = d.get("type", "sixshot")
-            if filter_type == "today" and doc_type != "today":
-                continue
-            if filter_type == "sixshot" and doc_type == "today":
-                continue
+        for doc in raw_docs:
             if doc.id == exclude_id:
                 continue
+            d = doc.to_dict() or {}
             items.append({
                 "doc_id": doc.id,
                 "name": d.get("nickname", "") or d.get("name", ""),
@@ -6525,7 +6525,7 @@ def sixshot_random():
                 "shots": d.get("shots", {}),
                 "shot_images": d.get("shot_images", {}),
                 "poems": d.get("poems", ""),
-                "type": doc_type,
+                "type": d.get("type", filter_type or "sixshot"),
                 "created_at": d.get("created_at", ""),
             })
         if not items:
@@ -6733,7 +6733,7 @@ def today_submit():
         # 4. Firestore 저장
         now = datetime.datetime.utcnow().isoformat()
         db = _get_db()
-        db.collection("sixshot").document(doc_id).set({
+        db.collection("today").document(doc_id).set({
             "doc_id": doc_id,
             "name": name,
             "nickname": nickname,
@@ -6888,7 +6888,7 @@ def today_submit_url():
         # 3. Firestore 저장
         doc_id = uuid.uuid4().hex[:12]
         now    = dt.datetime.utcnow().isoformat()
-        _get_db().collection("sixshot").document(doc_id).set({
+        _get_db().collection("today").document(doc_id).set({
             "doc_id":          doc_id,
             "name":            name,
             "nickname":        nickname,
@@ -7042,7 +7042,7 @@ def today_submit_b64():
         # Firestore 저장
         doc_id = uuid.uuid4().hex[:12]
         now    = dt.datetime.utcnow().isoformat()
-        _get_db().collection("sixshot").document(doc_id).set({
+        _get_db().collection("today").document(doc_id).set({
             "doc_id":          doc_id,
             "name":            name,
             "nickname":        nickname,
