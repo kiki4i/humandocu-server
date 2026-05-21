@@ -5021,6 +5021,17 @@ def firebase_delete_sixshot(doc_id):
         return False
 
 
+def firebase_delete_today(doc_id):
+    """today 컬렉션에서 문서 삭제"""
+    try:
+        _get_db().collection("today").document(doc_id).delete()
+        print(f"[TODAY-FB] 삭제 성공: {doc_id}")
+        return True
+    except Exception as e:
+        print(f"[TODAY-FB] 삭제 오류: {e}")
+        return False
+
+
 def send_email_delete_code(to_email: str, code: str, doc_id: str, lang: str = "ko"):
     """투*필 삭제 인증코드 + 바로 삭제 링크 이메일 발송 (한/영 분기)"""
     try:
@@ -5102,7 +5113,7 @@ def api_delete_request(doc_id):
     """삭제 인증코드 발송 요청"""
     if request.method == "OPTIONS":
         return "", 204
-    data = firebase_get_sixshot(doc_id)
+    data = firebase_get_sixshot(doc_id) or firebase_get_today(doc_id)
     if data is None:
         return jsonify({"status": "error", "message": "not found"}), 404
     email = data.get("email", "")
@@ -5133,7 +5144,10 @@ def _delete_confirm_logic(doc_id: str, code: str):
     if datetime.now(timezone.utc) > stored["expires_at"]:
         ref.delete()
         return "코드가 올바르지 않거나 만료되었습니다."
-    ok = firebase_delete_sixshot(doc_id)
+    if firebase_get_today(doc_id) is not None:
+        ok = firebase_delete_today(doc_id)
+    else:
+        ok = firebase_delete_sixshot(doc_id)
     ref.delete()
     if not ok:
         return "삭제에 실패했습니다. 다시 시도해주세요."
