@@ -6780,7 +6780,7 @@ def today_submit():
             "created_at": now,
         })
 
-        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
         try:
             send_email_sixshot(email, nickname, poems, identity, "", page_url, type="today", lang="ko")
         except Exception as _mail_err:
@@ -6941,7 +6941,7 @@ def today_submit_url():
             "created_at":      now,
         })
 
-        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
         try:
             send_email_sixshot(email, nickname, poems, identity, last_msg, page_url, type="today", lang="ko")
         except Exception as _mail_err:
@@ -7099,7 +7099,7 @@ def today_submit_b64():
             "created_at":      now,
         })
 
-        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+        page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
         try:
             send_email_sixshot(email, nickname, poems, identity, last_msg, page_url, type="today", lang="ko")
         except Exception as _mail_err:
