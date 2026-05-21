@@ -3903,7 +3903,7 @@ def my_filmography_verified(name):
                 "time_label": created[11:16] if len(created) > 15 else "",
                 "type": "today",
                 "is_public": d.get("is_public", False),
-                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
+                "imgs": [imgs.get(str(i), "") for i in range(1, 7) if imgs.get(str(i))],
             })
         for doc in docs_six:
             d = doc.to_dict() or {}
@@ -3918,7 +3918,7 @@ def my_filmography_verified(name):
                 "time_label": created[11:16] if len(created) > 15 else "",
                 "type": d.get("type", "sixshot"),
                 "is_public": d.get("is_public", False),
-                "imgs": [imgs.get(str(i), "") for i in range(1, 4) if imgs.get(str(i))],
+                "imgs": [imgs.get(str(i), "") for i in range(1, 7) if imgs.get(str(i))],
             })
         today_items.sort(key=lambda x: x["created_at"], reverse=True)
         six_items.sort(key=lambda x: x["created_at"], reverse=True)
@@ -3932,7 +3932,7 @@ def my_filmography_verified(name):
             time_str = f" {item['time_label']}" if item["time_label"] else ""
             photos_html = "".join([
                 f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
-                for url in item["imgs"][:3]
+                for url in item["imgs"]
             ])
             record_url = (f"https://humandocu-server-production.up.railway.app/today/{item['doc_id']}"
                           if item["type"] == "today"
