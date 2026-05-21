@@ -4814,7 +4814,7 @@ def next_today(current_doc_id):
         candidates = [d.id for d in docs if d.id != current_doc_id]
         if candidates:
             chosen = random.choice(candidates)
-            return redirect(f"/sixshot/{chosen}")
+            return redirect(f"/today/{chosen}")
     except Exception as e:
         logger.error(f"[NEXT-TODAY] error: {e}")
     return redirect("https://humandocu.com/today.html")
