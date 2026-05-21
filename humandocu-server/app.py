@@ -2175,9 +2175,10 @@ def webhook_sixshot():
                 # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
                 try:
                     db = _get_db()
+                    from google.cloud.firestore_v1.base_query import FieldFilter
                     old_docs = db.collection("sixshot")\
-                        .where("email", "==", email)\
-                        .where("is_public", "==", True).get()
+                        .where(filter=FieldFilter("email", "==", email))\
+                        .where(filter=FieldFilter("is_public", "==", True)).get()
                     for old_doc in old_docs:
                         db.collection("sixshot").document(old_doc.id).update({"is_public": False})
                         print(f"[SIXSHOT] 기존 공개 doc 비공개 처리: {old_doc.id}")
@@ -4745,10 +4746,11 @@ def check_today():
         from datetime import datetime, timezone, timedelta
         window_start = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
         db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
         docs = db.collection("today")\
-            .where("email", "==", email)\
-            .where("created_at", ">=", window_start)\
-            .order_by("created_at", direction="DESCENDING")\
+            .where(filter=FieldFilter("email", "==", email))\
+            .where(filter=FieldFilter("created_at", ">=", window_start))\
+            .order_by("created_at", direction=fb_firestore.Query.DESCENDING)\
             .limit(1).get()
         for doc in docs:
             return jsonify({"status": "ready", "doc_id": doc.id})
@@ -4792,8 +4794,9 @@ def next_today(current_doc_id):
     import random
     try:
         db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
         docs = db.collection("today")\
-            .where("is_public", "==", True)\
+            .where(filter=FieldFilter("is_public", "==", True))\
             .limit(50).get()
         candidates = [d.id for d in docs if d.id != current_doc_id]
         if candidates:
@@ -6532,14 +6535,15 @@ def sixshot_random():
         filter_type = request.args.get("type", "")
         exclude_id  = request.args.get("exclude", "")
         db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
         if filter_type == "today":
-            raw_docs = db.collection("today").where("is_public", "==", True).limit(50).get()
+            raw_docs = db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()
         elif filter_type == "sixshot":
-            raw_docs = db.collection("sixshot").where("is_public", "==", True).limit(50).get()
+            raw_docs = db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()
         else:
             raw_docs = (
-                list(db.collection("sixshot").where("is_public", "==", True).limit(50).get()) +
-                list(db.collection("today").where("is_public", "==", True).limit(50).get())
+                list(db.collection("sixshot").where(filter=FieldFilter("is_public", "==", True)).limit(50).get()) +
+                list(db.collection("today").where(filter=FieldFilter("is_public", "==", True)).limit(50).get())
             )
         items = []
         for doc in raw_docs:
