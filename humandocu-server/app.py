@@ -6728,78 +6728,126 @@ def today_submit():
                 "text": f"[SHOT {idx}] {caption}"
             })
 
-        content_parts.append({"type": "text", "text": f"""
-위 사진 {len(shots)}장은 {nickname}님의 오늘 하루입니다.
-각 사진과 설명을 보고 아래 형식으로 작성해주세요.
+        # 프롬프트 구성
+        shots_text = "\n".join([
+            f"SHOT {idx} : {shot_captions[idx]}"
+            for idx in sorted(shot_captions.keys())
+            if shot_captions.get(idx)
+        ])
+        OUTPUT_FORMAT = """[대표]
+(1행)
+(2행)
+(3행)
 
-[대표]
-오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
+[대표2]
+(1행)
+(2행)
+(3행)
 
-[SHOT 1]
-이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)
+[하이쿠감성]
+(1행)
+(2행)
+(3행)
 
-[SHOT 2]
-...
+[하이쿠유머]
+(1행)
+(2행)
+(3행)
 
-[SHOT {len(shots)}]
-...
+[SHOT1감성]
+(하이쿠)
+[SHOT1유머]
+(하이쿠)
 
-[한줄평]
-오늘의 {nickname}님을 한 문장으로 (20자 이내)
+[SHOT2감성]
+(하이쿠)
+[SHOT2유머]
+(하이쿠)
 
-[총평]
-오늘 하루 전체에 대한 따뜻한 한 단락 (3~4문장)
+[SHOT3감성]
+(하이쿠)
+[SHOT3유머]
+(하이쿠)
 
-형식 외 다른 말은 하지 마세요.
-""".strip()})
+[SHOT4감성]
+(하이쿠)
+[SHOT4유머]
+(하이쿠)
+
+[SHOT5감성]
+(하이쿠)
+[SHOT5유머]
+(하이쿠)
+
+[SHOT6감성]
+(하이쿠)
+[SHOT6유머]
+(하이쿠)
+
+[이모지]
+(이모지 5개, 한 줄)"""
+        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
+설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
+규칙:
+- 거창한 철학이나 교훈 금지
+- "삶이란", "존재란" 같은 추상어 금지
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라
+- 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
+- 하이쿠는 반드시 5·7·5 음절 (한국어 기준)
+- 유머 하이쿠는 진짜 웃긴 거. 공감되는 현실 자조. '맞아 나도 그래' 하고 피식 웃게. 너무 시적으로 포장하지 말고 날것으로. 예: '출근길에 / 오늘만 참자 했는데 / 내일도 출근'
+
+각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
+
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
+
+오늘의 장면들:
+{shots_text}
+
+다음을 작성해주세요.
+
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+
+3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
+   짧지만 오늘의 온도가 느껴지는 하이쿠.
+
+4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
+   읽으면 피식 웃음이 나오는 하이쿠.
+
+5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
+   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 진짜 웃긴 거. 날것의 현실 자조. 너무 시적으로 포장하지 말 것.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
+   - ☀️😊🌙✨ 같은 뻔한 것 금지
+   - 이 사람만의 오늘이 느껴지게
+   - 닉네임, 사진, 속마음 전부 종합해서
+   - 이모지만 5개, 설명 없이, 한 줄로
+   예: 😮‍💨💼🍱🚇🫠
+
+출력 형식 (정확히 이 형식으로):
+{OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        # 3. 파싱
-        poems = {}
+        # 3. poems = raw string, sixshot_page의 regex 파서가 처리
+        poems    = ai_text
         identity = ""
-        overall = ""
-        current_key = None
-        current_lines = []
-
-        for line in ai_text.strip().split("\n"):
-            line = line.strip()
-            if line.startswith("[대표]"):
-                current_key = "대표"
-                current_lines = []
-            elif line.startswith("[SHOT "):
-                if current_key:
-                    poems[current_key] = "\n".join(current_lines).strip()
-                num = line.replace("[SHOT ", "").replace("]", "").strip()
-                current_key = f"SHOT{num}"
-                current_lines = []
-            elif line.startswith("[한줄평]"):
-                if current_key:
-                    poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "한줄평"
-                current_lines = []
-            elif line.startswith("[총평]"):
-                if current_key:
-                    if current_key == "한줄평":
-                        identity = "\n".join(current_lines).strip()
-                    else:
-                        poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "총평"
-                current_lines = []
-            elif line:
-                current_lines.append(line)
-
-        if current_key == "총평":
-            overall = "\n".join(current_lines).strip()
-        elif current_key == "한줄평":
-            identity = "\n".join(current_lines).strip()
-        elif current_key:
-            poems[current_key] = "\n".join(current_lines).strip()
+        overall  = ""
 
         # 4. Firestore 저장
         now = datetime.datetime.utcnow().isoformat()
@@ -6888,76 +6936,128 @@ def today_submit_url():
                 "text": f"[SHOT {idx}] {caption}"
             })
 
-        extra = ""
-        if today_sentence:
-            extra += f"\n오늘 하루 한 문장: {today_sentence}"
-        if last_to and last_msg:
-            extra += f"\n누군가에게 한 마디 — {last_to}에게: {last_msg}"
-        elif last_msg:
-            extra += f"\n누군가에게 한 마디: {last_msg}"
+        # 프롬프트 구성
+        last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
+        today_line    = f"\n오늘 하루를 한 문장으로: {today_sentence}" if today_sentence else ""
+        shots_text = "\n".join([
+            f"SHOT {idx} : {shot_captions[idx]}"
+            for idx in sorted(shot_captions.keys())
+            if shot_captions.get(idx)
+        ])
+        OUTPUT_FORMAT = """[대표]
+(1행)
+(2행)
+(3행)
 
-        shot_count = len([s for s in shots[:6] if s.get("image_url")])
-        shot_list = "\n".join([f"[SHOT {i+1}]\n이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)" for i in range(shot_count)])
+[대표2]
+(1행)
+(2행)
+(3행)
 
-        content_parts.append({"type": "text", "text": f"""
-위 사진들은 {nickname}님의 오늘 하루입니다.{extra}
+[하이쿠감성]
+(1행)
+(2행)
+(3행)
 
-각 사진과 설명을 보고 아래 형식으로 작성해주세요.
+[하이쿠유머]
+(1행)
+(2행)
+(3행)
 
-[대표]
-오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
+[SHOT1감성]
+(하이쿠)
+[SHOT1유머]
+(하이쿠)
 
-{shot_list}
+[SHOT2감성]
+(하이쿠)
+[SHOT2유머]
+(하이쿠)
 
-[한줄평]
-오늘의 {nickname}님을 한 문장으로 (20자 이내)
+[SHOT3감성]
+(하이쿠)
+[SHOT3유머]
+(하이쿠)
 
-[총평]
-오늘 하루 전체에 대한 따뜻한 한 단락 (3~4문장)
+[SHOT4감성]
+(하이쿠)
+[SHOT4유머]
+(하이쿠)
 
-형식 외 다른 말은 하지 마세요.
-""".strip()})
+[SHOT5감성]
+(하이쿠)
+[SHOT5유머]
+(하이쿠)
+
+[SHOT6감성]
+(하이쿠)
+[SHOT6유머]
+(하이쿠)
+
+[이모지]
+(이모지 5개, 한 줄)"""
+        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
+설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
+규칙:
+- 거창한 철학이나 교훈 금지
+- "삶이란", "존재란" 같은 추상어 금지
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라
+- 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
+- 하이쿠는 반드시 5·7·5 음절 (한국어 기준)
+- 유머 하이쿠는 진짜 웃긴 거. 공감되는 현실 자조. '맞아 나도 그래' 하고 피식 웃게. 너무 시적으로 포장하지 말고 날것으로. 예: '출근길에 / 오늘만 참자 했는데 / 내일도 출근'
+
+각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
+
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+
+오늘의 장면들:
+{shots_text}
+
+다음을 작성해주세요.
+
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+
+3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
+   짧지만 오늘의 온도가 느껴지는 하이쿠.
+
+4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
+   읽으면 피식 웃음이 나오는 하이쿠.
+
+5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
+   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 진짜 웃긴 거. 날것의 현실 자조. 너무 시적으로 포장하지 말 것.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
+   - ☀️😊🌙✨ 같은 뻔한 것 금지
+   - 이 사람만의 오늘이 느껴지게
+   - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
+   - 이모지만 5개, 설명 없이, 한 줄로
+   예: 😮‍💨💼🍱🚇🫠
+
+출력 형식 (정확히 이 형식으로):
+{OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        # 2. 파싱
-        poems = {}
-        identity = ""
+        # 2. poems = raw string, sixshot_page의 regex 파서가 처리
+        poems    = ai_text
+        identity = today_sentence
         overall  = ""
-        current_key   = None
-        current_lines = []
-
-        for line in ai_text.strip().split("\n"):
-            line = line.strip()
-            if line.startswith("[대표]"):
-                current_key = "대표"; current_lines = []
-            elif line.startswith("[SHOT "):
-                if current_key: poems[current_key] = "\n".join(current_lines).strip()
-                num = line.replace("[SHOT ","").replace("]","").strip()
-                current_key = f"SHOT{num}"; current_lines = []
-            elif line.startswith("[한줄평]"):
-                if current_key: poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "한줄평"; current_lines = []
-            elif line.startswith("[총평]"):
-                if current_key == "한줄평":
-                    identity = "\n".join(current_lines).strip()
-                elif current_key:
-                    poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "총평"; current_lines = []
-            elif line:
-                current_lines.append(line)
-
-        if current_key == "총평":
-            overall = "\n".join(current_lines).strip()
-        elif current_key == "한줄평":
-            identity = "\n".join(current_lines).strip()
-        elif current_key:
-            poems[current_key] = "\n".join(current_lines).strip()
 
         # 3. Firestore 저장
         doc_id = uuid.uuid4().hex[:12]
@@ -7050,78 +7150,128 @@ def today_submit_b64():
                 "text": f"[SHOT {idx}] {caption}"
             })
 
-        # 추가 정보
-        extra = ""
-        if today_sentence:
-            extra += f"\n오늘 하루 한 문장: {today_sentence}"
-        if last_to and last_msg:
-            extra += f"\n누군가에게 한 마디 — {last_to}에게: {last_msg}"
-        elif last_msg:
-            extra += f"\n누군가에게 한 마디: {last_msg}"
+        # 프롬프트 구성
+        last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
+        today_line    = f"\n오늘 하루를 한 문장으로: {today_sentence}" if today_sentence else ""
+        shots_text = "\n".join([
+            f"SHOT {idx} : {shot_captions[idx]}"
+            for idx in sorted(shot_captions.keys())
+            if shot_captions.get(idx)
+        ])
+        OUTPUT_FORMAT = """[대표]
+(1행)
+(2행)
+(3행)
 
-        content_parts.append({"type": "text", "text": f"""
-위 사진들은 {nickname}님의 오늘 하루입니다.{extra}
+[대표2]
+(1행)
+(2행)
+(3행)
 
-각 사진과 설명을 보고 아래 형식으로 작성해주세요.
+[하이쿠감성]
+(1행)
+(2행)
+(3행)
 
-[대표]
-오늘 전체를 관통하는 짧은 시 1편 (4~8줄, 시적이고 감각적으로)
+[하이쿠유머]
+(1행)
+(2행)
+(3행)
 
-[SHOT 1]
-이 장면을 담은 짧은 시 또는 한 문장 (1~3줄)
+[SHOT1감성]
+(하이쿠)
+[SHOT1유머]
+(하이쿠)
 
-[SHOT 2]
-...
+[SHOT2감성]
+(하이쿠)
+[SHOT2유머]
+(하이쿠)
 
-[한줄평]
-오늘의 {nickname}님을 한 문장으로 (20자 이내)
+[SHOT3감성]
+(하이쿠)
+[SHOT3유머]
+(하이쿠)
 
-[총평]
-오늘 하루 전체에 대한 따뜻한 한 단락 (3~4문장)
+[SHOT4감성]
+(하이쿠)
+[SHOT4유머]
+(하이쿠)
 
-형식 외 다른 말은 하지 마세요.
-""".strip()})
+[SHOT5감성]
+(하이쿠)
+[SHOT5유머]
+(하이쿠)
+
+[SHOT6감성]
+(하이쿠)
+[SHOT6유머]
+(하이쿠)
+
+[이모지]
+(이모지 5개, 한 줄)"""
+        content_parts.append({"type": "text", "text": f"""당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
+설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
+규칙:
+- 거창한 철학이나 교훈 금지
+- "삶이란", "존재란" 같은 추상어 금지
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라
+- 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
+- 하이쿠는 반드시 5·7·5 음절 (한국어 기준)
+- 유머 하이쿠는 진짜 웃긴 거. 공감되는 현실 자조. '맞아 나도 그래' 하고 피식 웃게. 너무 시적으로 포장하지 말고 날것으로. 예: '출근길에 / 오늘만 참자 했는데 / 내일도 출근'
+
+각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
+
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+
+오늘의 장면들:
+{shots_text}
+
+다음을 작성해주세요.
+
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+
+3. [하이쿠감성] - 오늘 하루 전체를 담은 하이쿠 1편. 5·7·5 음절. 감성적·시적 톤.
+   짧지만 오늘의 온도가 느껴지는 하이쿠.
+
+4. [하이쿠유머] - 같은 오늘을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 웃음이 나는 톤.
+   읽으면 피식 웃음이 나오는 하이쿠.
+
+5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 하이쿠를 써라.
+   [SHOT1감성] — SHOT 1 장면을 담은 하이쿠 1편. 5·7·5 음절. 그 장면의 감정 온도를 읽어서 농도를 자유롭게 조절.
+   [SHOT1유머] — 같은 장면을 유머러스하게 담은 하이쿠 1편. 5·7·5 음절. 진짜 웃긴 거. 날것의 현실 자조. 너무 시적으로 포장하지 말 것.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
+   - ☀️😊🌙✨ 같은 뻔한 것 금지
+   - 이 사람만의 오늘이 느껴지게
+   - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
+   - 이모지만 5개, 설명 없이, 한 줄로
+   예: 😮‍💨💼🍱🚇🫠
+
+출력 형식 (정확히 이 형식으로):
+{OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        # 파싱
-        poems = {}
-        identity = ""
+        # poems = raw string, sixshot_page의 regex 파서가 처리
+        poems    = ai_text
+        identity = today_sentence
         overall  = ""
-        current_key   = None
-        current_lines = []
-
-        for line in ai_text.strip().split("\n"):
-            line = line.strip()
-            if line.startswith("[대표]"):
-                current_key = "대표"; current_lines = []
-            elif line.startswith("[SHOT "):
-                if current_key: poems[current_key] = "\n".join(current_lines).strip()
-                num = line.replace("[SHOT ","").replace("]","").strip()
-                current_key = f"SHOT{num}"; current_lines = []
-            elif line.startswith("[한줄평]"):
-                if current_key: poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "한줄평"; current_lines = []
-            elif line.startswith("[총평]"):
-                if current_key == "한줄평":
-                    identity = "\n".join(current_lines).strip()
-                elif current_key:
-                    poems[current_key] = "\n".join(current_lines).strip()
-                current_key = "총평"; current_lines = []
-            elif line:
-                current_lines.append(line)
-
-        if current_key == "총평":
-            overall = "\n".join(current_lines).strip()
-        elif current_key == "한줄평":
-            identity = "\n".join(current_lines).strip()
-        elif current_key:
-            poems[current_key] = "\n".join(current_lines).strip()
 
         # Firestore 저장
         now    = dt.datetime.utcnow().isoformat()
