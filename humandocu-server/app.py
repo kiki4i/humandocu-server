@@ -2823,6 +2823,13 @@ These poems may one day remain on this person's memorial page.
 So write each line with dignity, so that the whole of their life is held within it.
 No grand philosophy. Capture a life through specific objects, colors, temperatures, smells.
 Make the reader feel close to tears — and nod, thinking: "Yes, that was them."
+[ABSOLUTE RULES]
+- Never invent facts not present in the user's descriptions
+- Never guess or fabricate years, dates, place names, or people's names
+- Example: if the description only says "old photo", do NOT write "1998"
+- Example: if the description only says "the sea", do NOT name a specific location
+- Express only the emotions, relationships, and atmosphere found in the descriptions
+- Do not try to fill in gaps -- instead, go deeper into what is already there
 
 Name: {name}
 Who I am: {identity}{last_msg_text}
@@ -2862,6 +2869,13 @@ Output format — copy these tags verbatim, write poem content in English:
 그러니 한 줄 한 줄, 그 사람의 생이 존엄하게 담기도록 쓰십시오.
 거창한 철학 금지. 구체적인 사물, 색깔, 온도, 냄새로 인생을 담으십시오.
 읽는 사람이 눈물이 날 것 같으면서도 '맞아, 그 사람 그랬지' 하고 고개 끄덕이게.
+[절대 규칙]
+- 사용자가 입력한 설명에 없는 사실을 절대 만들어내지 말 것
+- 연도, 날짜, 장소명, 인물 이름 등을 추측하거나 지어내지 말 것
+- 예: 설명에 '옛날 사진'이라고만 했으면 '1998년'이라고 쓰면 안 됨
+- 예: 설명에 '바다'라고만 했으면 특정 지명을 넣으면 안 됨
+- 설명에 있는 감정, 관계, 분위기만 시적으로 표현할 것
+- 없는 것을 채우려 하지 말고, 있는 것을 깊게 표현할 것
 
 이름: {name}
 나는 이런 사람입니다: {identity}{last_msg_text}
