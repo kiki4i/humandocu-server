@@ -4643,7 +4643,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
-    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">" + emoji_section_label + "</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
+    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">" + emoji_section_label + "</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
