@@ -2847,10 +2847,18 @@ Do NOT translate these tags into English. Use Korean bracket tags exactly as sho
 
 2. [대표2] — The same life, in plain and quiet prose. 3 lines. No flourish, just depth.
 
-3. [하이쿠] — A haiku (5-7-5 syllables) distilling this life. Maximum emotion. No humor.
+3. [하이쿠] — A short poem (2–3 lines) piercing the essence of this life.
+   No format rules. Do not count syllables.
+   Goal: the reader stops and goes "oh."
+   Use one of three techniques:
+   1) Reversal: lull them in, then flip it in the last line.
+   2) Raw honesty: what everyone feels but no one says.
+   3) Universal truth: this person's story, but everyone nods.
 
-4. For each submitted SHOT write a 3-line poem under its own tag: [SHOT1], [SHOT2], [SHOT3], [SHOT4], [SHOT5], [SHOT6].
-   Capture the light, temperature, and feeling of that moment. Skip shots marked (not submitted).
+4. For each submitted SHOT write a 2–3 line poem under its own tag: [SHOT1], [SHOT2], [SHOT3], [SHOT4], [SHOT5], [SHOT6].
+   No format rules. Don't count syllables.
+   Pierce the core emotion of that moment. Use reversal, raw honesty, or universal truth.
+   Skip shots marked (not submitted).
 
 Output format — copy these tags verbatim, write poem content in English:
 {OUTPUT_FORMAT}"""
@@ -2890,10 +2898,17 @@ Output format — copy these tags verbatim, write poem content in English:
 
 2. [대표2] — 같은 인생을 담담하고 산문적으로. 화려하지 않게, 그러나 깊게. 3행.
 
-3. [하이쿠] — 이 사람의 인생을 5·7·5 음절로. 감성 최대치. 유머 없음.
+3. [하이쿠] — 이 사람의 인생 전체의 핵심을 찌르는 짧은 시. 2~3줄.
+   형식 규칙 없음. 음절 맞추지 말 것.
+   목표: 읽는 사람이 '헉' 하고 멈추게.
+   3가지 기법 중 하나를 골라라:
+   1) 반전: 평범해 보이다가 마지막 줄에서 뒤집어라.
+   2) 날것의 솔직함: 누구나 느끼지만 아무도 말 안 하는 것을 그대로.
+   3) 보편적 진실: 이 사람 이야기인데 읽는 누구나 '나도 그래' 하게.
 
-4. [SHOT별 시] — 제출된 각 SHOT마다 시 1편. 3행.
-   사진을 직접 보고, 그 순간의 빛과 온도와 감정을 담을 것.
+4. [SHOT별 시] — 제출된 각 SHOT마다 시 1편. 2~3줄.
+   형식 규칙 없음. 음절 맞추지 말 것.
+   그 장면의 핵심 감정 하나를 찌를 것. 반전·솔직함·보편적 진실 중 하나로.
    제출되지 않은 SHOT은 건너뜀.
 
 출력 형식 (정확히 이 형식으로):
@@ -4132,8 +4147,8 @@ def sixshot_page(doc_id):
         else:
             poem_section_title  = "✦ A poem capturing your life"
             scene_section_title = "My Six Shot"
-            haiku_intro_label   = "A haiku distilling a life in 5 · 7 · 5 syllables"
-            haiku_single_label  = "— Haiku —"
+            haiku_intro_label   = "Short. Sharp. A poem piercing a life."
+            haiku_single_label  = "— Short. Sharp. —"
             hero_sub_label      = "HUMANDOCU · SIX SHOT"
             hero_tagline        = f"{nickname}'s Life Six Shot"
             share_tagline       = "Your life story, in six photos."
@@ -4199,7 +4214,7 @@ def sixshot_page(doc_id):
         else:
             poem_section_title  = "✦ AIが完成させた詩"
             scene_section_title = "ライフシックスショット"
-            haiku_intro_label   = "5・7・5音節で人生を凝縮した詩"
+            haiku_intro_label   = "短く、鋭く。人生を刺す詩。"
             hero_sub_label      = "HUMANDOCU · SIX SHOT"
             hero_tagline        = f"{nickname}のライフシックスショット"
             share_tagline       = "6枚の写真であなたの人生を。"
@@ -4210,7 +4225,7 @@ def sixshot_page(doc_id):
             nav_today_lbl       = "📽️ Today Filmを見る"
             delete_confirm_msg  = "このSix Shotを削除しますか？元に戻すことはできません。"
             page_title_str      = f"ライフシックスショット · {display_name}"
-        haiku_single_label  = "— 俳句 —"
+        haiku_single_label  = "— 短く、鋭く。 —"
         haiku_s_label       = "🌸 詩 · 感情"
         haiku_h_label       = "😂 詩 · ユーモア"
         ver1_title          = "バージョン 1"
@@ -4266,7 +4281,7 @@ def sixshot_page(doc_id):
         else:
             poem_section_title  = "✦ AI完成的诗"
             scene_section_title = "人生六格照"
-            haiku_intro_label   = "以5·7·5音节浓缩人生的诗"
+            haiku_intro_label   = "短而有力，刺穿人生的诗。"
             hero_sub_label      = "HUMANDOCU · SIX SHOT"
             hero_tagline        = f"{nickname}的人生六格照"
             share_tagline       = "用6张照片讲述你的人生故事。"
@@ -4277,7 +4292,7 @@ def sixshot_page(doc_id):
             nav_today_lbl       = "📽️ 浏览Today Film"
             delete_confirm_msg  = "确定要删除这个Six Shot吗？此操作无法撤销。"
             page_title_str      = f"人生六格照 · {display_name}"
-        haiku_single_label  = "— 俳句 —"
+        haiku_single_label  = "— 短而有力。 —"
         haiku_s_label       = "🌸 诗 · 情感"
         haiku_h_label       = "😂 诗 · 幽默"
         ver1_title          = "版本 1"
@@ -4318,8 +4333,8 @@ def sixshot_page(doc_id):
     else:
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
-        haiku_intro_label   = "짧지만 강렬하게, 오늘을 찌르는 시"
-        haiku_single_label  = "— 하이쿠 · 俳句 —"
+        haiku_intro_label   = "짧지만 강렬하게, 오늘을 찌르는 시" if page_type == "today" else "짧지만 강렬하게, 인생을 찌르는 시"
+        haiku_single_label  = "— 짧지만 강렬하게 —"
         haiku_s_label       = "🌸 시 · 감성"
         haiku_h_label       = "😂 시 · 유머"
         hero_sub_label      = "HUMANDOCU · 필모그래피"
