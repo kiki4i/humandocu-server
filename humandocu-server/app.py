@@ -37,6 +37,10 @@ def add_cors_headers(response):
 def guestbook_preflight(doc_id=None):
     return "", 204
 
+@app.route("/api/sixshot/submit-b64", methods=["OPTIONS"])
+def sixshot_b64_preflight():
+    return "", 204
+
 @app.route("/api/today/submit-b64", methods=["OPTIONS"])
 @app.route("/api/today/submit-url", methods=["OPTIONS"])
 @app.route("/api/today/submit", methods=["OPTIONS"])
@@ -7521,6 +7525,93 @@ palette: #hex1 #hex2 #hex3"""
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
+
+
+
+@app.route("/api/sixshot/submit-b64", methods=["POST"])
+def sixshot_submit_b64():
+    """식스샷 자체 폼 — base64 이미지 직접 처리"""
+    try:
+        import uuid, datetime as dt
+        data       = request.get_json() or {}
+        name       = (data.get("name") or "").strip()
+        nickname   = (data.get("nickname") or name).strip()
+        email      = (data.get("email") or "").strip().lower()
+        is_public  = bool(data.get("is_public", True))
+        shots_raw  = data.get("shots", [])
+        self_intro = (data.get("self_intro") or "").strip()
+        message_to = (data.get("message_to") or "").strip()
+        message_body = (data.get("message_body") or "").strip()
+
+        if not name or not email:
+            return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
+        filled = [s for s in shots_raw if s.get("image_b64")]
+        if len(filled) < 6:
+            return jsonify({"ok": False, "error": "사진 6장을 모두 올려주세요"}), 400
+
+        doc_id = uuid.uuid4().hex[:12]
+        shots = {}
+        shot_images = {}
+
+        for shot in shots_raw[:6]:
+            idx     = int(shot.get("index", 1))
+            b64     = shot.get("image_b64", "")
+            caption = (shot.get("caption") or "").strip()
+            shots[idx] = caption
+            if b64:
+                try:
+                    fname = f"{doc_id}_shot{idx}_{uuid.uuid4().hex[:6]}.jpg"
+                    url = _upload_to_firebase_storage(b64, fname)
+                    if url:
+                        shot_images[idx] = url
+                except Exception as _up_err:
+                    logger.warning(f"[SIXSHOT-B64] 이미지 업로드 오류 SHOT{idx}: {_up_err}")
+
+        detect_source = self_intro + " " + " ".join(v for v in shots.values() if v)
+        lang = _detect_lang(detect_source)
+
+        poems = generate_sixshot_haiku(nickname, shots, self_intro, message_body, shot_images, lang)
+        logger.warning(f"[SIXSHOT-B64] poems={str(poems)[:200]}")
+
+        try:
+            _db = _get_db()
+            from google.cloud.firestore_v1.base_query import FieldFilter
+            old_docs = _db.collection("sixshot")                .where(filter=FieldFilter("email", "==", email))                .where(filter=FieldFilter("is_public", "==", True)).get()
+            for _old in old_docs:
+                _db.collection("sixshot").document(_old.id).update({"is_public": False})
+        except Exception:
+            pass
+
+        shots_str  = {str(k): v for k, v in shots.items()}
+        images_str = {str(k): v for k, v in shot_images.items()}
+        now = dt.datetime.utcnow().isoformat()
+        firebase_save_sixshot(doc_id, {
+            "name":       name,
+            "nickname":   nickname,
+            "email":      email,
+            "identity":   self_intro,
+            "last_to":    message_to,
+            "last_msg":   message_body,
+            "shots":      shots_str,
+            "shot_images": images_str,
+            "poems":      poems,
+            "is_public":  is_public,
+            "type":       "sixshot",
+            "lang":       lang,
+            "created_at": now,
+        })
+
+        page_url = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
+        try:
+            send_email_sixshot(email, nickname, poems, self_intro, message_body, page_url, type="sixshot", lang=lang)
+        except Exception as _mail_err:
+            logger.warning(f"[SIXSHOT-B64] 이메일 오류: {_mail_err}")
+
+        return jsonify({"ok": True, "doc_id": doc_id, "page_url": page_url})
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/api/today/submit-b64", methods=["POST"])
