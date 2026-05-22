@@ -2399,34 +2399,34 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 (3행)
 
 [SHOT1감성]
-(하이쿠)
+(시)
 [SHOT1유머]
-(하이쿠)
+(시)
 
 [SHOT2감성]
-(하이쿠)
+(시)
 [SHOT2유머]
-(하이쿠)
+(시)
 
 [SHOT3감성]
-(하이쿠)
+(시)
 [SHOT3유머]
-(하이쿠)
+(시)
 
 [SHOT4감성]
-(하이쿠)
+(시)
 [SHOT4유머]
-(하이쿠)
+(시)
 
 [SHOT5감성]
-(하이쿠)
+(시)
 [SHOT5유머]
-(하이쿠)
+(시)
 
 [SHOT6감성]
-(하이쿠)
+(시)
 [SHOT6유머]
-(하이쿠)
+(시)
 
 [이모지]
 (이모지 5개, 한 줄)
@@ -2487,7 +2487,7 @@ palette: #hex1 #hex2 #hex3"""
    진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
    좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
 
-5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
    [SHOT1감성] — SHOT 1 장면의 핵심 감정 하나를 찌르는 시. 반전·솔직함·보편적 진실 중 하나로.
    [SHOT1유머] — 같은 장면을 유머·자조로 찌르는 시. 날것으로. 웃기게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
@@ -2561,7 +2561,7 @@ Please write the following:
    Actually funny. Raw, relatable self-deprecation. Makes you smirk and nod.
    Good: "survived the whole week / so I ordered fried chicken / this is what life is"
 
-5. [SHOT별 하이쿠] - For each submitted SHOT, write two short poems (2–3 lines, no format rules).
+5. [SHOT별 시] - For each submitted SHOT, write two short poems (2–3 lines, no format rules).
    [SHOT1감성] — Stab at the core emotion of SHOT 1. Use reversal, raw honesty, or universal truth.
    [SHOT1유머] — Same scene, with humor and self-deprecation. Raw. Actually funny.
    Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
@@ -2630,7 +2630,7 @@ Output format (exactly this format):
    本当に笑える。剥き出しのリアルな自嘲。「わかる」とニヤリとさせる。
    良い例：「一週間耐えた / だから唐揚げ頼んだ / これが人生だ」
 
-5. [SHOT별 하이쿠] - 提出された各SHOTごとに短い詩を二つ書け（2〜3行、形式の縛りなし）。
+5. [SHOT별 시] - 提出された各SHOTごとに短い詩を二つ書け（2〜3行、形式の縛りなし）。
    [SHOT1감성] — SHOT 1の場面の核心感情を突く詩。逆転・剥き出し・普遍の真実のどれかで。
    [SHOT1유머] — 同じ場面をユーモア・自嘲で突く詩。剥き出しで。笑えるように。
    [SHOT2감성]〜[SHOT6유머]も同様に。提出されていないSHOTはスキップ。
@@ -2690,7 +2690,7 @@ Output format (exactly this format):
    真的好笑。赤裸的现实自嘲。让人苦笑点头"就是这样"。
    好例：「撑过了整整一周 / 于是点了炸鸡 / 这就是人生」
 
-5. [SHOT별 하이쿠] - 为每张提交的SHOT写两首短诗（2~3行，无格式限制）。
+5. [SHOT별 시] - 为每张提交的SHOT写两首短诗（2~3行，无格式限制）。
    [SHOT1감성] — 直刺SHOT 1场景核心情感的诗。用反转、坦诚或普世真理之一。
    [SHOT1유머] — 用幽默自嘲直刺同一场景。赤裸地。要好笑。
    [SHOT2감성]〜[SHOT6유머]同上。未提交的SHOT跳过。
@@ -4099,7 +4099,7 @@ def sixshot_page(doc_id):
         if page_type == "today":
             poem_section_title  = "✦ A poem capturing today"
             scene_section_title = "Today's Six Shot"
-            haiku_intro_label   = "A haiku capturing today in 5 · 7 · 5 syllables"
+            haiku_intro_label   = "Short. Sharp. Your today in verse."
             haiku_single_label  = "— Haiku —"
             hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
             hero_tagline        = f"{nickname}'s Today Filmography"
@@ -4126,14 +4126,14 @@ def sixshot_page(doc_id):
             nav_today_lbl       = "📽️ Browse Today Filmographies"
             delete_confirm_msg  = "Delete this Six Shot? This cannot be undone."
             page_title_str      = f"Life Six Shot · {display_name}"
-        haiku_s_label       = "🌸 Haiku · Emotional"
-        haiku_h_label       = "😂 Haiku · Humorous"
+        haiku_s_label       = "🌸 Verse · Emotion"
+        haiku_h_label       = "😂 Verse · Humor"
         ver1_title          = "Version 1"
         ver1_sub            = "Poetic · Metaphorical"
         ver2_title          = "Version 2"
         ver2_sub            = "Prose · Direct"
-        shot_s_label        = "🌸 Emotional"
-        shot_h_label        = "😂 Humorous"
+        shot_s_label        = "🌸 Verse · Emotion"
+        shot_h_label        = "😂 Verse · Humor"
         to_nobody_label     = "A word for someone"
         play_label          = "▶ Play"
         pause_label         = "⏸ Pause"
@@ -4159,8 +4159,7 @@ def sixshot_page(doc_id):
         delete_success_msg   = "Deleted."
         delete_done_sub      = "Redirecting to humandocu.com..."
         delete_error_msg     = "Code is invalid or expired."
-        ai_read_label = "AI's read of today"
-        ai_color_label = "Today's colors, as AI sees it"
+        ai_today_label = "Today, as AI sees it"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -4168,7 +4167,7 @@ def sixshot_page(doc_id):
         if page_type == "today":
             poem_section_title  = "✦ AIが完成させた詩"
             scene_section_title = "今日のフィルモグラフィー"
-            haiku_intro_label   = "5・7・5音節で今日を捉えた詩"
+            haiku_intro_label   = "短く、鋭く。今日を刺す詩。"
             hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
             hero_tagline        = f"{nickname}のフィルモグラフィー"
             share_tagline       = "毎日を記録しましょう。<br>積み重ねると、それがあなたになります。"
@@ -4194,14 +4193,14 @@ def sixshot_page(doc_id):
             delete_confirm_msg  = "このSix Shotを削除しますか？元に戻すことはできません。"
             page_title_str      = f"ライフシックスショット · {display_name}"
         haiku_single_label  = "— 俳句 —"
-        haiku_s_label       = "🌸 俳句 · 感情"
-        haiku_h_label       = "😂 俳句 · ユーモア"
+        haiku_s_label       = "🌸 詩 · 感情"
+        haiku_h_label       = "😂 詩 · ユーモア"
         ver1_title          = "バージョン 1"
         ver1_sub            = "詩的 · 比喩的"
         ver2_title          = "バージョン 2"
         ver2_sub            = "淡々 · 直接的"
-        shot_s_label        = "🌸 感情"
-        shot_h_label        = "😂 ユーモア"
+        shot_s_label        = "🌸 詩 · 感情"
+        shot_h_label        = "😂 詩 · ユーモア"
         to_nobody_label     = "誰かへの一言"
         play_label          = "▶ 再生"
         pause_label         = "⏸ 一時停止"
@@ -4227,8 +4226,7 @@ def sixshot_page(doc_id):
         delete_success_msg  = "削除しました。"
         delete_done_sub     = "humandocu.comへ移動します..."
         delete_error_msg    = "コードが正しくないか、期限切れです。"
-        ai_read_label = "AIが読んだ今日の私"
-        ai_color_label = "AIが読んだ今日のカラー"
+        ai_today_label = "AIが読んだ今日"
         kakao_view_btn      = "フィルモグラフィーを見る"
         kakao_create_btn    = "私も作る"
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
@@ -4236,7 +4234,7 @@ def sixshot_page(doc_id):
         if page_type == "today":
             poem_section_title  = "✦ AI完成的诗"
             scene_section_title = "今日的人生影志"
-            haiku_intro_label   = "以5·7·5音节捕捉今天的诗"
+            haiku_intro_label   = "短而有力，刺穿今天的诗。"
             hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
             hero_tagline        = f"{nickname}的人生影志"
             share_tagline       = "每天都记录下来。<br>积累起来，那就是你。"
@@ -4262,14 +4260,14 @@ def sixshot_page(doc_id):
             delete_confirm_msg  = "确定要删除这个Six Shot吗？此操作无法撤销。"
             page_title_str      = f"人生六格照 · {display_name}"
         haiku_single_label  = "— 俳句 —"
-        haiku_s_label       = "🌸 俳句 · 情感"
-        haiku_h_label       = "😂 俳句 · 幽默"
+        haiku_s_label       = "🌸 诗 · 情感"
+        haiku_h_label       = "😂 诗 · 幽默"
         ver1_title          = "版本 1"
         ver1_sub            = "诗意 · 隐喻"
         ver2_title          = "版本 2"
         ver2_sub            = "平实 · 直接"
-        shot_s_label        = "🌸 情感"
-        shot_h_label        = "😂 幽默"
+        shot_s_label        = "🌸 诗 · 情感"
+        shot_h_label        = "😂 诗 · 幽默"
         to_nobody_label     = "给某人的留言"
         play_label          = "▶ 播放"
         pause_label         = "⏸ 暂停"
@@ -4295,26 +4293,25 @@ def sixshot_page(doc_id):
         delete_success_msg  = "已删除。"
         delete_done_sub     = "正在前往humandocu.com..."
         delete_error_msg    = "验证码不正确或已过期。"
-        ai_read_label = "AI解读的今天"
-        ai_color_label = "AI读出的今天色彩"
+        ai_today_label = "AI读出的今天"
         kakao_view_btn      = "查看人生影志"
         kakao_create_btn    = "我也来创建"
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
     else:
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
-        haiku_intro_label   = "5 · 7 · 5 음절로 오늘을 포착한 시"
+        haiku_intro_label   = "짧지만 강렬하게, 오늘을 찌르는 시"
         haiku_single_label  = "— 하이쿠 · 俳句 —"
-        haiku_s_label       = "🌸 하이쿠 · 감성"
-        haiku_h_label       = "😂 하이쿠 · 유머"
+        haiku_s_label       = "🌸 시 · 감성"
+        haiku_h_label       = "😂 시 · 유머"
         hero_sub_label      = "HUMANDOCU · 필모그래피"
         hero_tagline        = f"{nickname}님의 필모그래피"
         ver1_title          = "버전 1"
         ver1_sub            = "시적 · 은유적"
         ver2_title          = "버전 2"
         ver2_sub            = "담담 · 직접적"
-        shot_s_label        = "🌸 감성"
-        shot_h_label        = "😂 유머"
+        shot_s_label        = "🌸 시 · 감성"
+        shot_h_label        = "😂 시 · 유머"
         to_nobody_label     = "누군가에게 남기는 한 줄"
         play_label          = "▶ 재생"
         pause_label         = "⏸ 멈춤"
@@ -4350,8 +4347,7 @@ def sixshot_page(doc_id):
         delete_success_msg   = "삭제되었습니다."
         delete_done_sub      = "humandocu.com으로 이동합니다..."
         delete_error_msg     = "코드가 올바르지 않거나 만료되었습니다."
-        ai_read_label  = "AI가 읽은 오늘의 나"
-        ai_color_label = "AI가 읽은 오늘의 컬러"
+        ai_today_label = "AI가 읽은 오늘"
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4687,22 +4683,22 @@ function switchVer(v) {{
             + '</div>'
         )
 
-    # Build hashtag/palette HTML for today hero
-    today_hashtags_html = ""
-    if today_hashtags_str and page_type == "today":
-        today_hashtags_html = (
-            f'<div style="margin-top:8px;font-size:12px;color:#C8973A;letter-spacing:3px;text-align:center">'
-            + today_hashtags_str + '</div>'
-        )
-    today_palette_html = ""
-    if today_palette_list and page_type == "today":
-        _dots = "".join(
-            f'<span style="width:16px;height:16px;border-radius:50%;background:{c};display:inline-block"></span>'
-            for c in today_palette_list[:3]
-        )
-        today_palette_html = (
-            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-top:12px;margin-bottom:4px">{ai_color_label}</p>'
-            f'<div style="display:flex;justify-content:center;gap:8px">{_dots}</div>'
+    # Build hashtag/palette HTML for today hero (combined single row)
+    today_hero_extra_html = ""
+    if (today_hashtags_str or today_palette_list) and page_type == "today":
+        _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
+        _pl_part = ""
+        if today_palette_list:
+            _dots = "".join(
+                f'<span style="width:14px;height:14px;border-radius:50%;background:{c};display:inline-block"></span>'
+                for c in today_palette_list[:3]
+            )
+            _pl_part = f'<span style="display:inline-flex;gap:6px;align-items:center;margin-left:10px">{_dots}</span>'
+        today_hero_extra_html = (
+            f'<div style="margin-top:20px">'
+            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:6px">{ai_today_label}</p>'
+            f'<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">{_ht_part}{_pl_part}</div>'
+            f'</div>'
         )
 
 
@@ -4750,7 +4746,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
-    {'<div style="margin-top:20px"><p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;">' + ai_read_label + '</p>' + today_hashtags_html + today_palette_html + '</div>' if (today_hashtags_str or today_palette_list) and page_type == "today" else ""}
+    {today_hero_extra_html}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
@@ -7106,34 +7102,34 @@ def today_submit():
 (3행)
 
 [SHOT1감성]
-(하이쿠)
+(시)
 [SHOT1유머]
-(하이쿠)
+(시)
 
 [SHOT2감성]
-(하이쿠)
+(시)
 [SHOT2유머]
-(하이쿠)
+(시)
 
 [SHOT3감성]
-(하이쿠)
+(시)
 [SHOT3유머]
-(하이쿠)
+(시)
 
 [SHOT4감성]
-(하이쿠)
+(시)
 [SHOT4유머]
-(하이쿠)
+(시)
 
 [SHOT5감성]
-(하이쿠)
+(시)
 [SHOT5유머]
-(하이쿠)
+(시)
 
 [SHOT6감성]
-(하이쿠)
+(시)
 [SHOT6유머]
-(하이쿠)
+(시)
 
 [이모지]
 (이모지 5개, 한 줄)
@@ -7189,7 +7185,7 @@ palette: #hex1 #hex2 #hex3"""
    진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
    좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
 
-5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
    [SHOT1감성] — SHOT 1 장면의 핵심 감정 하나를 찌르는 시. 반전·솔직함·보편적 진실 중 하나로.
    [SHOT1유머] — 같은 장면을 유머·자조로 찌르는 시. 날것으로. 웃기게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
@@ -7354,34 +7350,34 @@ def today_submit_url():
 (3행)
 
 [SHOT1감성]
-(하이쿠)
+(시)
 [SHOT1유머]
-(하이쿠)
+(시)
 
 [SHOT2감성]
-(하이쿠)
+(시)
 [SHOT2유머]
-(하이쿠)
+(시)
 
 [SHOT3감성]
-(하이쿠)
+(시)
 [SHOT3유머]
-(하이쿠)
+(시)
 
 [SHOT4감성]
-(하이쿠)
+(시)
 [SHOT4유머]
-(하이쿠)
+(시)
 
 [SHOT5감성]
-(하이쿠)
+(시)
 [SHOT5유머]
-(하이쿠)
+(시)
 
 [SHOT6감성]
-(하이쿠)
+(시)
 [SHOT6유머]
-(하이쿠)
+(시)
 
 [이모지]
 (이모지 5개, 한 줄)
@@ -7437,7 +7433,7 @@ palette: #hex1 #hex2 #hex3"""
    진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
    좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
 
-5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
    [SHOT1감성] — SHOT 1 장면의 핵심 감정 하나를 찌르는 시. 반전·솔직함·보편적 진실 중 하나로.
    [SHOT1유머] — 같은 장면을 유머·자조로 찌르는 시. 날것으로. 웃기게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
@@ -7607,34 +7603,34 @@ def today_submit_b64():
 (3행)
 
 [SHOT1감성]
-(하이쿠)
+(시)
 [SHOT1유머]
-(하이쿠)
+(시)
 
 [SHOT2감성]
-(하이쿠)
+(시)
 [SHOT2유머]
-(하이쿠)
+(시)
 
 [SHOT3감성]
-(하이쿠)
+(시)
 [SHOT3유머]
-(하이쿠)
+(시)
 
 [SHOT4감성]
-(하이쿠)
+(시)
 [SHOT4유머]
-(하이쿠)
+(시)
 
 [SHOT5감성]
-(하이쿠)
+(시)
 [SHOT5유머]
-(하이쿠)
+(시)
 
 [SHOT6감성]
-(하이쿠)
+(시)
 [SHOT6유머]
-(하이쿠)
+(시)
 
 [이모지]
 (이모지 5개, 한 줄)
@@ -7690,7 +7686,7 @@ palette: #hex1 #hex2 #hex3"""
    진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
    좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
 
-5. [SHOT별 하이쿠] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
    [SHOT1감성] — SHOT 1 장면의 핵심 감정 하나를 찌르는 시. 반전·솔직함·보편적 진실 중 하나로.
    [SHOT1유머] — 같은 장면을 유머·자조로 찌르는 시. 날것으로. 웃기게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
