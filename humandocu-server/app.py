@@ -2429,7 +2429,13 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 (하이쿠)
 
 [이모지]
-(이모지 5개, 한 줄)"""
+(이모지 5개, 한 줄)
+
+[해시태그]
+hashtags: #태그1 #태그2 #태그3
+
+[팔레트]
+palette: #hex1 #hex2 #hex3"""
 
     if lang == 'ko':
         last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
@@ -2486,6 +2492,13 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
    - 이모지만 5개, 설명 없이, 한 줄로
    - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
    예: 😤💼🍱🚇😬
+
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개를 한국어로 생성.
+   예: #출근길 #빨간차 #왕의기운
+   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
+
+8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
+   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""
@@ -2546,6 +2559,13 @@ Please write the following:
    - Only use universally supported emoji released before 2015 (Unicode 8.0 or lower). No newer emoji like 🪷🫶🪸 (introduced after 2019).
    Example: 😤💼🍱🚇😬
 
+7. [해시태그] - 3 hashtags in English that capture today based on the photos and one-sentence summary.
+   Example: #morningcommute #redcar #royalvibes
+   Format: hashtags: #tag1 #tag2 #tag3 (strictly follow this format)
+
+8. [팔레트] - 3 colors in hex that represent the mood of today's photos.
+   Format: palette: #hex1 #hex2 #hex3 (strictly follow this format)
+
 Output format (exactly this format):
 {OUTPUT_FORMAT}"""
 
@@ -2591,6 +2611,13 @@ Output format (exactly this format):
    [SHOT1유머] — 同じ場面をユーモラスに捉えた俳句1篇。5・7・5音節。自嘲的で共感できるトーン。
    [SHOT2감성]〜[SHOT6유머]も同様に。提出されていないSHOTはスキップ。
 
+6. [해시태그] - 今日の写真と一言説明を見て、今日を表すハッシュタグを日本語で3つ生成。
+   例: #通勤の朝 #赤い車 #王の気配
+   形式: hashtags: #タグ1 #タグ2 #タグ3（必ずこの形式で）
+
+7. [팔레트] - 今日の写真の雰囲気を代表する色を3色、hexコードで返す。
+   形式: palette: #hex1 #hex2 #hex3（必ずこの形式で）
+
 出力形式（正確にこの形式で）:
 {OUTPUT_FORMAT}"""
 
@@ -2635,6 +2662,13 @@ Output format (exactly this format):
    [SHOT1감성] — 捕捉SHOT 1场景的俳句1首。5·7·5音节。自由把握场景的情感温度。
    [SHOT1유머] — 用幽默方式写同一场景的俳句1首。5·7·5音节。自嘲式，有共鸣感。不要太温和。
    [SHOT2감성]〜[SHOT6유머]同上。未提交的SHOT跳过。
+
+6. [해시태그] - 根据今天的照片和一句话，用中文生成3个代表今天的话题标签。
+   例: #早晨通勤 #红色汽车 #王者气息
+   格式: hashtags: #标签1 #标签2 #标签3（必须严格按此格式）
+
+7. [팔레트] - 返回3个代表今天照片氛围的颜色hex代码。
+   格式: palette: #hex1 #hex2 #hex3（必须严格按此格式）
 
 输出格式（严格按照此格式）:
 {OUTPUT_FORMAT}"""
@@ -2900,6 +2934,21 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
       </div>
       {today_album_block}""" if page_url else ""
+
+    # Build hashtag/palette HTML for today hero
+    today_hashtags_html = ""
+    if today_hashtags_str and page_type == "today":
+        today_hashtags_html = (
+            f'<div style="margin-top:8px;font-size:12px;color:#C8973A;letter-spacing:3px;text-align:center">'
+            + today_hashtags_str + '</div>'
+        )
+    today_palette_html = ""
+    if today_palette_list and page_type == "today":
+        _dots = "".join(
+            f'<span style="width:16px;height:16px;border-radius:50%;background:{c};display:inline-block"></span>'
+            for c in today_palette_list[:3]
+        )
+        today_palette_html = f'<div style="display:flex;justify-content:center;gap:8px;margin-top:8px">{_dots}</div>'
 
     html = f"""<!DOCTYPE html>
 <html lang="{lang}">
@@ -4094,7 +4143,7 @@ def sixshot_page(doc_id):
         delete_success_msg   = "Deleted."
         delete_done_sub      = "Redirecting to humandocu.com..."
         delete_error_msg     = "Code is invalid or expired."
-        emoji_section_label = "AI's read of today · Emojis"
+        ai_read_label = "AI's read of today"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -4161,7 +4210,7 @@ def sixshot_page(doc_id):
         delete_success_msg  = "削除しました。"
         delete_done_sub     = "humandocu.comへ移動します..."
         delete_error_msg    = "コードが正しくないか、期限切れです。"
-        emoji_section_label = "AIが読んだ今日の私（絵文字）"
+        ai_read_label = "AIが読んだ今日の私"
         kakao_view_btn      = "フィルモグラフィーを見る"
         kakao_create_btn    = "私も作る"
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
@@ -4228,7 +4277,7 @@ def sixshot_page(doc_id):
         delete_success_msg  = "已删除。"
         delete_done_sub     = "正在前往humandocu.com..."
         delete_error_msg    = "验证码不正确或已过期。"
-        emoji_section_label = "AI解读的今天（表情）"
+        ai_read_label = "AI解读的今天"
         kakao_view_btn      = "查看人生影志"
         kakao_create_btn    = "我也来创建"
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
@@ -4282,7 +4331,7 @@ def sixshot_page(doc_id):
         delete_success_msg   = "삭제되었습니다."
         delete_done_sub      = "humandocu.com으로 이동합니다..."
         delete_error_msg     = "코드가 올바르지 않거나 만료되었습니다."
-        emoji_section_label  = "AI가 읽은 오늘의 나 (이모지)"
+        ai_read_label  = "AI가 읽은 오늘의 나"
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4335,6 +4384,23 @@ def sixshot_page(doc_id):
         pass
 
     today_emojis = poem_dict.get("이모지", "").strip()
+
+    # Parse hashtags and palette for today hero
+    today_hashtags_str = data.get("hashtags", "") if page_type == "today" else ""
+    if not today_hashtags_str and page_type == "today":
+        _ht_raw = poem_dict.get("해시태그", "")
+        if _ht_raw:
+            _ht_m2 = _re.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', _ht_raw)
+            if _ht_m2:
+                today_hashtags_str = _ht_m2.group(1).strip()
+
+    today_palette_list = data.get("palette", []) if page_type == "today" else []
+    if not today_palette_list and page_type == "today":
+        _pl_raw = poem_dict.get("팔레트", "")
+        if _pl_raw:
+            _pl_m2 = _re.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', _pl_raw, _re.IGNORECASE)
+            if _pl_m2:
+                today_palette_list = _pl_m2.group(1).strip().split()
 
     if is_en:
         og_title = f"{nickname or name}'s Today Filmography · Humandocu"
@@ -4645,7 +4711,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
-    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">" + emoji_section_label + "</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
+    {'<div style="margin-top:20px"><p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;">' + ai_read_label + '</p>' + today_hashtags_html + today_palette_html + '</div>' if (today_hashtags_str or today_palette_list) and page_type == "today" else ""}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
@@ -7031,7 +7097,13 @@ def today_submit():
 (하이쿠)
 
 [이모지]
-(이모지 5개, 한 줄)"""
+(이모지 5개, 한 줄)
+
+[해시태그]
+hashtags: #태그1 #태그2 #태그3
+
+[팔레트]
+palette: #hex1 #hex2 #hex3"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -7084,6 +7156,13 @@ def today_submit():
    - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
    예: 😤💼🍱🚇😬
 
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개.
+   lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
+   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
+
+8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
+   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
+
 {lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
@@ -7095,6 +7174,12 @@ def today_submit():
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
+
+        import re as _re_ht
+        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
+        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
+        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
 
         # 3. poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
@@ -7117,6 +7202,8 @@ def today_submit():
             "identity": identity,
             "overall": overall,
             "lang": lang,
+            "hashtags": _hashtags_parsed,
+            "palette": _palette_parsed,
             "created_at": now,
         })
 
@@ -7250,7 +7337,13 @@ def today_submit_url():
 (하이쿠)
 
 [이모지]
-(이모지 5개, 한 줄)"""
+(이모지 5개, 한 줄)
+
+[해시태그]
+hashtags: #태그1 #태그2 #태그3
+
+[팔레트]
+palette: #hex1 #hex2 #hex3"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -7303,6 +7396,14 @@ def today_submit_url():
    - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
    예: 😤💼🍱🚇😬
 
+
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개.
+   lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
+   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
+
+8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
+   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
+
 {lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
@@ -7314,6 +7415,12 @@ def today_submit_url():
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
+
+        import re as _re_ht
+        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
+        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
+        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
 
         # 2. poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
@@ -7339,6 +7446,8 @@ def today_submit_url():
             "last_to":         last_to,
             "last_msg":        last_msg,
             "lang":            lang,
+            "hashtags":        _hashtags_parsed,
+            "palette":         _palette_parsed,
             "created_at":      now,
         })
 
@@ -7473,7 +7582,13 @@ def today_submit_b64():
 (하이쿠)
 
 [이모지]
-(이모지 5개, 한 줄)"""
+(이모지 5개, 한 줄)
+
+[해시태그]
+hashtags: #태그1 #태그2 #태그3
+
+[팔레트]
+palette: #hex1 #hex2 #hex3"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -7526,6 +7641,14 @@ def today_submit_b64():
    - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
    예: 😤💼🍱🚇😬
 
+
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개.
+   lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
+   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
+
+8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
+   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
+
 {lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
@@ -7537,6 +7660,12 @@ def today_submit_b64():
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
+
+        import re as _re_ht
+        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
+        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
+        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
 
         # poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
@@ -7561,6 +7690,8 @@ def today_submit_b64():
             "last_to":         last_to,
             "last_msg":        last_msg,
             "lang":            lang,
+            "hashtags":        _hashtags_parsed,
+            "palette":         _palette_parsed,
             "created_at":      now,
         })
 
