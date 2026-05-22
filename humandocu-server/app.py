@@ -4128,6 +4128,7 @@ def sixshot_page(doc_id):
         delete_done_sub      = "Redirecting to humandocu.com..."
         delete_error_msg     = "Code is invalid or expired."
         ai_read_label = "AI's read of today"
+        ai_color_label = "Today's colors, as AI sees it"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
@@ -4195,6 +4196,7 @@ def sixshot_page(doc_id):
         delete_done_sub     = "humandocu.comへ移動します..."
         delete_error_msg    = "コードが正しくないか、期限切れです。"
         ai_read_label = "AIが読んだ今日の私"
+        ai_color_label = "AIが読んだ今日のカラー"
         kakao_view_btn      = "フィルモグラフィーを見る"
         kakao_create_btn    = "私も作る"
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
@@ -4262,6 +4264,7 @@ def sixshot_page(doc_id):
         delete_done_sub     = "正在前往humandocu.com..."
         delete_error_msg    = "验证码不正确或已过期。"
         ai_read_label = "AI解读的今天"
+        ai_color_label = "AI读出的今天色彩"
         kakao_view_btn      = "查看人生影志"
         kakao_create_btn    = "我也来创建"
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
@@ -4316,6 +4319,7 @@ def sixshot_page(doc_id):
         delete_done_sub      = "humandocu.com으로 이동합니다..."
         delete_error_msg     = "코드가 올바르지 않거나 만료되었습니다."
         ai_read_label  = "AI가 읽은 오늘의 나"
+        ai_color_label = "AI가 읽은 오늘의 컬러"
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4664,7 +4668,10 @@ function switchVer(v) {{
             f'<span style="width:16px;height:16px;border-radius:50%;background:{c};display:inline-block"></span>'
             for c in today_palette_list[:3]
         )
-        today_palette_html = f'<div style="display:flex;justify-content:center;gap:8px;margin-top:8px">{_dots}</div>'
+        today_palette_html = (
+            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-top:12px;margin-bottom:4px">{ai_color_label}</p>'
+            f'<div style="display:flex;justify-content:center;gap:8px">{_dots}</div>'
+        )
 
 
     html = f"""<!DOCTYPE html>
