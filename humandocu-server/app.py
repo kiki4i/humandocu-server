@@ -4948,12 +4948,6 @@ function confirmDelete(){{
 }}
 </script>
 {ver_script}
-<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
-<script>
-if (window.twemoji) {{
-  twemoji.parse(document.body, {{folder:'svg',ext:'.svg'}});
-}}
-</script>
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
