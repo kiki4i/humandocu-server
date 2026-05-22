@@ -2934,22 +2934,6 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
       </div>
       {today_album_block}""" if page_url else ""
-
-    # Build hashtag/palette HTML for today hero
-    today_hashtags_html = ""
-    if today_hashtags_str and page_type == "today":
-        today_hashtags_html = (
-            f'<div style="margin-top:8px;font-size:12px;color:#C8973A;letter-spacing:3px;text-align:center">'
-            + today_hashtags_str + '</div>'
-        )
-    today_palette_html = ""
-    if today_palette_list and page_type == "today":
-        _dots = "".join(
-            f'<span style="width:16px;height:16px;border-radius:50%;background:{c};display:inline-block"></span>'
-            for c in today_palette_list[:3]
-        )
-        today_palette_html = f'<div style="display:flex;justify-content:center;gap:8px;margin-top:8px">{_dots}</div>'
-
     html = f"""<!DOCTYPE html>
 <html lang="{lang}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -4666,6 +4650,22 @@ function switchVer(v) {{
             + f'<script>{slideshow_js}</script>'
             + '</div>'
         )
+
+    # Build hashtag/palette HTML for today hero
+    today_hashtags_html = ""
+    if today_hashtags_str and page_type == "today":
+        today_hashtags_html = (
+            f'<div style="margin-top:8px;font-size:12px;color:#C8973A;letter-spacing:3px;text-align:center">'
+            + today_hashtags_str + '</div>'
+        )
+    today_palette_html = ""
+    if today_palette_list and page_type == "today":
+        _dots = "".join(
+            f'<span style="width:16px;height:16px;border-radius:50%;background:{c};display:inline-block"></span>'
+            for c in today_palette_list[:3]
+        )
+        today_palette_html = f'<div style="display:flex;justify-content:center;gap:8px;margin-top:8px">{_dots}</div>'
+
 
     html = f"""<!DOCTYPE html>
 <html lang="{lang}">
