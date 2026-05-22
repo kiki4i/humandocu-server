@@ -4024,6 +4024,8 @@ def sixshot_page(doc_id):
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
     lang        = data.get("lang", "ko")
     is_en       = (lang == "en")
+    is_ja       = (lang == "ja")
+    is_zh       = (lang == "zh")
 
     # 타입/언어별 UI 레이블
     if is_en:
@@ -4090,9 +4092,144 @@ def sixshot_page(doc_id):
         delete_success_msg   = "Deleted."
         delete_done_sub      = "Redirecting to humandocu.com..."
         delete_error_msg     = "Code is invalid or expired."
+        emoji_section_label = "AI's read of today · Emojis"
         kakao_view_btn      = "View Filmography"
         kakao_create_btn    = "Create Mine"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
+    elif is_ja:
+        if page_type == "today":
+            poem_section_title  = "✦ AIが完成させた詩"
+            scene_section_title = "今日のフィルモグラフィー"
+            haiku_intro_label   = "5・7・5音節で今日を捉えた詩"
+            hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+            hero_tagline        = f"{nickname}のフィルモグラフィー"
+            share_tagline       = "毎日を記録しましょう。<br>積み重ねると、それがあなたになります。"
+            cta_tag             = "HUMANDOCU · TODAY FILM"
+            cta_title           = "今日のあなたの一日も、<br>詩になれます"
+            cta_sub             = "写真6枚 + 一言 · 無料 · 結果はメールで"
+            cta_btn             = "私のToday Filmを作る →"
+            nav_today_lbl       = "📽️ 他のToday Filmを見る"
+            delete_confirm_msg  = "このToday Filmを削除しますか？元に戻すことはできません。"
+            page_title_str      = f"Today Film · {display_name}の今日"
+        else:
+            poem_section_title  = "✦ AIが完成させた詩"
+            scene_section_title = "ライフシックスショット"
+            haiku_intro_label   = "5・7・5音節で人生を凝縮した詩"
+            hero_sub_label      = "HUMANDOCU · SIX SHOT"
+            hero_tagline        = f"{nickname}のライフシックスショット"
+            share_tagline       = "6枚の写真であなたの人生を。"
+            cta_tag             = "HUMANDOCU · SIX SHOT"
+            cta_title           = "あなたの人生も<br>詩になれます"
+            cta_sub             = "写真6枚 + 短いストーリー · AIが詩にします"
+            cta_btn             = "私のシックスショットを作る →"
+            nav_today_lbl       = "📽️ Today Filmを見る"
+            delete_confirm_msg  = "このSix Shotを削除しますか？元に戻すことはできません。"
+            page_title_str      = f"ライフシックスショット · {display_name}"
+        haiku_single_label  = "— 俳句 —"
+        haiku_s_label       = "🌸 俳句 · 感情"
+        haiku_h_label       = "😂 俳句 · ユーモア"
+        ver1_title          = "バージョン 1"
+        ver1_sub            = "詩的 · 比喩的"
+        ver2_title          = "バージョン 2"
+        ver2_sub            = "淡々 · 直接的"
+        shot_s_label        = "🌸 感情"
+        shot_h_label        = "😂 ユーモア"
+        to_nobody_label     = "誰かへの一言"
+        play_label          = "▶ 再生"
+        pause_label         = "⏸ 一時停止"
+        link_section_label  = "私のフィルモグラフィーリンク"
+        copy_link_label     = "🔗 リンクをコピー"
+        my_link_btn_label   = "📬 記録リンクを受け取る"
+        my_link_sending     = "送信中..."
+        my_link_sent        = "✓ メール送信完了"
+        my_link_sent_msg    = f"{mask_email(email)} — メールをご確認ください。"
+        my_link_error_pfx   = "エラー: "
+        nav_sixshot_lbl     = "🎞️ ライフシックスショットを見る"
+        nav_home_lbl        = "🏠 HumanDocuを見る"
+        footer_text         = "Humandocuで作りました · humandocu.com"
+        delete_label        = "🗑 削除する"
+        delete_sending      = "認証メール送信中..."
+        delete_cancel_btn   = "キャンセル"
+        delete_sent_title   = "✉️ 認証メールを送信しました"
+        delete_sent_sub     = "登録済みのメールでご確認ください。"
+        delete_method1_title = "方法1 — メールから直接削除"
+        delete_method1_desc  = 'メールの&ldquo;今すぐ削除&rdquo;ボタンを押すと<br>このページに戻らなくても削除されます。'
+        delete_method2_title = "方法2 — ここでコードを入力"
+        delete_code_btn     = "確認"
+        delete_success_msg  = "削除しました。"
+        delete_done_sub     = "humandocu.comへ移動します..."
+        delete_error_msg    = "コードが正しくないか、期限切れです。"
+        emoji_section_label = "AIが読んだ今日の私（絵文字）"
+        kakao_view_btn      = "フィルモグラフィーを見る"
+        kakao_create_btn    = "私も作る"
+        copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
+    elif is_zh:
+        if page_type == "today":
+            poem_section_title  = "✦ AI完成的诗"
+            scene_section_title = "今日的人生影志"
+            haiku_intro_label   = "以5·7·5音节捕捉今天的诗"
+            hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+            hero_tagline        = f"{nickname}的人生影志"
+            share_tagline       = "每天都记录下来。<br>积累起来，那就是你。"
+            cta_tag             = "HUMANDOCU · TODAY FILM"
+            cta_title           = "今天你的一天，<br>也可以成为一首诗"
+            cta_sub             = "6张照片 + 一句话 · 免费 · 结果通过邮件发送"
+            cta_btn             = "创建我的Today Film →"
+            nav_today_lbl       = "📽️ 浏览其他Today Film"
+            delete_confirm_msg  = "确定要删除这个Today Film吗？此操作无法撤销。"
+            page_title_str      = f"Today Film · {display_name}的今天"
+        else:
+            poem_section_title  = "✦ AI完成的诗"
+            scene_section_title = "人生六格照"
+            haiku_intro_label   = "以5·7·5音节浓缩人生的诗"
+            hero_sub_label      = "HUMANDOCU · SIX SHOT"
+            hero_tagline        = f"{nickname}的人生六格照"
+            share_tagline       = "用6张照片讲述你的人生故事。"
+            cta_tag             = "HUMANDOCU · SIX SHOT"
+            cta_title           = "你的人生<br>也可以成为一首诗"
+            cta_sub             = "6张照片 + 短故事 · AI将其化为诗"
+            cta_btn             = "创建我的六格照 →"
+            nav_today_lbl       = "📽️ 浏览Today Film"
+            delete_confirm_msg  = "确定要删除这个Six Shot吗？此操作无法撤销。"
+            page_title_str      = f"人生六格照 · {display_name}"
+        haiku_single_label  = "— 俳句 —"
+        haiku_s_label       = "🌸 俳句 · 情感"
+        haiku_h_label       = "😂 俳句 · 幽默"
+        ver1_title          = "版本 1"
+        ver1_sub            = "诗意 · 隐喻"
+        ver2_title          = "版本 2"
+        ver2_sub            = "平实 · 直接"
+        shot_s_label        = "🌸 情感"
+        shot_h_label        = "😂 幽默"
+        to_nobody_label     = "给某人的留言"
+        play_label          = "▶ 播放"
+        pause_label         = "⏸ 暂停"
+        link_section_label  = "我的人生影志链接"
+        copy_link_label     = "🔗 复制链接"
+        my_link_btn_label   = "📬 获取我的记录链接"
+        my_link_sending     = "发送中..."
+        my_link_sent        = "✓ 邮件发送完成"
+        my_link_sent_msg    = f"{mask_email(email)} — 请检查您的邮箱。"
+        my_link_error_pfx   = "错误："
+        nav_sixshot_lbl     = "🎞️ 浏览人生六格照"
+        nav_home_lbl        = "🏠 浏览HumanDocu"
+        footer_text         = "由Humandocu制作 · humandocu.com"
+        delete_label        = "🗑 删除"
+        delete_sending      = "发送验证邮件中..."
+        delete_cancel_btn   = "取消"
+        delete_sent_title   = "✉️ 已发送验证邮件"
+        delete_sent_sub     = "请检查您注册的邮箱。"
+        delete_method1_title = "方法1 — 直接从邮件中删除"
+        delete_method1_desc  = '点击邮件中的&ldquo;立即删除&rdquo;按钮，<br>无需返回此页面即可直接删除。'
+        delete_method2_title = "方法2 — 在此输入验证码"
+        delete_code_btn     = "确认"
+        delete_success_msg  = "已删除。"
+        delete_done_sub     = "正在前往humandocu.com..."
+        delete_error_msg    = "验证码不正确或已过期。"
+        emoji_section_label = "AI解读的今天（表情）"
+        kakao_view_btn      = "查看人生影志"
+        kakao_create_btn    = "我也来创建"
+        copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
     else:
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
@@ -4143,6 +4280,7 @@ def sixshot_page(doc_id):
         delete_success_msg   = "삭제되었습니다."
         delete_done_sub      = "humandocu.com으로 이동합니다..."
         delete_error_msg     = "코드가 올바르지 않거나 만료되었습니다."
+        emoji_section_label  = "AI가 읽은 오늘의 나 (이모지)"
         page_title_str      = (f"투*필 · {display_name}님의 오늘" if page_type == "today"
                                else f"{display_name}님의 인생 이야기 · 휴먼다큐")
         kakao_view_btn      = "필모그래피 보기"
@@ -4199,6 +4337,12 @@ def sixshot_page(doc_id):
     if is_en:
         og_title = f"{nickname or name}'s Today Filmography · Humandocu"
         og_desc  = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
+    elif is_ja:
+        og_title = f"{nickname or name}のToday Film · Humandocu"
+        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}6枚の写真と詩で今日を記録しました。"
+    elif is_zh:
+        og_title = f"{nickname or name}的Today Film · Humandocu"
+        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}用6张照片和诗记录了今天。"
     elif page_type == "today":
         og_title = f"{nickname or name}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
         og_desc  = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
@@ -4466,8 +4610,8 @@ function switchVer(v) {{
 <meta property="og:description" content="{og_desc}">
 <meta property="og:image" content="{og_image}">
 <meta property="og:url" content="{page_url_self}">
-<meta property="og:site_name" content="{'humandocu.com' if is_en else '휴먼다큐'}">
-<meta property="og:locale" content="{'en_US' if is_en else 'ko_KR'}">
+<meta property="og:site_name" content="{'humandocu.com' if (is_en or is_ja or is_zh) else '휴먼다큐'}">
+<meta property="og:locale" content="{'en_US' if is_en else 'ja_JP' if is_ja else 'zh_CN' if is_zh else 'ko_KR'}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{og_image}">
 <style>
@@ -4499,7 +4643,7 @@ function switchVer(v) {{
     <div class="hero-name">{nickname}</div>
     <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
-    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">AI가 읽은 오늘의 나 (이모지)</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
+    {"<div style='margin-top:20px'><p style=\"font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:4px;\">" + emoji_section_label + "</p><p style=\"font-size:32px;letter-spacing:4px;text-align:center;margin-top:0;\">" + today_emojis + "</p></div>" if today_emojis and page_type == "today" else ""}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
 
@@ -4614,7 +4758,7 @@ function switchVer(v) {{
           .then(function(r){{ return r.json(); }})
           .then(function(d){{
             if (d.reset) {{
-              var msg = {json.dumps("모든 투*필을 다 보셨어요! 처음부터 다시 시작합니다." if not is_en else "You've seen all Today Filmographies! Starting over.")};
+              var msg = {json.dumps("You've seen all Today Filmographies! Starting over." if is_en else "すべてのToday Filmを見ました！最初からやり直します。" if is_ja else "已看完所有Today Film！从头开始。" if is_zh else "모든 투*필을 다 보셨어요! 처음부터 다시 시작합니다.")};
               alert(msg);
               sessionStorage.removeItem(SEEN_KEY);
             }}
