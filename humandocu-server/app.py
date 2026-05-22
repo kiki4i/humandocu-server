@@ -2484,7 +2484,8 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
    - 이 사람만의 오늘이 느껴지게
    - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
-   예: 😮‍💨💼🍱🚇🫠
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
+   예: 😤💼🍱🚇😬
 
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""
@@ -2542,7 +2543,8 @@ Please write the following:
    - Must feel specific to THIS person's today
    - Consider nickname, photos, feelings, and summary together
    - Just 5 emojis, no explanation, one line
-   Example: 😮‍💨💼🍱🚇🫠
+   - Only use universally supported emoji released before 2015 (Unicode 8.0 or lower). No newer emoji like 🪷🫶🪸 (introduced after 2019).
+   Example: 😤💼🍱🚇😬
 
 Output format (exactly this format):
 {OUTPUT_FORMAT}"""
@@ -7079,7 +7081,8 @@ def today_submit():
    - 이 사람만의 오늘이 느껴지게
    - 닉네임, 사진, 속마음 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
-   예: 😮‍💨💼🍱🚇🫠
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
+   예: 😤💼🍱🚇😬
 
 {lang_instruction}
 
@@ -7297,7 +7300,8 @@ def today_submit_url():
    - 이 사람만의 오늘이 느껴지게
    - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
-   예: 😮‍💨💼🍱🚇🫠
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
+   예: 😤💼🍱🚇😬
 
 {lang_instruction}
 
@@ -7519,7 +7523,8 @@ def today_submit_b64():
    - 이 사람만의 오늘이 느껴지게
    - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
-   예: 😮‍💨💼🍱🚇🫠
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
+   예: 😤💼🍱🚇😬
 
 {lang_instruction}
 
