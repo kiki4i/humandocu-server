@@ -4338,7 +4338,7 @@ def sixshot_page(doc_id):
         haiku_s_label       = "🌸 시 · 감성"
         haiku_h_label       = "😂 시 · 유머"
         hero_sub_label      = "TODAY FILMOGRAPHY"
-        hero_tagline        = f"{nickname} · 오늘, 이 순간"
+        hero_tagline        = "오늘, 이 순간"
         ver1_title          = "버전 1"
         ver1_sub            = "시적 · 은유적"
         ver2_title          = "버전 2"
@@ -4742,9 +4742,11 @@ def sixshot_page(doc_id):
 
   <div class="hero">
     <div class="hero-sub">{hero_sub_label}</div>
-    <div class="hero-name">{nickname}</div>
-    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
-    <div class="hero-identity">{identity}</div>
+    <div style="margin-bottom:6px;">
+      <span class="hero-name">{nickname}</span><span style="font-size:16px;color:rgba(200,169,110,.6);font-weight:300;margin-left:4px;">님의</span>
+    </div>
+    <div style="font-size:18px;color:rgba(200,169,110,.85);letter-spacing:.06em;margin-bottom:12px;font-family:Georgia,serif;font-weight:300;">{hero_tagline}</div>
+    <div class="hero-identity" style="word-break:keep-all;overflow-wrap:break-word;">{identity}</div>
     {today_hero_extra_html}
     {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
   </div>
