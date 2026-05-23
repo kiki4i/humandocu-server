@@ -2382,17 +2382,7 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
     submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_weekdays_ko[_now.weekday()]} {_ampm_ko} {_h}시 {_now.minute:02d}분"
     submit_time_en = f"{_weekdays_en[_now.weekday()]}, {_now.strftime('%B')} {_now.day}, {_now.year} {'AM' if _now.hour < 12 else 'PM'} {_h}:{_now.minute:02d}"
 
-    OUTPUT_FORMAT = """[대표]
-(1행)
-(2행)
-(3행)
-
-[대표2]
-(1행)
-(2행)
-(3행)
-
-[하이쿠감성]
+    OUTPUT_FORMAT = """[하이쿠감성]
 (1행)
 (2행)
 (3행)
@@ -2472,29 +2462,27 @@ palette: #hex1 #hex2 #hex3"""
 
 다음을 작성해주세요.
 
-1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
-   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
-   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
+1. [하이쿠감성] - 오늘 하루를 관통하는 단 하나의 감정·진실을 찌르는 시.
+   2~3줄. 형식 없음. 음절 금지.
+   목표: 읽는 사람이 화면에서 눈을 떼지 못하게. "헉, 맞아" 하고 멈추게.
+   이 사람의 오늘에서 말하지 않은 것을 꺼내라. 사진 뒤에 숨겨진 감정.
+   기법 (하나만 골라라):
+   ① 반전: 평범하게 시작해서 마지막 줄에서 완전히 뒤집어라
+   ② 날것: 누구나 느끼지만 아무도 말 안 하는 걸 그대로 써라
+   ③ 보편: 이 사람 얘기인데 읽는 사람 모두 "나도 그래" 하게
+   ❌ 나쁜 예: "선풍기 박스 앞에서 / 작년 것을 떠올리며 / 새것을 바라봤다" (설명)
+   ✅ 좋은 예: "작년 것은 어디 갔지 / 그게 왜 이렇게 / 슬프지" (진실)
+   ✅ 좋은 예: "일주일을 버텼다 / 금요일 밤이 되어서야 / 비로소 나였다" (반전)
 
-2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
-   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
+2. [하이쿠유머] - 같은 오늘을 유머·자조로 찌르는 시.
+   2~3줄. 형식 없음. 음절 금지.
+   진짜 웃겨야 한다. 자조적으로. 날것으로. 피식이 아니라 빵 터지게.
+   현실의 민낯을 그대로. 포장하지 마라.
+   ❌ 나쁜 예: "선풍기 앞에서 / 여름 걱정하는 / 소시민" (밋밋함)
+   ✅ 좋은 예: "작년 선풍기 어디 갔지 / 그러면서 새것 집어드는 / 내 손" (현장감)
+   ✅ 좋은 예: "할 일이 태산이라며 / 점심 먹고 선풍기 구경 / 이게 내 인생이다"
 
-3. [하이쿠감성] - 오늘 하루 전체의 핵심 감정 하나를 찌르는 짧은 시.
-   2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
-   목표: 읽는 사람이 '헉' 하고 멈추게.
-   3가지 기법 중 하나를 골라라:
-   1) 반전: 평범해 보이다가 마지막 줄에서 뒤집어라.
-   2) 날것의 솔직함: 누구나 느끼지만 아무도 말 안 하는 것을 그대로.
-   3) 보편적 진실: 이 사람 이야기인데 읽는 누구나 '나도 그래' 하게.
-   나쁜 예: '여름날에 시작하고 끝나는 하나씩' (형식에 맞추느라 의미 없음)
-   좋은 예: '일주일을 버텼다 / 금요일 밤이 되어서야 / 비로소 나였다'
-
-4. [하이쿠유머] - 같은 오늘을 유머·자조로 찌르는 짧은 시.
-   2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
-   진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
-   좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
-
-5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+3. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
    핵심: 사진 설명을 그대로 쓰면 안 된다. 그 설명 뒤에 있는 것을 써라.
    나쁜 예 — "오늘은 찬이 많네" 사진:
      ❌ "오늘은 찬이 많다고 하지만 / 늘 이 정도였는데 / 왜 오늘만 풍성해 보일까" (설명을 시처럼 쓴 것)
@@ -4349,8 +4337,8 @@ def sixshot_page(doc_id):
         haiku_single_label  = "— 짧지만 강렬하게 —"
         haiku_s_label       = "🌸 시 · 감성"
         haiku_h_label       = "😂 시 · 유머"
-        hero_sub_label      = "HUMANDOCU · 필모그래피"
-        hero_tagline        = f"{nickname}님의 필모그래피"
+        hero_sub_label      = "TODAY FILMOGRAPHY"
+        hero_tagline        = f"{nickname} · 오늘, 이 순간"
         ver1_title          = "버전 1"
         ver1_sub            = "시적 · 은유적"
         ver2_title          = "버전 2"
@@ -4528,43 +4516,9 @@ def sixshot_page(doc_id):
             '</div>'
         )
 
-    # 버전 토글 버튼 (대표2 있을 때만)
+    # 버전 토글 버튼 — 제거됨 (감성/유머로 통합)
     ver_toggle_html = ""
     ver_script = ""
-    if rep_poem2:
-        import json as _json
-        rep_poem2_json = _json.dumps(poem_html(rep_poem2), ensure_ascii=False)
-        ver_toggle_html = f'''<div style="margin-top:16px">
-  <div style="display:flex;gap:10px">
-    <button onclick="switchVer(1)" id="ver1-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#C8870A;color:#fff;cursor:pointer;text-align:center;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">{ver1_title}</div>
-      <div style="font-size:11px;opacity:.85;">{ver1_sub}</div>
-    </button>
-    <button onclick="switchVer(2)" id="ver2-btn" style="flex:1;padding:14px 10px;border-radius:12px;border:2px solid #C8870A;background:#fff;color:#C8870A;cursor:pointer;text-align:center;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">{ver2_title}</div>
-      <div style="font-size:11px;opacity:.7;">{ver2_sub}</div>
-    </button>
-  </div>
-</div>'''
-        ver_script = f"""
-<script>
-var _ver1 = document.getElementById('rep-poem-box').innerHTML;
-var _ver2 = {rep_poem2_json};
-function switchVer(v) {{
-  var box = document.getElementById('rep-poem-box');
-  var b1 = document.getElementById('ver1-btn');
-  var b2 = document.getElementById('ver2-btn');
-  if (v === 1) {{
-    box.innerHTML = _ver1;
-    b1.style.background = '#C8870A'; b1.style.color = '#fff'; b1.style.borderColor = '#C8870A';
-    b2.style.background = '#fff'; b2.style.color = '#C8870A'; b2.style.borderColor = '#C8870A';
-  }} else {{
-    box.innerHTML = _ver2;
-    b2.style.background = '#C8870A'; b2.style.color = '#fff'; b2.style.borderColor = '#C8870A';
-    b1.style.background = '#fff'; b1.style.color = '#C8870A'; b1.style.borderColor = '#C8870A';
-  }}
-}}
-</script>"""
 
     # 장면별 카드 HTML
     scene_cards = ""
@@ -4798,8 +4752,6 @@ function switchVer(v) {{
   <div class="section">
     <div class="section-label">{poem_section_title}</div>
     {haiku_block_html}
-    <div class="rep-poem" id="rep-poem-box">{poem_html(rep_poem)}</div>
-    {ver_toggle_html}
   </div>
 
   <div class="section" style="padding-top:0">
