@@ -1965,15 +1965,17 @@ def webhook_advanced_native():
         }
 
         # ── Firebase 저장 ──
+        contact_email = payload.get("email", "").strip()
         _get_db().collection("advanced_pending").document(pending_id).set({
             "fields":        fields,
             "fields_by_key": {},
             "deceased_name": deceased_name,
+            "contact_email": contact_email,
             "status":        "pending",
             "source":        "native_form",
             "created_at":    datetime.datetime.utcnow().isoformat(),
         })
-        print(f"[NATIVE] pending 저장 완료: {pending_id}")
+        print(f"[NATIVE] pending 저장 완료: {pending_id} / email={contact_email}")
 
         # ── 파이프라인 실행 ──
         import threading
@@ -2140,8 +2142,8 @@ def _run_advanced_pipeline(pending_id):
             print(f"[ADVANCED] pending 문서 없음: {pending_id}")
             return
         data = doc.to_dict()
-        if data.get("status") != "pending":
-            print(f"[ADVANCED] 이미 처리됨: {pending_id}")
+        if data.get("status") not in ("pending", "test"):
+            print(f"[ADVANCED] 이미 처리됨: {pending_id} / status={data.get('status')}")
             return
 
         # 상태 업데이트
@@ -2169,7 +2171,7 @@ def _run_advanced_pipeline(pending_id):
                 bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "") or \
                             fields.get(" 고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
                 last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
-                contact_email = fields.get("신청자 이메일", "")
+                contact_email = data.get("contact_email", "") or fields.get("신청자 이메일", "")
 
                 print("[ADVANCED] Claude API 호출 - 버전A...")
                 one_liner_a, tribute_para_a = generate_tribute_advanced(
