@@ -1842,6 +1842,44 @@ def webhook_basic():
         return jsonify({"error": str(e)}), 500
 
 
+
+@app.route("/test/memorial-form", methods=["GET"])
+def test_memorial_form():
+    """테스트용 — 결제 없이 메모리얼 폼으로 바로 이동"""
+    test_pending_id = "test_" + __import__('uuid').uuid4().hex[:8]
+    import datetime
+    _get_db().collection("advanced_pending").document(test_pending_id).set({
+        "fields": {}, "fields_by_key": {}, "deceased_name": "",
+        "status": "test", "source": "test",
+        "created_at": datetime.datetime.utcnow().isoformat(),
+    })
+    return __import__('flask').redirect(
+        f"https://humandocu.com/memorial-form.html?pending_id={test_pending_id}&test=1"
+    )
+
+
+@app.route("/test/native-result/<pending_id>", methods=["GET"])
+def test_native_result(pending_id):
+    """테스트용 — pending_id로 파이프라인 결과 조회"""
+    try:
+        doc = _get_db().collection("advanced_pending").document(pending_id).get()
+        if not doc.exists:
+            return jsonify({"error": "문서 없음"}), 404
+        data = doc.to_dict()
+        return jsonify({
+            "status":       data.get("status"),
+            "deceased":     data.get("deceased_name"),
+            "pages_url":    data.get("pages_url"),
+            "one_liner_a":  data.get("one_liner_a"),
+            "one_liner_b":  data.get("one_liner_b"),
+            "tribute_a":    data.get("tribute_para_a","")[:200] + "...",
+            "email":        data.get("contact_email"),
+            "fields_keys":  list(data.get("fields",{}).keys()),
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/webhook/advanced-native", methods=["POST"])
 def webhook_advanced_native():
     """자체 memorial-form.html에서 직접 POST — Tally 없이 바로 파이프라인 실행"""
@@ -3796,9 +3834,7 @@ def test_portone():
 @app.route("/payment/success", methods=["GET"])
 def payment_success():
     pending_id = request.args.get("pending_id", "")
-    # Tally 어드밴스드 폼 ID
-    tally_form_id = "7RVAZa"
-    tally_url = f"https://tally.so/r/{tally_form_id}?pending_id={pending_id}"
+    form_url = f"https://humandocu.com/memorial-form.html?pending_id={pending_id}"
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -3829,17 +3865,11 @@ def payment_success():
       입력이 완료되면 약 10분 이내에<br>
       이메일로 발송해 드립니다.
     </div>
-    <a href="{tally_url}" class="btn">부고 정보 입력하기 빈칸</a>
+    <a href="{form_url}" class="btn">부고 정보 입력하기 →</a>
     <div class="sub">문의: 031-539-9709</div>
     <div class="pid">주문번호: {pending_id}</div>
   </div>
 </div>
-<script>
-  // pending_id를 localStorage에 저장 빈칸 Tally 완료 후 webhook에서 사용
-  if ('{pending_id}') {{
-    localStorage.setItem('hd_pending_id', '{pending_id}');
-  }}
-</script>
 </body>
 </html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
@@ -6799,6 +6829,167 @@ def send_email_damnyejang(to_email, deceased_name, pages_url, edit_url=""):
     )
     resp.raise_for_status()
     print(f"[DAMNYEJANG] 이메일 발송: {to_email}")
+
+
+
+
+def _run_damnyejang_pipeline(pending_id, d_fields, contact_email, is_edit=False, stored_fields=None, stored_msg_a="", stored_msg_b=""):
+    """답례장 파이프라인 — native 폼과 Tally 공용"""
+    import datetime as _dt
+    try:
+        deceased_name = d_fields.get("고인이름", "").strip()
+        chief_name    = d_fields.get("상주 이름", "").strip()
+        chief_words   = d_fields.get("상주가 대표로 하고 싶은 말", "").strip()
+
+        adv_data = firebase_get_advanced(deceased_name)
+        print(f"[DAMNYEJANG-PIPE] Firebase 조회: {list(adv_data.keys())}")
+
+        if is_edit and stored_msg_a and stored_msg_b:
+            msg_a, msg_b = stored_msg_a, stored_msg_b
+            print("[DAMNYEJANG-PIPE] 기존 인사말 재사용")
+        else:
+            msg_a, msg_b = generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_data)
+            print(f"[DAMNYEJANG-PIPE] 인사말 생성 완료")
+
+        merged_fields = dict(stored_fields or {})
+        merged_fields.update(d_fields)
+        if is_edit and stored_fields:
+            for key in _DAMNYEJANG_PHOTO_KEYS:
+                if not d_fields.get(key):
+                    merged_fields[key] = stored_fields.get(key, "")
+
+        edit_url = f"https://humandocu-server-production.up.railway.app/damnyejang/edit-link/{pending_id}"
+        html = build_html_damnyejang(merged_fields, adv_data, msg_a, msg_b, edit_url=edit_url)
+        filename  = "damnyejang-" + safe_filename(deceased_name)
+        pages_url = upload_to_github(filename, html)
+        print(f"[DAMNYEJANG-PIPE] 업로드 완료: {pages_url}")
+
+        doc_data = {
+            "fields":        merged_fields,
+            "deceased_name": deceased_name,
+            "contact_email": contact_email,
+            "msg_a":         msg_a,
+            "msg_b":         msg_b,
+            "pages_url":     pages_url,
+            "status":        "done",
+            "updated_at":    _dt.datetime.utcnow().isoformat(),
+        }
+        if is_edit:
+            _get_db().collection("damnyejang_pending").document(pending_id).update(doc_data)
+        else:
+            doc_data["created_at"] = _dt.datetime.utcnow().isoformat()
+            _get_db().collection("damnyejang_pending").document(pending_id).set(doc_data)
+
+        send_email_damnyejang(contact_email, deceased_name, pages_url, edit_url=edit_url)
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        print(f"[DAMNYEJANG-PIPE] 오류: {e}")
+
+
+@app.route("/webhook/damnyejang-native", methods=["POST"])
+def webhook_damnyejang_native():
+    """자체 damnyejang-form.html에서 직접 POST — Tally 없이 바로 파이프라인 실행"""
+    try:
+        payload = request.get_json(force=True)
+        import uuid, datetime as _dt
+
+        pending_id = payload.get("pending_id", "").strip() or uuid.uuid4().hex[:16]
+        deceased_name = payload.get("deceased", "").strip()
+        chief_name    = payload.get("chief", "").strip()
+        contact_email = payload.get("email", "").strip()
+
+        if not deceased_name:
+            return jsonify({"status": "error", "reason": "고인이름 없음"}), 400
+
+        print(f"[DAMNYEJANG-NATIVE] 수신: {deceased_name} / {pending_id}")
+
+        # ── 이미지 업로드 ──
+        def upload_photo(b64, label):
+            if not b64: return ""
+            try:
+                fname = f"damnyejang/{pending_id}_{label}.jpg"
+                return _upload_to_firebase_storage(b64, fname)
+            except Exception as e:
+                print(f"[DAMNYEJANG-NATIVE] 사진 업로드 오류 {label}: {e}")
+                return ""
+
+        def upload_audio(b64, label):
+            if not b64: return ""
+            try:
+                import base64 as _b64
+                from firebase_admin import storage as fb_storage
+                svc_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+                svc = json.loads(svc_json)
+                bucket_name = svc.get("project_id", "humandocu-93c65") + ".firebasestorage.app"
+                if not firebase_admin._apps: _get_db()
+                bucket = fb_storage.bucket(bucket_name)
+                audio_bytes = _b64.b64decode(b64)
+                fname = f"damnyejang/{pending_id}_{label}.mp3"
+                blob = bucket.blob(fname)
+                blob.upload_from_string(audio_bytes, content_type="audio/mpeg")
+                blob.make_public()
+                return blob.public_url
+            except Exception as e:
+                print(f"[DAMNYEJANG-NATIVE] 음성 업로드 오류 {label}: {e}")
+                return ""
+
+        main_url   = upload_photo(payload.get("main_photo_b64",""), "main")
+        family_url = upload_photo(payload.get("family_photo_b64",""), "family")
+        voice_deceased_url = upload_audio(payload.get("voice_deceased_b64",""), "voice_deceased")
+        voice_chief_url    = upload_audio(payload.get("voice_chief_b64",""), "voice_chief")
+
+        funeral_photos = payload.get("funeral_photos", [])
+        funeral_urls = {}
+        for ph in funeral_photos:
+            idx = ph.get("index", 0)
+            if ph.get("image_b64"):
+                funeral_urls[idx] = {
+                    "url": upload_photo(ph["image_b64"], f"funeral{idx}"),
+                    "caption": ph.get("caption","")
+                }
+
+        # ── d_fields 딕셔너리 구성 ──
+        d_fields = {
+            "고인이름":          deceased_name,
+            "상주 이름":         chief_name,
+            "상주 연락처":       payload.get("phone",""),
+            "답례장 링크 받으실 이메일": contact_email,
+            "상주가 대표로 하고 싶은 말": payload.get("message",""),
+            "고인 대표사진":     main_url,
+            "유가족 답례사진":   family_url,
+            "고인 육성 파일":    voice_deceased_url,
+            "상주 육성 파일":    voice_chief_url,
+        }
+        for idx, info in funeral_urls.items():
+            d_fields[f"장례사진{idx}"] = info["url"]
+            d_fields[f"장례사진{idx}설명"] = info["caption"]
+
+        # ── Firebase 저장 ──
+        _get_db().collection("damnyejang_pending").document(pending_id).set({
+            "fields":        d_fields,
+            "deceased_name": deceased_name,
+            "contact_email": contact_email,
+            "status":        "pending",
+            "source":        "native_form",
+            "created_at":    _dt.datetime.utcnow().isoformat(),
+        })
+        print(f"[DAMNYEJANG-NATIVE] pending 저장: {pending_id}")
+
+        # ── 파이프라인 실행 (기존 webhook_damnyejang 로직 재활용) ──
+        import threading
+        threading.Thread(
+            target=_run_damnyejang_pipeline,
+            args=(pending_id, d_fields, contact_email),
+            daemon=True
+        ).start()
+
+        return jsonify({"status": "ok", "pending_id": pending_id}), 200
+
+    except Exception as e:
+        print(f"[DAMNYEJANG-NATIVE] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/webhook/damnyejang", methods=["POST"])
