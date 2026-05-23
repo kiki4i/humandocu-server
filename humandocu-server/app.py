@@ -1841,6 +1841,114 @@ def webhook_basic():
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/webhook/advanced-native", methods=["POST"])
+def webhook_advanced_native():
+    """자체 memorial-form.html에서 직접 POST — Tally 없이 바로 파이프라인 실행"""
+    try:
+        payload = request.get_json(force=True)
+        import uuid, datetime
+
+        pending_id = payload.get("pending_id", "").strip() or uuid.uuid4().hex[:16]
+        deceased_name = payload.get("deceased", "").strip()
+        if not deceased_name:
+            return jsonify({"status": "error", "reason": "고인 성함 없음"}), 400
+
+        print(f"[NATIVE] 자체폼 수신: {deceased_name} / pending_id={pending_id}")
+
+        # ── 이미지 업로드 ──
+        def upload_photo(b64, label):
+            if not b64:
+                return ""
+            try:
+                fname = f"memorial/{pending_id}_{label}.jpg"
+                return _upload_to_firebase_storage(b64, fname)
+            except Exception as e:
+                print(f"[NATIVE] 사진 업로드 오류 {label}: {e}")
+                return ""
+
+        portrait_url = upload_photo(payload.get("portrait_b64", ""), "portrait")
+        life_urls = {}
+        for ph in payload.get("life_photos", []):
+            idx = ph.get("index", 0)
+            if ph.get("image_b64"):
+                life_urls[idx] = {
+                    "url": upload_photo(ph["image_b64"], f"life{idx}"),
+                    "caption": ph.get("caption", "")
+                }
+
+        # ── fields 딕셔너리 구성 (파이프라인이 기대하는 한국어 키) ──
+        fields = {
+            "고인 성함":                 deceased_name,
+            "직함/직책":                 payload.get("title", ""),
+            "종교":                      payload.get("religion", ""),
+            "성별":                      payload.get("gender", ""),
+            "생년월일":                  payload.get("birth", ""),
+            "별세일":                    payload.get("death", ""),
+            "고인 한줄 소개":            payload.get("intro", ""),
+            "고인과 상주의 관계":        payload.get("relation", ""),
+            "상주 성함":                 payload.get("chief", ""),
+            "신청자 이름":               payload.get("applicant", ""),
+            "신청자 연락처":             payload.get("phone", ""),
+            "신청자 이메일":             payload.get("email", ""),
+            # 고인 이야기
+            "고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?":
+                payload.get("memory", ""),
+            "고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?":
+                payload.get("habit", ""),
+            "고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?":
+                payload.get("shine", ""),
+            "끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.":
+                payload.get("last_message", ""),
+            "생애 주요 사건":            payload.get("history", ""),
+            "유가족 명단":               payload.get("family", ""),
+            # 장례 정보
+            "입실일시":                  payload.get("checkin", ""),
+            "입관일시":                  payload.get("coffin", ""),
+            "발인일시":                  payload.get("funeral", ""),
+            "장례식장 이름":             payload.get("hall_name", ""),
+            "장례식장 주소":             payload.get("hall_addr", ""),
+            "장례식장 전화번호":         payload.get("hall_tel", ""),
+            "장지이름 또는 주소":        payload.get("grave", ""),
+            "안내 말씀":                 payload.get("notice", ""),
+            "조의금 계좌":               payload.get("account", ""),
+            # 사진 URL
+            "고인 사진(영정)":           portrait_url,
+            "생애 사진1":               life_urls.get(1, {}).get("url", ""),
+            "생애 사진1 설명":          life_urls.get(1, {}).get("caption", ""),
+            "생애 사진2":               life_urls.get(2, {}).get("url", ""),
+            "생애 사진2 설명":          life_urls.get(2, {}).get("caption", ""),
+            "생애 사진3":               life_urls.get(3, {}).get("url", ""),
+            "생애 사진3 설명":          life_urls.get(3, {}).get("caption", ""),
+            "생애 사진4":               life_urls.get(4, {}).get("url", ""),
+            "생애 사진4 설명":          life_urls.get(4, {}).get("caption", ""),
+            "생애 사진5":               life_urls.get(5, {}).get("url", ""),
+            "생애 사진5 설명":          life_urls.get(5, {}).get("caption", ""),
+        }
+
+        # ── Firebase 저장 ──
+        _get_db().collection("advanced_pending").document(pending_id).set({
+            "fields":        fields,
+            "fields_by_key": {},
+            "deceased_name": deceased_name,
+            "status":        "pending",
+            "source":        "native_form",
+            "created_at":    datetime.datetime.utcnow().isoformat(),
+        })
+        print(f"[NATIVE] pending 저장 완료: {pending_id}")
+
+        # ── 파이프라인 실행 ──
+        import threading
+        threading.Thread(target=_run_advanced_pipeline, args=(pending_id,), daemon=True).start()
+
+        return jsonify({"status": "ok", "pending_id": pending_id}), 200
+
+    except Exception as e:
+        print(f"[NATIVE] 오류: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/webhook/advanced", methods=["POST"])
 def webhook_advanced():
     """Tally 어드밴스드 웹훅 - 데이터를 Firebase에 임시 저장 후 결제 페이지 URL 반환"""
