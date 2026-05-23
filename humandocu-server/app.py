@@ -3836,7 +3836,15 @@ def test_portone():
 @app.route("/payment/success", methods=["GET"])
 def payment_success():
     pending_id = request.args.get("pending_id", "")
-    form_url = f"https://humandocu.com/memorial-form.html?pending_id={pending_id}"
+    lang = request.args.get("lang", "KO").upper()
+    form_map = {
+        "KO": "memorial-form.html",
+        "EN": "memorial-form-en.html",
+        "JP": "memorial-form-jp.html",
+        "ZH": "memorial-form-zh.html",
+    }
+    form_file = form_map.get(lang, "memorial-form.html")
+    form_url = f"https://humandocu.com/{form_file}?pending_id={pending_id}"
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
