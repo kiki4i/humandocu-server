@@ -5205,6 +5205,46 @@ def today_feed():
         return jsonify({"status": "error", "items": [], "has_more": False, "next_offset": None, "total": 0}), 200
 
 
+@app.route("/api/sixshot/feed", methods=["GET"])
+def sixshot_feed():
+    """공개 식스샷 목록 반환 — 썸네일 그리드용. ?limit=30&offset=0"""
+    try:
+        limit = min(int(request.args.get("limit", 12)), 30)
+        offset = max(int(request.args.get("offset", 0)), 0)
+        db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        docs = db.collection("sixshot")            .where(filter=FieldFilter("is_public", "==", True))            .limit(500).get()
+        all_items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            photo1 = imgs.get("1", "") or imgs.get(1, "")
+            photo2 = imgs.get("2", "") or imgs.get(2, "")
+            all_items.append({
+                "doc_id": doc.id,
+                "name": d.get("name", ""),
+                "nickname": d.get("nickname", "") or d.get("name", ""),
+                "identity": d.get("identity", ""),
+                "photo1": photo1,
+                "photo2": photo2,
+                "created_at": d.get("created_at", ""),
+            })
+        all_items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        total = len(all_items)
+        page_items = all_items[offset:offset + limit]
+        has_more = (offset + limit) < total
+        return jsonify({
+            "status": "ok",
+            "items": page_items,
+            "has_more": has_more,
+            "next_offset": offset + limit if has_more else None,
+            "total": total,
+        }), 200
+    except Exception as e:
+        logger.error(f"[SIXSHOT-FEED] error: {e}")
+        return jsonify({"status": "error", "items": [], "has_more": False}), 200
+
+
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "휴먼다큐 베이직"}), 200
