@@ -5193,6 +5193,38 @@ def next_today(current_doc_id):
     return redirect("https://humandocu.com/today.html")
 
 
+@app.route("/api/today/feed", methods=["GET"])
+def today_feed():
+    """공개 투*필 목록 반환 — 썸네일 그리드용. ?limit=12"""
+    import random as _random
+    try:
+        limit = min(int(request.args.get("limit", 12)), 30)
+        db = _get_db()
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        docs = db.collection("today")\
+            .where(filter=FieldFilter("is_public", "==", True))\
+            .limit(50).get()
+        items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            photo1 = imgs.get("1", "") or imgs.get(1, "")
+            photo2 = imgs.get("2", "") or imgs.get(2, "")
+            items.append({
+                "doc_id": doc.id,
+                "name": d.get("name", ""),
+                "nickname": d.get("nickname", "") or d.get("name", ""),
+                "identity": d.get("identity", ""),
+                "photo1": photo1,
+                "photo2": photo2,
+            })
+        _random.shuffle(items)
+        return jsonify({"status": "ok", "items": items[:limit]}), 200
+    except Exception as e:
+        logger.error(f"[TODAY-FEED] error: {e}")
+        return jsonify({"status": "error", "items": []}), 200
+
+
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "휴먼다큐 베이직"}), 200
