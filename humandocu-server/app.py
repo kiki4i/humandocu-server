@@ -5195,37 +5195,26 @@ def next_today(current_doc_id):
 
 @app.route("/api/today/feed", methods=["GET"])
 def today_feed():
-    """공개 투*필 목록 반환 — 썸네일 그리드용. ?page=1&limit=12
-    - created_at 내림차순 정렬 + Firestore cursor 기반 페이지네이션
-    - 응답: { status, items, has_more, next_cursor }
+    """공개 투*필 목록 반환 — 썸네일 그리드용.
+    ?limit=12&offset=0
+    - is_public==True 전체 가져와서 Python에서 created_at 내림차순 정렬 후 offset/limit 슬라이싱
+    - 응답: { status, items, has_more, next_offset, total }
     """
     try:
         limit = min(int(request.args.get("limit", 12)), 30)
-        cursor_val = request.args.get("cursor", None)  # 마지막 doc의 created_at 값
-
+        offset = max(int(request.args.get("offset", 0)), 0)
         db = _get_db()
         from google.cloud.firestore_v1.base_query import FieldFilter
-
-        query = db.collection("today")\
+        docs = db.collection("today")\
             .where(filter=FieldFilter("is_public", "==", True))\
-            .order_by("created_at", direction=fb_firestore.Query.DESCENDING)\
-            .limit(limit + 1)  # 1개 더 가져와서 has_more 판단
-
-        if cursor_val:
-            query = query.start_after({"created_at": cursor_val})
-
-        docs = query.get()
-        doc_list = list(docs)
-        has_more = len(doc_list) > limit
-        doc_list = doc_list[:limit]
-
-        items = []
-        for doc in doc_list:
+            .limit(500).get()
+        all_items = []
+        for doc in docs:
             d = doc.to_dict() or {}
             imgs = d.get("shot_images", {})
             photo1 = imgs.get("1", "") or imgs.get(1, "")
             photo2 = imgs.get("2", "") or imgs.get(2, "")
-            items.append({
+            all_items.append({
                 "doc_id": doc.id,
                 "name": d.get("name", ""),
                 "nickname": d.get("nickname", "") or d.get("name", ""),
@@ -5234,18 +5223,20 @@ def today_feed():
                 "photo2": photo2,
                 "created_at": d.get("created_at", ""),
             })
-
-        next_cursor = items[-1]["created_at"] if has_more and items else None
-
+        all_items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        total = len(all_items)
+        page_items = all_items[offset:offset + limit]
+        has_more = (offset + limit) < total
         return jsonify({
             "status": "ok",
-            "items": items,
+            "items": page_items,
             "has_more": has_more,
-            "next_cursor": next_cursor,
+            "next_offset": offset + limit if has_more else None,
+            "total": total,
         }), 200
     except Exception as e:
         logger.error(f"[TODAY-FEED] error: {e}")
-        return jsonify({"status": "error", "items": [], "has_more": False, "next_cursor": None}), 200
+        return jsonify({"status": "error", "items": [], "has_more": False, "next_offset": None, "total": 0}), 200
 
 
 @app.route("/", methods=["GET"])
