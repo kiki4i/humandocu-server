@@ -4032,7 +4032,7 @@ def my_filmography_verified(name):
             pub_badge = "" if item["is_public"] else '<span style="font-size:10px;color:#aaa;background:#f0f0f0;padding:2px 8px;border-radius:10px;margin-left:4px">비공개</span>'
             time_str = f" {item['time_label']}" if item["time_label"] else ""
             photos_html = "".join([
-                f'<img src="{url}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+                f'<img src="{url}" style="width:100px;height:100px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
                 for url in item["imgs"]
             ])
             record_url = (f"https://humandocu-server-production.up.railway.app/today/{item['doc_id']}"
@@ -4040,13 +4040,13 @@ def my_filmography_verified(name):
                           else f"https://humandocu-server-production.up.railway.app/sixshot/{item['doc_id']}")
             cards_html += f"""
 <a href="{record_url}"
-   style="display:block;background:#fff;border:1px solid #e8dece;border-radius:8px;padding:16px;margin-bottom:12px;text-decoration:none">
+   style="display:block;background:#fff;border:1px solid #e8dece;border-radius:10px;padding:16px;margin-bottom:20px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <span style="font-size:11px;font-weight:600;color:{type_color};background:rgba(200,169,110,.1);padding:3px 10px;border-radius:20px">{type_label}</span>
+    <span style="font-size:12px;font-weight:700;color:{type_color};background:rgba(200,169,110,.15);padding:4px 12px;border-radius:20px;letter-spacing:.3px">{type_label}</span>
     {pub_badge}
-    <span style="font-size:12px;color:#9e8250">{item['date_label']}{time_str}</span>
+    <span style="font-size:14px;color:#9e8250">{item['date_label']}{time_str}</span>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:10px">{photos_html}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">{photos_html}</div>
   <div style="font-size:14px;color:#2d2a22;line-height:1.7">{item['identity']}</div>
 </a>"""
 
