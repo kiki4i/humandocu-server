@@ -2185,18 +2185,7 @@ def webhook_sixshot():
                 logger.warning("[SIXSHOT RAW] " + str(poems)[:500])
                 print(f"[SIXSHOT] 시 생성 완료")
 
-                # 같은 이메일의 기존 공개 인생 식스샷 비공개 처리
-                try:
-                    db = _get_db()
-                    from google.cloud.firestore_v1.base_query import FieldFilter
-                    old_docs = db.collection("sixshot")\
-                        .where(filter=FieldFilter("email", "==", email))\
-                        .where(filter=FieldFilter("is_public", "==", True)).get()
-                    for old_doc in old_docs:
-                        db.collection("sixshot").document(old_doc.id).update({"is_public": False})
-                        print(f"[SIXSHOT] 기존 공개 doc 비공개 처리: {old_doc.id}")
-                except Exception as e:
-                    print(f"[SIXSHOT] 기존 doc 비공개 처리 오류: {e}")
+                # [정책 변경] 기존 공개 식스샷 비공개 처리 제거 — 모두 공개 유지
 
                 import datetime
                 shots_str = {str(k): v for k, v in shots.items()}
@@ -7654,14 +7643,7 @@ def sixshot_submit_b64():
         poems = generate_sixshot_haiku(nickname, shots, self_intro, message_body, shot_images, lang)
         logger.warning(f"[SIXSHOT-B64] poems={str(poems)[:200]}")
 
-        try:
-            _db = _get_db()
-            from google.cloud.firestore_v1.base_query import FieldFilter
-            old_docs = _db.collection("sixshot")                .where(filter=FieldFilter("email", "==", email))                .where(filter=FieldFilter("is_public", "==", True)).get()
-            for _old in old_docs:
-                _db.collection("sixshot").document(_old.id).update({"is_public": False})
-        except Exception:
-            pass
+        # [정책 변경] 기존 공개 식스샷 비공개 처리 제거 — 모두 공개 유지
 
         shots_str  = {str(k): v for k, v in shots.items()}
         images_str = {str(k): v for k, v in shot_images.items()}
