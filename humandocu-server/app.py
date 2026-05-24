@@ -2499,7 +2499,6 @@ def _detect_lang(text):
 def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
-    extra_line = ("[추가로 남긴 이야기]: " + extra) if extra else ""
 
         f"SHOT {i} : {shots.get(i, '(없음)')}"
         for i in range(1, 7)
@@ -2596,7 +2595,6 @@ palette: #hex1 #hex2 #hex3"""
 
 오늘의 장면들:
 {shots_text}
-{extra_line}
 
 {lang_instruction}
 
@@ -7967,7 +7965,6 @@ palette: #hex1 #hex2 #hex3"""
 
 오늘의 장면들:
 {shots_text}
-{extra_line}
 
 {lang_instruction}
 
@@ -8221,7 +8218,6 @@ palette: #hex1 #hex2 #hex3"""
 
 오늘의 장면들:
 {shots_text}
-{extra_line}
 
 {lang_instruction}
 
@@ -8560,7 +8556,6 @@ palette: #hex1 #hex2 #hex3"""
 
 오늘의 장면들:
 {shots_text}
-{extra_line}
 
 {lang_instruction}
 
