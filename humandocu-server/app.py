@@ -3137,27 +3137,7 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
       </div>
       {today_album_block}""" if page_url else ""
-    # 나의 이야기 / 지금의 기록 섹션 레이블
-    if page_type == "today":
-        story_btn_label    = "✦ 지금 이 마음, 조금 더 기록해볼까요?"
-        story_kicker       = "✦ 지금의 기록"
-        story_result_kicker= "✦ 지금의 기록"
-        story_save_api     = "/api/today/diary-save"
-        story_load_api     = "/api/today/diary-load"
-        story_q_api        = "/api/today/diary-questions"
-        story_fallback_q   = '["지금 이 순간, 가장 하고 싶은 말이 있다면?"]'
-    else:
-        story_btn_label    = "✦ 나의 이야기, 조금 더 풀어볼까요?"
-        story_kicker       = "✦ 나의 이야기"
-        story_result_kicker= "✦ 나의 이야기"
-        story_save_api     = "/api/sixshot/story-save"
-        story_load_api     = "/api/sixshot/story-load"
-        story_q_api        = "/api/sixshot/story-questions"
-        story_fallback_q   = '["이 여섯 장 너머, 더 하고 싶은 이야기가 있다면?"]'
-    story_trigger_display = "" if is_owner else "display:none;"
 
-    story_section_html = f'''
-<div id="story-trigger" style="padding:32px 24px 8px;text-align:center;{story_trigger_display}">
   <button onclick="openStory()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.35);border-radius:24px;color:rgba(200,135,10,.85);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em">
     {story_btn_label}
   </button>
@@ -5353,7 +5333,6 @@ function confirmDelete(){{
   }});
 }}
 </script>
-{story_section_html}
 {ver_script}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
