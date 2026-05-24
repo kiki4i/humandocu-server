@@ -2499,6 +2499,8 @@ def _detect_lang(text):
 def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
+    extra_line = ("[추가로 남긴 이야기]: " + extra) if extra else ""
+
         f"SHOT {i} : {shots.get(i, '(없음)')}"
         for i in range(1, 7)
     ])
@@ -2593,7 +2595,8 @@ palette: #hex1 #hex2 #hex3"""
 오늘 하루를 한 문장으로: {today_one}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
+{shots_text}
+{extra_line}
 
 {lang_instruction}
 
@@ -4414,6 +4417,7 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
+        extra    = data.get("extra", "").strip()
     poems_raw = data.get("poems", "")
     # poems가 dict면 그대로, 문자열이면 파싱용으로 보존
     poems = poems_raw if isinstance(poems_raw, dict) else {}
@@ -7962,7 +7966,8 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
 
 오늘의 장면들:
-{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
+{shots_text}
+{extra_line}
 
 {lang_instruction}
 
@@ -8215,7 +8220,8 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
+{shots_text}
+{extra_line}
 
 {lang_instruction}
 
@@ -8553,7 +8559,8 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
+{shots_text}
+{extra_line}
 
 {lang_instruction}
 
