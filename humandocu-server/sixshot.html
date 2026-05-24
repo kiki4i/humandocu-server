@@ -278,6 +278,36 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   </div>
 </div>
 
+
+<!-- DIARY SECTION — 투*필 전용 -->
+<div id="diary-section" style="display:none;padding:48px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">✦ TODAY DIARY</div>
+  <div id="diary-prompt-text" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:28px"></div>
+  <textarea id="diary-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:100px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none;letter-spacing:.02em"></textarea>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+    <button id="diary-skip" style="padding:10px 20px;background:transparent;border:1px solid rgba(249,246,240,.15);border-radius:20px;color:rgba(249,246,240,.4);font-size:12px;cursor:pointer;font-family:inherit">건너뛰기</button>
+    <button id="diary-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
+  </div>
+  <div id="diary-progress" style="margin-top:20px;display:flex;justify-content:center;gap:6px">
+    <div class="d-dot active" style="width:6px;height:6px;border-radius:50%;background:#C8870A;transition:background .3s"></div>
+    <div class="d-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+    <div class="d-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+  </div>
+</div>
+
+<!-- DIARY RESULT — 완성된 일기 -->
+<div id="diary-result" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:20px">✦ 오늘의 일기</div>
+  <div id="diary-entries" style="display:flex;flex-direction:column;gap:20px"></div>
+</div>
+
+<!-- DIARY TRIGGER BUTTON -->
+<div id="diary-trigger" style="padding:20px 24px 0;text-align:center">
+  <button id="diary-open-btn" onclick="openDiary()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.3);border-radius:24px;color:rgba(200,135,10,.8);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .3s">
+    ✦ 오늘 더 남기고 싶은 말이 있나요?
+  </button>
+</div>
+
 <!-- BOTTOM CTA -->
 <div class="bottom-cta">
   <div class="bottom-cta-text" data-ko="지금 이 순간도<br><em>당신의 여섯 장 중 하나입니다.</em><br>기념해 보세요." data-en="This very moment<br><em>is one of your six.</em><br>Make it count." data-jp="今この瞬間も<br><em>あなたの六枚のうちの一枚です。</em><br>記念してみましょう。" data-zh="此刻<br><em>也是你六幕人生之一。</em><br>留住它吧。">
@@ -319,6 +349,92 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
     <a href="tel:031-539-9709">031-539-9709</a>
   </div>
 </footer>
+
+
+<script>
+(function() {
+  var DOC_ID = '{{ doc_id }}';
+  var LANG   = localStorage.getItem('sixshot_lang') || 'KO';
+  var API    = 'https://humandocu-server-production.up.railway.app';
+
+  var questions = [];
+  var answers   = [];
+  var step      = 0;
+
+  function openDiary() {
+    document.getElementById('diary-trigger').style.display = 'none';
+    document.getElementById('diary-section').style.display = 'block';
+    loadQuestions();
+  }
+  window.openDiary = openDiary;
+
+  function loadQuestions() {
+    fetch(API + '/api/today/diary-questions?doc_id=' + DOC_ID + '&lang=' + LANG)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        questions = d.questions || [];
+        showStep(0);
+      })
+      .catch(function(){
+        questions = [
+          '오늘 사진 중 가장 오래 바라본 건 어떤 장면이었나요?',
+          '오늘 하루를 한 단어로 표현한다면?',
+          '내일의 나에게 한마디 남긴다면?'
+        ];
+        showStep(0);
+      });
+  }
+
+  function showStep(n) {
+    step = n;
+    if (n >= questions.length) { saveDiary(); return; }
+    document.getElementById('diary-prompt-text').textContent = questions[n];
+    document.getElementById('diary-input').value = answers[n] || '';
+    document.getElementById('diary-input').focus();
+    document.querySelectorAll('.d-dot').forEach(function(d, i){
+      d.style.background = i === n ? '#C8870A' : 'rgba(200,135,10,.2)';
+    });
+  }
+
+  document.getElementById('diary-next').addEventListener('click', function(){
+    var val = document.getElementById('diary-input').value.trim();
+    answers[step] = val;
+    showStep(step + 1);
+  });
+
+  document.getElementById('diary-skip').addEventListener('click', function(){
+    answers[step] = '';
+    showStep(step + 1);
+  });
+
+  function saveDiary() {
+    var entries = questions.map(function(q, i){ return {q: q, a: answers[i] || ''}; })
+                           .filter(function(e){ return e.a; });
+
+    document.getElementById('diary-section').style.display = 'none';
+
+    if (!entries.length) return;
+
+    // 결과 표시
+    var container = document.getElementById('diary-entries');
+    entries.forEach(function(e){
+      var div = document.createElement('div');
+      div.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.15);border-radius:8px;padding:20px 20px';
+      div.innerHTML = '<div style="font-size:11px;color:rgba(200,135,10,.6);margin-bottom:8px;letter-spacing:.06em">' + e.q + '</div>' +
+                      '<div style="font-size:14px;color:rgba(249,246,240,.8);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
+      container.appendChild(div);
+    });
+    document.getElementById('diary-result').style.display = 'block';
+
+    // 서버에 저장
+    fetch(API + '/api/today/diary-save', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({doc_id: DOC_ID, entries: entries})
+    }).catch(function(){});
+  }
+})();
+</script>
 
 <script>
 (function () {
