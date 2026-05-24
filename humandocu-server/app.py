@@ -2499,7 +2499,6 @@ def _detect_lang(text):
 def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
-
         f"SHOT {i} : {shots.get(i, '(없음)')}"
         for i in range(1, 7)
     ])
@@ -3137,9 +3136,6 @@ def send_email_sixshot(to_email, name, haikus_text, identity, last_msg, page_url
         <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
       </div>
       {today_album_block}""" if page_url else ""
-
-'''
-
     html = f"""<!DOCTYPE html>
 <html lang="{lang}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -3932,23 +3928,38 @@ def damnyejang_auth():
 
 def _damnyejang_auth_html(name, error):
     error_block = f'''
+    <div style="background:#fff0f0;border:1px solid #e88;border-radius:4px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c00">
+        {error}
+    </div>''' if error else ""
 
+    name_val = name or ""
+    return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>답례장 신청 · 휴먼다큐</title>
 <style>
   * {{ box-sizing:border-box; margin:0; padding:0; }}
   body {{ background:#f5f2eb; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }}
   .card {{ background:#fff; max-width:420px; width:90%; border-radius:8px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); }}
   .header {{ background:#0f0d09; padding:40px 32px; text-align:center; }}
+  .header-sub {{ font-size:11px; color:rgba(200,169,110,.6); letter-spacing:.2em; margin-bottom:12px; }}
+  .header-title {{ font-size:22px; color:#f9f6f0; font-weight:300; }}
+  .body {{ padding:32px; }}
+  .desc {{ font-size:13px; color:#6b6050; line-height:1.9; margin-bottom:24px; }}
+  label {{ display:block; font-size:12px; color:#9e8250; margin-bottom:6px; letter-spacing:.05em; }}
+  input {{ width:100%; padding:12px 14px; border:1px solid #e5dece; border-radius:4px; font-size:15px; margin-bottom:16px; font-family:inherit; }}
   input:focus {{ outline:none; border-color:#c8a96e; }}
+  .btn {{ width:100%; padding:14px; background:#c8a96e; border:none; border-radius:4px; font-size:15px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
   .btn:hover {{ background:#b8994e; }}
+  .footer-note {{ font-size:11px; color:#9e8250; text-align:center; margin-top:16px; }}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
+    <div class="header-sub">HUMANDOCU · MEMORIAL</div>
     <div class="header-title">답례장 신청</div>
   </div>
   <div class="body">
@@ -3964,6 +3975,7 @@ def _damnyejang_auth_html(name, error):
       <input type="text" name="password" placeholder="완성 이메일의 6자리 번호" maxlength="6" required inputmode="numeric">
       <button type="submit" class="btn">확인 빈칸</button>
     </form>
+    <div class="footer-note">문의: 031-539-9709</div>
   </div>
 </div>
 </body>
@@ -3971,16 +3983,20 @@ def _damnyejang_auth_html(name, error):
 
 @app.route("/my/<name>", methods=["GET"])
 def my_filmography(name):
+    """이름으로 모아보기 — 이메일 인증 필요"""
     html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{name}님의 필모그래피 · 휴먼다큐</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}}
 .card{{background:#fff;border-radius:16px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(200,169,110,.12)}}
+.avatar{{width:64px;height:64px;border-radius:50%;background:#C8A96E;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif KR',serif;font-size:24px;color:#0f0d09;margin:0 auto 16px}}
+h2{{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:300;margin-bottom:8px}}
 .sub{{font-size:13px;color:#9e8250;margin-bottom:28px;line-height:1.7}}
 input{{width:100%;padding:13px 16px;border:1px solid rgba(200,169,110,.4);border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;color:#1A1208;background:#fff}}
 input:focus{{border-color:#C8870A}}
@@ -4245,6 +4261,168 @@ def sixshot_page(doc_id):
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
     is_owner    = getattr(_g, "_is_owner", False)
 
+    # 나의 이야기 / 지금의 기록 섹션 레이블
+    if page_type == "today":
+        story_btn_label    = "✦ 지금 이 마음, 조금 더 기록해볼까요?"
+        story_kicker       = "✦ 지금의 기록"
+        story_result_kicker= "✦ 지금의 기록"
+        story_save_api     = "/api/today/diary-save"
+        story_load_api     = "/api/today/diary-load"
+        story_q_api        = "/api/today/diary-questions"
+        story_fallback_q   = '["지금 이 순간, 가장 하고 싶은 말이 있다면?"]'
+    else:
+        story_btn_label    = "✦ 나의 이야기, 조금 더 풀어볼까요?"
+        story_kicker       = "✦ 나의 이야기"
+        story_result_kicker= "✦ 나의 이야기"
+        story_save_api     = "/api/sixshot/story-save"
+        story_load_api     = "/api/sixshot/story-load"
+        story_q_api        = "/api/sixshot/story-questions"
+        story_fallback_q   = '["이 여섯 장 너머, 더 하고 싶은 이야기가 있다면?"]'
+    story_trigger_display = "" if is_owner else "display:none;"
+
+    story_section_html = f'''
+<div id="story-trigger" style="padding:32px 24px 8px;text-align:center;{story_trigger_display}">
+  <button onclick="openStory()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.35);border-radius:24px;color:rgba(200,135,10,.85);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em">
+    {story_btn_label}
+  </button>
+</div>
+
+<div id="story-section" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">{story_kicker}</div>
+  <div id="story-prompt" style="font-size:17px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:20px"></div>
+  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:120px;background:#111;border:1px solid rgba(200,135,10,.3);border-radius:8px;padding:16px;color:#f0ebe0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
+  <div style="display:flex;gap:10px;justify-content:space-between;margin-top:12px">
+    <button onclick="closeStory()" style="padding:10px 18px;background:transparent;border:1px solid rgba(249,246,240,.15);border-radius:20px;color:rgba(249,246,240,.5);font-size:12px;cursor:pointer;font-family:inherit">← 돌아가기</button>
+    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
+  </div>
+</div>
+
+<div id="story-privacy" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.2em;color:rgba(200,135,10,.6);margin-bottom:14px">✦ 이 기록을</div>
+  <div style="font-size:18px;font-weight:300;color:#f9f6f0;margin-bottom:8px">공개할까요?</div>
+  <div style="font-size:12px;color:rgba(249,246,240,.45);margin-bottom:28px;line-height:1.8">공개/비공개 모두 이메일로 합본을 보내드려요</div>
+  <div style="display:flex;gap:12px;justify-content:center">
+    <button id="story-private" style="padding:12px 28px;background:transparent;border:1px solid rgba(249,246,240,.4);border-radius:24px;color:#f9f6f0;font-size:13px;cursor:pointer;font-family:inherit">🔒 나만 보기</button>
+    <button id="story-public" style="padding:12px 28px;background:#C8870A;border:none;border-radius:24px;color:#0d0d0d;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌐 공개하기</button>
+  </div>
+</div>
+
+<div id="story-done" style="display:none;padding:28px 24px;text-align:center">
+  <div style="font-size:22px;margin-bottom:14px;color:#C8870A">✦</div>
+  <div style="font-size:15px;font-weight:300;color:#f9f6f0;line-height:1.9">기록이 저장되었어요.<br><span style="color:rgba(200,135,10,.65);font-size:13px">이메일로 합본을 보내드릴게요</span></div>
+</div>
+
+<div id="story-result" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto">
+  <div style="font-size:10px;letter-spacing:.22em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:18px">{story_result_kicker}</div>
+  <div id="story-entries"></div>
+</div>
+
+<div style="text-align:center;padding:4px 0 0">
+  <button id="story-more-btn" style="display:none;padding:10px 24px;background:transparent;border:1px solid rgba(200,135,10,.22);border-radius:20px;color:rgba(200,135,10,.55);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.06em">글 더보기 ↓</button>
+</div>
+
+<script>
+(function(){{
+  var DOC_ID   = '{doc_id}';
+  var IS_OWNER = {str(is_owner).lower()};
+  var LANG     = localStorage.getItem('sixshot_lang') || 'KO';
+  var API      = 'https://humandocu-server-production.up.railway.app';
+  var qs=[], as=[], step=0;
+  var SAVE_API = '{story_save_api}';
+  var LOAD_API = '{story_load_api}';
+  var Q_API    = '{story_q_api}';
+  var FALLBACK = {story_fallback_q};
+
+  if (!IS_OWNER) {{
+    var t = document.getElementById('story-trigger');
+    if (t) t.style.display = 'none';
+  }}
+
+  function openStory() {{
+    document.getElementById('story-trigger').style.display = 'none';
+    document.getElementById('story-section').style.display = 'block';
+    document.getElementById('story-prompt').textContent = '질문을 불러오는 중...';
+    document.getElementById('story-input').value = '';
+    if (qs.length === 0) {{
+      fetch(API + Q_API + '?doc_id=' + DOC_ID + '&lang=' + LANG)
+        .then(function(r){{ return r.json(); }})
+        .then(function(d){{ qs = d.questions && d.questions.length ? d.questions : FALLBACK; showQ(0); }})
+        .catch(function(){{ qs = FALLBACK; showQ(0); }});
+    }} else {{ showQ(0); }}
+  }}
+  window.openStory = openStory;
+
+  function closeStory() {{
+    document.getElementById('story-section').style.display = 'none';
+    document.getElementById('story-trigger').style.display = 'block';
+  }}
+  window.closeStory = closeStory;
+
+  function showQ(n) {{
+    step = n;
+    if (n >= qs.length) {{ showPrivacy(); return; }}
+    document.getElementById('story-prompt').textContent = qs[n];
+    document.getElementById('story-input').value = as[n] || '';
+    document.getElementById('story-input').focus();
+  }}
+
+  document.getElementById('story-next').addEventListener('click', function(){{
+    var val = document.getElementById('story-input').value.trim();
+    if (!val) return;
+    as[step] = val;
+    showQ(step+1);
+  }});
+
+  function showPrivacy() {{
+    document.getElementById('story-section').style.display = 'none';
+    document.getElementById('story-privacy').style.display = 'block';
+  }}
+
+  function saveStory(pub) {{
+    var entries = qs.map(function(q,i){{ return {{q:q,a:as[i]||''}};  }}).filter(function(e){{ return e.a; }});
+    document.getElementById('story-privacy').style.display = 'none';
+    if (!entries.length) return;
+    fetch(API + SAVE_API, {{
+      method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{doc_id:DOC_ID, entries:entries, is_public:pub}})
+    }}).catch(function(){{}});
+    if (pub) {{ renderStory(entries); }}
+    else {{ document.getElementById('story-done').style.display = 'block'; }}
+  }}
+
+  document.getElementById('story-private').addEventListener('click', function(){{ saveStory(false); }});
+  document.getElementById('story-public').addEventListener('click', function(){{ saveStory(true); }});
+
+  function renderStory(entries) {{
+    var c = document.getElementById('story-entries');
+    c.innerHTML = '';
+    entries.forEach(function(e){{
+      var d = document.createElement('div');
+      d.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.13);border-radius:8px;padding:20px;margin-bottom:12px';
+      d.innerHTML = '<div style="font-size:10px;color:rgba(200,135,10,.5);margin-bottom:8px;letter-spacing:.08em">' + e.q + '</div>' +
+                    '<div style="font-size:14px;color:rgba(249,246,240,.85);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
+      c.appendChild(d);
+    }});
+    document.getElementById('story-result').style.display = 'block';
+  }}
+
+  if (!IS_OWNER) {{
+    fetch(API + LOAD_API + '?doc_id=' + DOC_ID)
+      .then(function(r){{ return r.json(); }})
+      .then(function(d){{
+        if (d.is_public && d.entries && d.entries.length) {{
+          var btn = document.getElementById('story-more-btn');
+          btn.style.display = 'block';
+          btn.addEventListener('click', function(){{
+            btn.style.display = 'none';
+            renderStory(d.entries);
+          }});
+        }}
+      }}).catch(function(){{}});
+  }}
+}})();
+</script>
+'''
     lang        = data.get("lang", "ko")
     is_en       = (lang == "en")
     is_ja       = (lang == "ja")
@@ -5173,6 +5351,7 @@ function confirmDelete(){{
   }});
 }}
 </script>
+{story_section_html}
 {ver_script}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
@@ -7778,7 +7957,6 @@ palette: #hex1 #hex2 #hex3"""
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
 
 오늘의 장면들:
@@ -8484,5 +8662,3 @@ palette: #hex1 #hex2 #hex3"""
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
-
-# redeploy trigger
