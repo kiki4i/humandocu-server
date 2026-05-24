@@ -4293,7 +4293,7 @@ def sixshot_page(doc_id):
   <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:120px;background:#111;border:1px solid rgba(200,135,10,.3);border-radius:8px;padding:16px;color:#f0ebe0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
   <div style="display:flex;gap:10px;justify-content:space-between;margin-top:12px">
     <button onclick="closeStory()" style="padding:10px 18px;background:transparent;border:1px solid rgba(249,246,240,.15);border-radius:20px;color:rgba(249,246,240,.5);font-size:12px;cursor:pointer;font-family:inherit">← 돌아가기</button>
-    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">저장하기 →</button>
+    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
   </div>
 </div>
 
@@ -4341,6 +4341,8 @@ def sixshot_page(doc_id):
   function openStory() {{
     document.getElementById('story-trigger').style.display = 'none';
     document.getElementById('story-section').style.display = 'block';
+    document.getElementById('story-prompt').textContent = '질문을 불러오는 중...';
+    document.getElementById('story-input').value = '';
     if (qs.length === 0) {{
       fetch(API + Q_API + '?doc_id=' + DOC_ID + '&lang=' + LANG)
         .then(function(r){{ return r.json(); }})
