@@ -2593,7 +2593,7 @@ palette: #hex1 #hex2 #hex3"""
 오늘 하루를 한 문장으로: {today_one}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -7951,6 +7951,7 @@ palette: #hex1 #hex2 #hex3"""
 - 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것. 읽는 사람이 '헉' 하고 멈추게 만드는 것이 목표.
 
 각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+- 사용자가 "더 하고 싶은 이야기"를 별도로 남겼다면, 그 감정과 맥락을 시와 총평에 자연스럽게 녹여줘.
 - 사진 속 텍스트(간판, 포스터, 현수막, 스크린 등)는 절대 시에 직접 인용하거나 옮겨 쓰지 마라. 텍스트는 참고만 하고, 그 장면의 분위기·색감·감정으로만 시를 써라.
 - 고유명사(사람 이름, 목사/직함, 행사명, 장소명)는 절대 시에 넣지 마라. 사용자가 설명에 직접 쓴 단어가 아니면 언급 금지.
 - 날짜 해석 주의: 현재는 2026년이다. 사진에 2026년 날짜가 있으면 올해 또는 다음 달 등 가까운 미래로 해석하라. "내년"이라고 쓰지 마라.
@@ -7960,7 +7961,7 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -8099,6 +8100,7 @@ def today_submit_url():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
+        extra    = (data.get("extra") or "").strip()
         lang     = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
@@ -8203,6 +8205,7 @@ palette: #hex1 #hex2 #hex3"""
 - 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것. 읽는 사람이 '헉' 하고 멈추게 만드는 것이 목표.
 
 각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+- 사용자가 "더 하고 싶은 이야기"를 별도로 남겼다면, 그 감정과 맥락을 시와 총평에 자연스럽게 녹여줘.
 - 사진 속 텍스트(간판, 포스터, 현수막, 스크린 등)는 절대 시에 직접 인용하거나 옮겨 쓰지 마라. 텍스트는 참고만 하고, 그 장면의 분위기·색감·감정으로만 시를 써라.
 - 고유명사(사람 이름, 목사/직함, 행사명, 장소명)는 절대 시에 넣지 마라. 사용자가 설명에 직접 쓴 단어가 아니면 언급 금지.
 - 날짜 해석 주의: 현재는 2026년이다. 사진에 2026년 날짜가 있으면 올해 또는 다음 달 등 가까운 미래로 해석하라. "내년"이라고 쓰지 마라.
@@ -8212,7 +8215,7 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -8424,6 +8427,7 @@ def today_submit_b64():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
+        extra    = (data.get("extra") or "").strip()
         lang     = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
@@ -8540,6 +8544,7 @@ palette: #hex1 #hex2 #hex3"""
 - 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것. 읽는 사람이 '헉' 하고 멈추게 만드는 것이 목표.
 
 각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+- 사용자가 "더 하고 싶은 이야기"를 별도로 남겼다면, 그 감정과 맥락을 시와 총평에 자연스럽게 녹여줘.
 - 사진 속 텍스트(간판, 포스터, 현수막, 스크린 등)는 절대 시에 직접 인용하거나 옮겨 쓰지 마라. 텍스트는 참고만 하고, 그 장면의 분위기·색감·감정으로만 시를 써라.
 - 고유명사(사람 이름, 목사/직함, 행사명, 장소명)는 절대 시에 넣지 마라. 사용자가 설명에 직접 쓴 단어가 아니면 언급 금지.
 - 날짜 해석 주의: 현재는 2026년이다. 사진에 2026년 날짜가 있으면 올해 또는 다음 달 등 가까운 미래로 해석하라. "내년"이라고 쓰지 마라.
@@ -8549,7 +8554,7 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
