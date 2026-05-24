@@ -4442,7 +4442,7 @@ def sixshot_page(doc_id):
             cta_title           = "Your today<br>can be a poem too"
             cta_sub             = "6 photos + one line · Free · Result by email"
             cta_btn             = "Create My Filmography →"
-            nav_today_lbl       = "📽️ Browse Other Filmographies"
+            nav_today_lbl       = "📽️ Browse Other Filmographies" if page_type == "today" else "🎞️ Browse Other Six Shots"
             delete_confirm_msg  = "Delete this Today Filmography? This cannot be undone."
             page_title_str      = f"Today Filmography · {display_name}"
         else:
@@ -4509,7 +4509,7 @@ def sixshot_page(doc_id):
             cta_title           = "今日のあなたの一日も、<br>詩になれます"
             cta_sub             = "写真6枚 + 一言 · 無料 · 結果はメールで"
             cta_btn             = "私のToday Filmを作る →"
-            nav_today_lbl       = "📽️ 他のToday Filmを見る"
+            nav_today_lbl       = "📽️ 他のToday Filmを見る" if page_type == "today" else "🎞️ 他のSix Shotを見る"
             delete_confirm_msg  = "このToday Filmを削除しますか？元に戻すことはできません。"
             page_title_str      = f"Today Film · {display_name}の今日"
         else:
@@ -4576,7 +4576,7 @@ def sixshot_page(doc_id):
             cta_title           = "今天你的一天，<br>也可以成为一首诗"
             cta_sub             = "6张照片 + 一句话 · 免费 · 结果通过邮件发送"
             cta_btn             = "创建我的Today Film →"
-            nav_today_lbl       = "📽️ 浏览其他Today Film"
+            nav_today_lbl       = "📽️ 浏览其他Today Film" if page_type == "today" else "🎞️ 浏览其他六幕人生"
             delete_confirm_msg  = "确定要删除这个Today Film吗？此操作无法撤销。"
             page_title_str      = f"Today Film · {display_name}的今天"
         else:
@@ -4664,7 +4664,7 @@ def sixshot_page(doc_id):
         cta_sub             = ("사진 6장 + 한 줄 · 무료 · 결과는 이메일로" if page_type == "today"
                                else "사진 6장 + 짧은 이야기 · AI가 시로 남겨드려요")
         cta_btn             = "나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"
-        nav_today_lbl       = "📽️ 다른 투*필 둘러보기"
+        nav_today_lbl       = "📽️ 다른 투*필 둘러보기" if page_type == "today" else "🎞️ 다른 식스샷 둘러보기"
         nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
         nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
@@ -5157,7 +5157,7 @@ def sixshot_page(doc_id):
         var btn = document.getElementById('btn-next-today');
         btn.disabled = true;
         var seen = getSeen();
-        var url = '/api/sixshot/random?type=today' + seen.map(function(id){{ return '&exclude='+encodeURIComponent(id); }}).join('');
+        var url = '/api/sixshot/random?type=' + ('{page_type}' === 'today' ? 'today' : 'sixshot') + seen.map(function(id){{ return '&exclude='+encodeURIComponent(id); }}).join('');
         fetch(url)
           .then(function(r){{ return r.json(); }})
           .then(function(d){{
