@@ -2593,7 +2593,7 @@ palette: #hex1 #hex2 #hex3"""
 오늘 하루를 한 문장으로: {today_one}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
 
 {lang_instruction}
 
@@ -7957,12 +7957,12 @@ palette: #hex1 #hex2 #hex3"""
 - 날짜 해석 주의: 현재는 2026년이다. 사진에 2026년 날짜가 있으면 올해 또는 다음 달 등 가까운 미래로 해석하라. "내년"이라고 쓰지 마라.
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
-{("\n[추가로 남긴 이야기]: " + extra) if extra else ""}" if extra else ""}
+
 
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
 
 {lang_instruction}
 
@@ -8215,7 +8215,7 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
 
 {lang_instruction}
 
@@ -8553,7 +8553,7 @@ palette: #hex1 #hex2 #hex3"""
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
 오늘의 장면들:
-{shots_text}
+{shots_text}{chr(10) + "[추가로 남긴 이야기]: " + extra if extra else ""}
 
 {lang_instruction}
 
