@@ -5349,6 +5349,7 @@ function confirmDelete(){{
   }});
 }}
 </script>
+{story_section_html}
 {ver_script}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
