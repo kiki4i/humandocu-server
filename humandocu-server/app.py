@@ -4415,7 +4415,6 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
-    extra    = data.get("extra", "").strip()
     poems_raw = data.get("poems", "")
     # poems가 dict면 그대로, 문자열이면 파싱용으로 보존
     poems = poems_raw if isinstance(poems_raw, dict) else {}
@@ -8103,7 +8102,6 @@ def today_submit_url():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
-        extra    = data.get("extra", "").strip()
         lang     = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
@@ -8429,7 +8427,6 @@ def today_submit_b64():
         today_sentence = data.get("today_sentence", "")
         last_to  = data.get("last_to", "")
         last_msg = data.get("last_msg", "")
-        extra    = data.get("extra", "").strip()
         lang     = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
