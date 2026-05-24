@@ -4269,7 +4269,7 @@ def sixshot_page(doc_id):
         story_save_api     = "/api/today/diary-save"
         story_load_api     = "/api/today/diary-load"
         story_q_api        = "/api/today/diary-questions"
-        story_fallback_q   = '["지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?","이 순간을 한 단어로 표현한다면?","지금의 나에게 한마디 남긴다면?"]'
+        story_fallback_q   = '["지금 이 순간, 가장 하고 싶은 말이 있다면?"]'
     else:
         story_btn_label    = "✦ 나의 이야기, 조금 더 풀어볼까요?"
         story_kicker       = "✦ 나의 이야기"
@@ -4277,7 +4277,7 @@ def sixshot_page(doc_id):
         story_save_api     = "/api/sixshot/story-save"
         story_load_api     = "/api/sixshot/story-load"
         story_q_api        = "/api/sixshot/story-questions"
-        story_fallback_q   = '["이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?","나를 지금의 나로 만든 가장 결정적인 순간이 있다면?","미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?"]'
+        story_fallback_q   = '["이 여섯 장 너머, 더 하고 싶은 이야기가 있다면?"]'
     story_trigger_display = "" if is_owner else "display:none;"
 
     story_section_html = f'''
@@ -5483,11 +5483,11 @@ def sixshot_story_questions():
         import re as _re
         m = _re.search(r'\[.*?\]', resp.content[0].text.strip(), _re.DOTALL)
         qs = json.loads(m.group()) if m else []
-        return jsonify({"questions": qs[:3]})
+        return jsonify({"questions": qs[:1]})
     except Exception as e:
         logger.error(f"[STORY-Q] {e}")
         fallback = {
-            "KO": ["이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?","나를 지금의 나로 만든 가장 결정적인 순간이 있다면?","미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?"],
+            "KO": ["이 여섯 장 너머, 더 하고 싶은 이야기가 있다면?"],
             "EN": ["Which of these six photos holds the most stories?","What was the moment that shaped who you are today?","What would you like to say to your future self or family?"],
             "JP": ["この6枚の中で最も多くの物語を秘めているのはどの写真ですか？","今の自分を作った最も決定的な瞬間があるとしたら？","未来の自分や家族に残したい言葉があるとしたら？"],
             "ZH": ["这六张照片中，哪一张包含最多故事？","塑造了今天的你的最关键时刻是什么？","你想对未来的自己或家人留下什么话？"]
@@ -5608,7 +5608,7 @@ def today_diary_questions():
         import re as _re
         m = _re.search(r'\[.*\]', raw, _re.DOTALL)
         qs = json.loads(m.group()) if m else []
-        return jsonify({"questions": qs[:3]})
+        return jsonify({"questions": qs[:1]})
     except Exception as e:
         logger.error(f"[DIARY-Q] {e}")
         fallback = {
@@ -5656,7 +5656,7 @@ def today_diary_save():
                         "from": "휴먼다큐 <noreply@humandocu.com>",
                         "to": [email],
                         "subject": f"[투*필] {nickname}님의 지금 이 순간 기록",
-                        "html": f"<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'><div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div><div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 투*필 + 지금의 기록</div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 지금의 기록</div>{diary_html}<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div></div>"
+                        "html": f"<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'><div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div><div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 투*필 + 지금의 기록</div><div style='text-align:center;margin:12px 0 24px'><a href='https://humandocu-server-production.up.railway.app/today/{doc_id}' style='padding:10px 24px;background:#C8870A;color:#fff;border-radius:20px;font-size:13px;text-decoration:none'>투*필 결과 보기 →</a></div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 지금의 기록</div>{diary_html}<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div></div>"
                     },
                     timeout=10
                 )
