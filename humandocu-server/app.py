@@ -4590,22 +4590,22 @@ def sixshot_page(doc_id):
 
     if is_en:
         og_title = f"{nickname or name}'s Today Filmography · Humandocu"
-        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
+        og_desc  = "AI captured today in 6 photos and a poem."
     elif is_ja:
         og_title = f"{nickname or name}のToday Film · Humandocu"
-        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}6枚の写真と詩で今日を記録しました。"
+        og_desc  = "6枚の写真と詩で今日を記録しました。"
     elif is_zh:
         og_title = f"{nickname or name}的Today Film · Humandocu"
-        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}用6张照片和诗记录了今天。"
+        og_desc  = "用6张照片和诗记录了今天。"
     elif page_type == "today":
         og_title = f"{nickname or name}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
-        og_desc  = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
+        og_desc  = f"사진 6장으로 담은 오늘 — {first_poem_line}… · humandocu.com"
     else:
         og_title = f"{nickname or name}님의 인생 식스샷 · 휴먼다큐"
         og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
 
     page_url_self = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
-    page_url_kakao = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
+    page_url_kakao = f"https://humandocu.com/today/{doc_id}"
 
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
