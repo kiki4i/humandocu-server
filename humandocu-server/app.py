@@ -2881,7 +2881,7 @@ Output format (exactly this format):
     return message.content[0].text
 
 
-def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None, lang="ko"):
+def generate_sixshot_haiku(name, shots, identity, last_msg, shot_images=None, lang="ko", extra=""):
     """식스샷 데이터로 생애시 생성 (Vision 지원, 다국어)"""
     OUTPUT_FORMAT = """[대표]
 (line 1)
@@ -3023,7 +3023,7 @@ Output format — copy these tags verbatim, write poem content in English:
 - 없는 것을 채우려 하지 말고, 있는 것을 깊게 표현할 것
 
 이름: {name}
-나는 이런 사람입니다: {identity}{last_msg_text}
+나는 이런 사람입니다: {identity}{last_msg_text}{(" / 추가: " + extra) if extra else ""}
 
 인생 6장면:
 {shots_text}
@@ -8376,7 +8376,7 @@ def sixshot_submit_b64():
         detect_source = self_intro + " " + " ".join(v for v in shots.values() if v)
         lang = _detect_lang(detect_source)
 
-        poems = generate_sixshot_haiku(nickname, shots, self_intro, message_body, shot_images, lang)
+        poems = generate_sixshot_haiku(nickname, shots, self_intro, message_body, shot_images, lang, extra=extra)
         logger.warning(f"[SIXSHOT-B64] poems={str(poems)[:200]}")
 
         # [정책 변경] 기존 공개 식스샷 비공개 처리 제거 — 모두 공개 유지
