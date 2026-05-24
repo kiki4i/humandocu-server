@@ -5276,6 +5276,86 @@ def today_profile():
     return jsonify({"found": False})
 
 
+
+@app.route("/api/today/diary-questions", methods=["GET"])
+def today_diary_questions():
+    """투*필 결과 기반 일기 질문 3개 생성"""
+    doc_id = request.args.get("doc_id", "").strip()
+    lang   = request.args.get("lang", "KO").upper()
+    try:
+        data = firebase_get_today(doc_id)
+        if not data:
+            raise ValueError("doc not found")
+        poem  = data.get("poem", "")
+        tags  = data.get("hashtags", [])
+        shots = data.get("shots", [])
+        descs = " / ".join([s.get("desc","") for s in shots if s.get("desc")])
+
+        lang_inst = {
+            "KO": "질문은 한국어로, 따뜻하고 일기 같은 말투로.",
+            "EN": "Write questions in English, warm and diary-like.",
+            "JP": "質問は日本語で、温かく日記のような口調で。",
+            "ZH": "问题用中文，语气温暖，像日记一样。"
+        }.get(lang, "질문은 한국어로.")
+
+        prompt = f"""다음은 오늘의 투*필(오늘 하루 필모그래피) 내용이야.
+
+시(하이쿠): {poem}
+해시태그: {', '.join(tags)}
+사진 설명들: {descs}
+
+이 내용을 바탕으로 일기 쓸 때 도움이 되는 질문 3개를 만들어줘.
+- 오늘 하루를 더 깊이 돌아볼 수 있는 질문
+- 사진/시에서 느껴지는 감정과 연결된 질문
+- 너무 무겁지 않게, 자연스럽게
+- {lang_inst}
+
+반드시 JSON 배열만 반환: ["질문1", "질문2", "질문3"]
+다른 텍스트 없이 JSON만."""
+
+        import anthropic as _ant
+        _client = _ant.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = _client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            messages=[{"role":"user","content": prompt}]
+        )
+        raw = resp.content[0].text.strip()
+        import re as _re
+        m = _re.search(r'\[.*\]', raw, _re.DOTALL)
+        qs = json.loads(m.group()) if m else []
+        return jsonify({"questions": qs[:3]})
+    except Exception as e:
+        logger.error(f"[DIARY-Q] {e}")
+        fallback = {
+            "KO": ["오늘 사진 중 가장 오래 바라본 건 어떤 장면이었나요?", "오늘 하루를 한 단어로 표현한다면?", "내일의 나에게 한마디 남긴다면?"],
+            "EN": ["Which photo did you linger on the longest today?", "If you had to describe today in one word?", "What would you say to tomorrow's you?"],
+            "JP": ["今日の写真の中で一番長く眺めたのはどのシーンですか？", "今日を一言で表すとしたら？", "明日の自分に一言残すとしたら？"],
+            "ZH": ["今天的照片中，你凝视最久的是哪一幕？", "用一个词来描述今天？", "给明天的自己留一句话？"]
+        }
+        return jsonify({"questions": fallback.get(lang, fallback["KO"])})
+
+
+@app.route("/api/today/diary-save", methods=["POST"])
+def today_diary_save():
+    """투*필 일기 답변 저장"""
+    try:
+        body    = request.get_json(force=True) or {}
+        doc_id  = body.get("doc_id", "").strip()
+        entries = body.get("entries", [])
+        if not doc_id or not entries:
+            return jsonify({"ok": False}), 400
+        from datetime import datetime, timezone
+        _get_db().collection("today").document(doc_id).update({
+            "diary": entries,
+            "diary_at": datetime.now(timezone.utc).isoformat()
+        })
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[DIARY-SAVE] {e}")
+        return jsonify({"ok": False}), 500
+
+
 @app.route("/api/next-today/<current_doc_id>", methods=["GET"])
 def next_today(current_doc_id):
     """현재 투*필 제외하고 공개된 투*필 중 랜덤 1개로 redirect"""
