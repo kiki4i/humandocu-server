@@ -1280,9 +1280,6 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '<meta property="og:title" content="' + og_title + '">'
         '<meta property="og:description" content="' + og_desc + '">'
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
-        '
-<!-- ✦ 나의 이야기 / 지금의 기록 섹션 -->
-{story_section_html}
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
         '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
         '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
