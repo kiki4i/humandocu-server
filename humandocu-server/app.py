@@ -5199,6 +5199,7 @@ def today_page(doc_id):
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
     _g._doc_data_override = data
+    _g._is_owner = True   # today 페이지는 본인만 직접 접근
     return sixshot_page(doc_id)
 
 
@@ -5338,22 +5339,71 @@ def today_diary_questions():
 
 @app.route("/api/today/diary-save", methods=["POST"])
 def today_diary_save():
-    """투*필 일기 답변 저장"""
+    """투*필 일기 답변 저장 + 비공개시 이메일 발송"""
     try:
-        body    = request.get_json(force=True) or {}
-        doc_id  = body.get("doc_id", "").strip()
-        entries = body.get("entries", [])
+        body      = request.get_json(force=True) or {}
+        doc_id    = body.get("doc_id", "").strip()
+        entries   = body.get("entries", [])
+        is_public = body.get("is_public", False)
         if not doc_id or not entries:
             return jsonify({"ok": False}), 400
         from datetime import datetime, timezone
         _get_db().collection("today").document(doc_id).update({
             "diary": entries,
+            "diary_public": is_public,
             "diary_at": datetime.now(timezone.utc).isoformat()
         })
+        # 비공개 → 이메일 합본 발송
+        if not is_public:
+            try:
+                doc_data = firebase_get_today(doc_id)
+                email    = doc_data.get("email", "") if doc_data else ""
+                nickname = doc_data.get("nickname") or doc_data.get("name", "") if doc_data else ""
+                poem     = doc_data.get("poem", "") if doc_data else ""
+                if email:
+                    diary_html = "".join([
+                        f"<div style='margin-bottom:20px;padding:16px;background:#f9f6f0;border-radius:8px'>"
+                        f"<div style='font-size:11px;color:#888;margin-bottom:6px'>{e['q']}</div>"
+                        f"<div style='font-size:14px;line-height:1.9;white-space:pre-wrap'>{e['a']}</div></div>"
+                        for e in entries if e.get('a')
+                    ])
+                    send_email(
+                        to=email,
+                        subject=f"[투*필] {nickname}님의 지금 이 순간 기록",
+                        html=f"""<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'>
+<div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div>
+<div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 투*필 + 일기</div>
+<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
+<div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div>
+<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
+<div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 지금의 기록</div>
+{diary_html}
+<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div>
+</div>"""
+                    )
+            except Exception as mail_err:
+                logger.error(f"[DIARY-MAIL] {mail_err}")
         return jsonify({"ok": True})
     except Exception as e:
         logger.error(f"[DIARY-SAVE] {e}")
         return jsonify({"ok": False}), 500
+
+
+@app.route("/api/today/diary-load", methods=["GET"])
+def today_diary_load():
+    """공개 일기 로드 — 다른 사람 뷰용"""
+    doc_id = request.args.get("doc_id", "").strip()
+    try:
+        data = firebase_get_today(doc_id)
+        if not data:
+            return jsonify({"entries": [], "is_public": False})
+        return jsonify({
+            "entries":   data.get("diary", []),
+            "is_public": data.get("diary_public", False)
+        })
+    except Exception as e:
+        logger.error(f"[DIARY-LOAD] {e}")
+        return jsonify({"entries": [], "is_public": False})
 
 
 @app.route("/api/next-today/<current_doc_id>", methods=["GET"])
