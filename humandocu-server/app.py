@@ -1280,7 +1280,158 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '<meta property="og:title" content="' + og_title + '">'
         '<meta property="og:description" content="' + og_desc + '">'
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
-        '<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
+        '
+<!-- ✦ 나의 이야기 / 지금의 기록 섹션 -->
+<div id="story-trigger" style="padding:32px 24px 8px;text-align:center;{'display:none' if not is_owner else ''}">
+  <button onclick="openStory()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.35);border-radius:24px;color:rgba(200,135,10,.85);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em">
+    {'✦ 나의 이야기, 조금 더 풀어볼까요?' if page_type != 'today' else '✦ 지금 이 마음, 조금 더 기록해볼까요?'}
+  </button>
+</div>
+
+<div id="story-section" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">{'✦ 나의 이야기' if page_type != 'today' else '✦ 지금의 기록'}</div>
+  <div id="story-prompt" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:24px"></div>
+  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:110px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+    <button id="story-skip" style="padding:10px 20px;background:transparent;border:1px solid rgba(249,246,240,.12);border-radius:20px;color:rgba(249,246,240,.35);font-size:12px;cursor:pointer;font-family:inherit">건너뛰기</button>
+    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
+  </div>
+  <div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:#C8870A;transition:background .3s"></div>
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+  </div>
+</div>
+
+<div id="story-privacy" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.2em;color:rgba(200,135,10,.6);margin-bottom:14px">✦ 이 기록을</div>
+  <div style="font-size:18px;font-weight:300;color:#f9f6f0;margin-bottom:8px">공개할까요?</div>
+  <div style="font-size:12px;color:rgba(249,246,240,.35);margin-bottom:28px;line-height:1.8">비공개를 선택하면<br>이메일로 합본을 보내드려요</div>
+  <div style="display:flex;gap:12px;justify-content:center">
+    <button id="story-private" style="padding:12px 28px;background:transparent;border:1px solid rgba(249,246,240,.18);border-radius:24px;color:rgba(249,246,240,.55);font-size:13px;cursor:pointer;font-family:inherit">🔒 나만 보기</button>
+    <button id="story-public" style="padding:12px 28px;background:#C8870A;border:none;border-radius:24px;color:#0d0d0d;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌐 공개하기</button>
+  </div>
+</div>
+
+<div id="story-done" style="display:none;padding:28px 24px;text-align:center">
+  <div style="font-size:22px;margin-bottom:14px;color:#C8870A">✦</div>
+  <div style="font-size:15px;font-weight:300;color:#f9f6f0;line-height:1.9">기록이 저장되었어요.<br><span style="color:rgba(200,135,10,.65);font-size:13px">이메일로 합본을 보내드릴게요</span></div>
+</div>
+
+<div id="story-result" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto">
+  <div style="font-size:10px;letter-spacing:.22em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:18px">{'✦ 나의 이야기' if page_type != 'today' else '✦ 지금의 기록'}</div>
+  <div id="story-entries"></div>
+</div>
+
+<div style="text-align:center;padding:4px 0 0">
+  <button id="story-more-btn" style="display:none;padding:10px 24px;background:transparent;border:1px solid rgba(200,135,10,.22);border-radius:20px;color:rgba(200,135,10,.55);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.06em">글 더보기 ↓</button>
+</div>
+
+<script>
+(function(){{
+  var DOC_ID    = '{doc_id}';
+  var IS_OWNER  = {'true' if is_owner else 'false'};
+  var PAGE_TYPE = '{page_type}';
+  var IS_TODAY  = (PAGE_TYPE === 'today');
+  var LANG      = localStorage.getItem('sixshot_lang') || 'KO';
+  var API       = 'https://humandocu-server-production.up.railway.app';
+  var qs = [], as = [], step = 0;
+  var SAVE_API  = IS_TODAY ? '/api/today/diary-save' : '/api/sixshot/story-save';
+  var LOAD_API  = IS_TODAY ? '/api/today/diary-load' : '/api/sixshot/story-load';
+  var Q_API     = IS_TODAY ? '/api/today/diary-questions' : '/api/sixshot/story-questions';
+
+  if (!IS_OWNER) {{
+    var t = document.getElementById('story-trigger');
+    if (t) t.style.display = 'none';
+  }}
+
+  function openStory() {{
+    document.getElementById('story-trigger').style.display = 'none';
+    document.getElementById('story-section').style.display = 'block';
+    fetch(API + Q_API + '?doc_id=' + DOC_ID + '&lang=' + LANG)
+      .then(function(r){{ return r.json(); }})
+      .then(function(d){{ qs = d.questions || []; showQ(0); }})
+      .catch(function(){{
+        qs = IS_TODAY
+          ? ['지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?','이 순간을 한 단어로 표현한다면?','지금의 나에게 한마디 남긴다면?']
+          : ['이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?','나를 지금의 나로 만든 가장 결정적인 순간이 있다면?','미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?'];
+        showQ(0);
+      }});
+  }}
+  window.openStory = openStory;
+
+  function showQ(n) {{
+    step = n;
+    if (n >= qs.length) {{ showPrivacy(); return; }}
+    document.getElementById('story-prompt').textContent = qs[n];
+    document.getElementById('story-input').value = as[n] || '';
+    document.getElementById('story-input').focus();
+    document.querySelectorAll('.s-dot').forEach(function(d,i){{
+      d.style.background = i===n ? '#C8870A' : 'rgba(200,135,10,.2)';
+    }});
+  }}
+
+  document.getElementById('story-next').addEventListener('click', function(){{
+    as[step] = document.getElementById('story-input').value.trim();
+    showQ(step+1);
+  }});
+  document.getElementById('story-skip').addEventListener('click', function(){{
+    as[step] = '';
+    showQ(step+1);
+  }});
+
+  function showPrivacy() {{
+    document.getElementById('story-section').style.display = 'none';
+    document.getElementById('story-privacy').style.display = 'block';
+  }}
+
+  function saveStory(pub) {{
+    var entries = qs.map(function(q,i){{ return {{q:q,a:as[i]||''}}; }}).filter(function(e){{ return e.a; }});
+    document.getElementById('story-privacy').style.display = 'none';
+    if (!entries.length) return;
+    fetch(API + SAVE_API, {{
+      method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{doc_id:DOC_ID, entries:entries, is_public:pub}})
+    }}).catch(function(){{}});
+    if (pub) {{ renderStory(entries); }}
+    else {{ document.getElementById('story-done').style.display = 'block'; }}
+  }}
+
+  document.getElementById('story-private').addEventListener('click', function(){{ saveStory(false); }});
+  document.getElementById('story-public').addEventListener('click', function(){{ saveStory(true); }});
+
+  function renderStory(entries) {{
+    var c = document.getElementById('story-entries');
+    c.innerHTML = '';
+    entries.forEach(function(e){{
+      var d = document.createElement('div');
+      d.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.13);border-radius:8px;padding:20px;margin-bottom:12px';
+      d.innerHTML = '<div style="font-size:10px;color:rgba(200,135,10,.5);margin-bottom:8px;letter-spacing:.08em">' + e.q + '</div>' +
+                    '<div style="font-size:14px;color:rgba(249,246,240,.85);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
+      c.appendChild(d);
+    }});
+    document.getElementById('story-result').style.display = 'block';
+  }}
+
+  // 다른 사람 뷰 — 글 더보기
+  if (!IS_OWNER) {{
+    fetch(API + LOAD_API + '?doc_id=' + DOC_ID)
+      .then(function(r){{ return r.json(); }})
+      .then(function(d){{
+        if (d.is_public && d.entries && d.entries.length) {{
+          var btn = document.getElementById('story-more-btn');
+          btn.style.display = 'block';
+          btn.addEventListener('click', function(){{
+            btn.style.display = 'none';
+            renderStory(d.entries);
+          }});
+        }}
+      }}).catch(function(){{}});
+  }}
+}})();
+</script>
+
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
         '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
         '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
@@ -4259,6 +4410,7 @@ def sixshot_page(doc_id):
     shot_images = data.get("shot_images", {})
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
+    is_owner    = getattr(_g, "_is_owner", False)
     lang        = data.get("lang", "ko")
     is_en       = (lang == "en")
     is_ja       = (lang == "ja")
@@ -5277,6 +5429,133 @@ def today_profile():
     return jsonify({"found": False})
 
 
+
+
+@app.route("/api/sixshot/story-questions", methods=["GET"])
+def sixshot_story_questions():
+    """식스샷 기반 '나의 이야기' 질문 3개 생성"""
+    doc_id = request.args.get("doc_id", "").strip()
+    lang   = request.args.get("lang", "KO").upper()
+    try:
+        data = firebase_get_sixshot(doc_id)
+        if not data:
+            raise ValueError("not found")
+        shots = data.get("shots", {})
+        poem  = data.get("poem", "") or data.get("poems", "")
+        if isinstance(poem, dict):
+            poem = " / ".join(poem.values())
+        descs = " / ".join([str(v.get("desc","")) for v in shots.values() if isinstance(v,dict) and v.get("desc")])
+
+        lang_inst = {
+            "KO": "따뜻하고 자기소개 같은 말투로, 한국어로.",
+            "EN": "Warm and personal, in English.",
+            "JP": "温かく自己紹介のような口調で、日本語で。",
+            "ZH": "温暖而像自我介绍，用中文。"
+        }.get(lang, "한국어로.")
+
+        prompt = f"""다음은 한 사람의 인생 식스샷(6장으로 정리한 인생) 내용이야.
+
+시: {poem}
+사진 설명들: {descs}
+
+이 내용을 바탕으로 '나의 이야기'를 더 풀어낼 수 있는 질문 3개를 만들어줘.
+- 인생 전체를 돌아보게 하는 질문
+- 자서전 쓰듯 깊이 있지만 부담 없는 질문
+- 미래 세대나 가족에게 남기고 싶은 이야기 끌어내는 질문
+- {lang_inst}
+
+반드시 JSON 배열만 반환: ["질문1", "질문2", "질문3"]"""
+
+        import anthropic as _ant
+        _client = _ant.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = _client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            messages=[{"role":"user","content":prompt}]
+        )
+        import re as _re
+        m = _re.search(r'\[.*?\]', resp.content[0].text.strip(), _re.DOTALL)
+        qs = json.loads(m.group()) if m else []
+        return jsonify({"questions": qs[:3]})
+    except Exception as e:
+        logger.error(f"[STORY-Q] {e}")
+        fallback = {
+            "KO": ["이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?","나를 지금의 나로 만든 가장 결정적인 순간이 있다면?","미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?"],
+            "EN": ["Which of these six photos holds the most stories?","What was the moment that shaped who you are today?","What would you like to say to your future self or family?"],
+            "JP": ["この6枚の中で最も多くの物語を秘めているのはどの写真ですか？","今の自分を作った最も決定的な瞬間があるとしたら？","未来の自分や家族に残したい言葉があるとしたら？"],
+            "ZH": ["这六张照片中，哪一张包含最多故事？","塑造了今天的你的最关键时刻是什么？","你想对未来的自己或家人留下什么话？"]
+        }
+        return jsonify({"questions": fallback.get(lang, fallback["KO"])})
+
+
+@app.route("/api/sixshot/story-save", methods=["POST"])
+def sixshot_story_save():
+    """식스샷 나의 이야기 저장 + 비공개시 이메일"""
+    try:
+        body      = request.get_json(force=True) or {}
+        doc_id    = body.get("doc_id","").strip()
+        entries   = body.get("entries",[])
+        is_public = body.get("is_public", False)
+        if not doc_id or not entries:
+            return jsonify({"ok":False}), 400
+        from datetime import datetime, timezone
+        _get_db().collection("sixshot").document(doc_id).update({
+            "story": entries,
+            "story_public": is_public,
+            "story_at": datetime.now(timezone.utc).isoformat()
+        })
+        if not is_public:
+            try:
+                data     = firebase_get_sixshot(doc_id)
+                email    = data.get("email","") if data else ""
+                nickname = data.get("nickname") or data.get("name","") if data else ""
+                poem     = data.get("poem","") or "" if data else ""
+                if isinstance(data.get("poems"), dict):
+                    poem = " ".join(data["poems"].values())
+                if email:
+                    story_html = "".join([
+                        f"<div style='margin-bottom:18px;padding:16px;background:#f9f6f0;border-radius:8px'>"
+                        f"<div style='font-size:11px;color:#888;margin-bottom:6px'>{e['q']}</div>"
+                        f"<div style='font-size:14px;line-height:1.9;white-space:pre-wrap'>{e['a']}</div></div>"
+                        for e in entries if e.get('a')
+                    ])
+                    send_email(
+                        to=email,
+                        subject=f"[식스샷] {nickname}님의 나의 이야기",
+                        html=f"""<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'>
+<div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div>
+<div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 식스샷 + 나의 이야기</div>
+<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
+<div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div>
+<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
+<div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 나의 이야기</div>
+{story_html}
+<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div>
+</div>"""
+                    )
+            except Exception as me:
+                logger.error(f"[STORY-MAIL] {me}")
+        return jsonify({"ok":True})
+    except Exception as e:
+        logger.error(f"[STORY-SAVE] {e}")
+        return jsonify({"ok":False}), 500
+
+
+@app.route("/api/sixshot/story-load", methods=["GET"])
+def sixshot_story_load():
+    """공개된 식스샷 나의 이야기 로드"""
+    doc_id = request.args.get("doc_id","").strip()
+    try:
+        data = firebase_get_sixshot(doc_id)
+        if not data:
+            return jsonify({"entries":[],"is_public":False})
+        return jsonify({
+            "entries":   data.get("story",[]),
+            "is_public": data.get("story_public", False)
+        })
+    except Exception as e:
+        logger.error(f"[STORY-LOAD] {e}")
+        return jsonify({"entries":[],"is_public":False})
 
 @app.route("/api/today/diary-questions", methods=["GET"])
 def today_diary_questions():
