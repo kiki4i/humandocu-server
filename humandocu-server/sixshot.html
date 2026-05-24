@@ -281,7 +281,7 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <!-- DIARY SECTION — 투*필 전용 -->
 <div id="diary-section" style="display:none;padding:48px 24px;max-width:480px;margin:0 auto;text-align:center">
-  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">✦ NOW DIARY</div>
+  <div id="diary-section-kicker" style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">✦ NOW DIARY</div>
   <div id="diary-prompt-text" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:28px"></div>
   <textarea id="diary-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:100px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none;letter-spacing:.02em"></textarea>
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
@@ -319,14 +319,14 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <!-- DIARY RESULT — 완성된 일기 -->
 <div id="diary-result" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto">
-  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:20px">✦ 지금의 기록</div>
+  <div id="diary-result-kicker" style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:20px">✦ 지금의 기록</div>
   <div id="diary-entries" style="display:flex;flex-direction:column;gap:20px"></div>
 </div>
 
 <!-- DIARY TRIGGER BUTTON -->
 <div id="diary-trigger" style="padding:20px 24px 0;text-align:center">
   <button id="diary-open-btn" onclick="openDiary()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.3);border-radius:24px;color:rgba(200,135,10,.8);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .3s">
-    ✦ 지금 이 마음, 조금 더 기록해볼까요?
+    <span id="diary-btn-label">✦ 지금 이 마음, 조금 더 기록해볼까요?</span>
   </button>
 </div>
 
@@ -375,14 +375,26 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <script>
 (function() {
-  var DOC_ID   = '{{ doc_id }}';
-  var IS_OWNER = '{{ is_owner }}' === 'True';
-  var LANG     = localStorage.getItem('sixshot_lang') || 'KO';
-  var API      = 'https://humandocu-server-production.up.railway.app';
+  var DOC_ID    = '{{ doc_id }}';
+  var IS_OWNER  = '{{ is_owner }}' === 'True';
+  var PAGE_TYPE = '{{ page_type }}';  // 'sixshot' or 'today'
+  var LANG      = localStorage.getItem('sixshot_lang') || 'KO';
+  var API       = 'https://humandocu-server-production.up.railway.app';
 
   var questions = [];
   var answers   = [];
   var step      = 0;
+
+  // 페이지 타입별 문구 설정
+  var isSixshot = (PAGE_TYPE !== 'today');
+  if (isSixshot) {
+    var btnLabel = document.getElementById('diary-btn-label');
+    if (btnLabel) btnLabel.textContent = '✦ 나의 이야기, 조금 더 풀어볼까요?';
+    var kicker = document.getElementById('diary-section-kicker');
+    if (kicker) kicker.textContent = '✦ 나의 이야기';
+    var rkicker = document.getElementById('diary-result-kicker');
+    if (rkicker) rkicker.textContent = '✦ 나의 이야기';
+  }
 
   // 본인 아니면 트리거 버튼 숨김
   if (!IS_OWNER) {
@@ -398,13 +410,19 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   window.openDiary = openDiary;
 
   function loadQuestions() {
-    fetch(API + '/api/today/diary-questions?doc_id=' + DOC_ID + '&lang=' + LANG)
+    fetch(API + (isSixshot ? '/api/sixshot/story-questions' : '/api/today/diary-questions') + '?doc_id=' + DOC_ID + '&lang=' + LANG)
       .then(function(r){ return r.json(); })
       .then(function(d){ questions = d.questions || []; showStep(0); })
       .catch(function(){
-        questions = ['지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?',
-                     '이 순간을 한 단어로 표현한다면?',
-                     '지금의 나에게 한마디 남긴다면?'];
+        if (isSixshot) {
+          questions = ['이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?',
+                       '지금의 나를 만든 가장 결정적인 순간이 있다면?',
+                       '미래의 나에게, 혹은 내 가족에게 남기고 싶은 말이 있다면?'];
+        } else {
+          questions = ['지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?',
+                       '이 순간을 한 단어로 표현한다면?',
+                       '지금의 나에게 한마디 남긴다면?'];
+        }
         showStep(0);
       });
   }
@@ -443,7 +461,7 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
     document.getElementById('diary-privacy').style.display = 'none';
     if (!entries.length) return;
 
-    fetch(API + '/api/today/diary-save', {
+    fetch(API + (isSixshot ? '/api/sixshot/story-save' : '/api/today/diary-save'), {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({doc_id:DOC_ID, entries:entries, is_public:isPublic})
     }).catch(function(){});
@@ -472,7 +490,7 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   // 다른 사람 뷰 — "글 더보기 ↓" 버튼
   var moreBtn = document.getElementById('diary-more-btn');
   if (moreBtn && !IS_OWNER) {
-    fetch(API + '/api/today/diary-load?doc_id=' + DOC_ID)
+    fetch(API + (isSixshot ? '/api/sixshot/story-load' : '/api/today/diary-load') + '?doc_id=' + DOC_ID)
       .then(function(r){ return r.json(); })
       .then(function(d){
         if (d.entries && d.entries.length && d.is_public) {
