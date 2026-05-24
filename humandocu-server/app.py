@@ -4415,7 +4415,7 @@ def sixshot_page(doc_id):
     identity = data.get("identity", "")
     last_to  = data.get("last_to", "")
     last_msg = data.get("last_msg", "")
-        extra    = data.get("extra", "").strip()
+    extra    = data.get("extra", "").strip()
     poems_raw = data.get("poems", "")
     # poems가 dict면 그대로, 문자열이면 파싱용으로 보존
     poems = poems_raw if isinstance(poems_raw, dict) else {}
