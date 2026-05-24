@@ -4290,7 +4290,7 @@ def sixshot_page(doc_id):
 <div id="story-section" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto;text-align:center">
   <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">{story_kicker}</div>
   <div id="story-prompt" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:24px"></div>
-  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:110px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
+  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:110px;background:#111;border:1px solid rgba(200,135,10,.3);border-radius:8px;padding:16px;color:#f0ebe0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
     <button id="story-skip" style="padding:10px 20px;background:transparent;border:1px solid rgba(249,246,240,.12);border-radius:20px;color:rgba(249,246,240,.35);font-size:12px;cursor:pointer;font-family:inherit">건너뛰기</button>
     <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
