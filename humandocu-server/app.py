@@ -4886,10 +4886,11 @@ def sixshot_page(doc_id):
             f'{img_block}{card_inner}</div>'
         )
 
-    to_label = f"To. {last_to}" if last_to else to_nobody_label
+    to_label = f"To. {last_to}" if last_to else ""
+    to_label_html = f'<div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">{to_label}</div>' if to_label else ""
     last_msg_block = f"""
         <div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
-            <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">{to_label}</div>
+            {to_label_html}
             <div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>
         </div>""" if last_msg else ""
 
