@@ -4665,7 +4665,7 @@ def sixshot_page(doc_id):
                                else "사진 6장 + 짧은 이야기 · AI가 시로 남겨드려요")
         cta_btn             = "나의 투*필 만들기 →" if page_type == "today" else "나의 식스샷 만들기 →"
         nav_today_lbl       = "📽️ 다른 투*필 둘러보기" if page_type == "today" else "🎞️ 다른 식스샷 둘러보기"
-        nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
+        nav_sixshot_lbl     = "📽️ 투*필 둘러보기" if page_type != "today" else "🎞️ 인생 식스샷 둘러보기"
         nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
         footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
         delete_label        = "🗑 삭제하기"
@@ -5176,7 +5176,7 @@ def sixshot_page(doc_id):
       }};
     }})();
     </script>
-    <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
+    <a href="{'https://humandocu.com/today.html' if page_type != 'today' else 'https://humandocu.com/sixshot.html'}" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
       {nav_sixshot_lbl}
     </a>
     <a href="https://humandocu.com" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">
