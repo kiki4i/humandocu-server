@@ -5516,8 +5516,7 @@ def sixshot_story_save():
             "story_public": is_public,
             "story_at": datetime.now(timezone.utc).isoformat()
         })
-        if not is_public:
-            try:
+        try:
                 data     = firebase_get_sixshot(doc_id)
                 email    = data.get("email","") if data else ""
                 nickname = data.get("nickname") or data.get("name","") if data else ""
@@ -5644,9 +5643,8 @@ def today_diary_save():
             "diary_public": is_public,
             "diary_at": datetime.now(timezone.utc).isoformat()
         })
-        # 비공개 → 이메일 합본 발송
-        if not is_public:
-            try:
+        # 공개/비공개 모두 이메일 합본 발송
+        try:
                 doc_data = firebase_get_today(doc_id)
                 email    = doc_data.get("email", "") if doc_data else ""
                 nickname = doc_data.get("nickname") or doc_data.get("name", "") if doc_data else ""
