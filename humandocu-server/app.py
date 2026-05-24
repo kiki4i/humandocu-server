@@ -5502,7 +5502,7 @@ def sixshot_story_questions():
 
 @app.route("/api/sixshot/story-save", methods=["POST"])
 def sixshot_story_save():
-    """식스샷 나의 이야기 저장 + 비공개시 이메일"""
+    """식스샷 나의 이야기 저장 + 항상 이메일 발송"""
     try:
         body      = request.get_json(force=True) or {}
         doc_id    = body.get("doc_id","").strip()
@@ -5517,35 +5517,33 @@ def sixshot_story_save():
             "story_at": datetime.now(timezone.utc).isoformat()
         })
         try:
-                data     = firebase_get_sixshot(doc_id)
-                email    = data.get("email","") if data else ""
-                nickname = data.get("nickname") or data.get("name","") if data else ""
-                poem     = data.get("poem","") or "" if data else ""
-                if isinstance(data.get("poems"), dict):
-                    poem = " ".join(data["poems"].values())
-                if email:
-                    story_html = "".join([
-                        f"<div style='margin-bottom:18px;padding:16px;background:#f9f6f0;border-radius:8px'>"
-                        f"<div style='font-size:11px;color:#888;margin-bottom:6px'>{e['q']}</div>"
-                        f"<div style='font-size:14px;line-height:1.9;white-space:pre-wrap'>{e['a']}</div></div>"
-                        for e in entries if e.get('a')
-                    ])
-                    send_email(
-                        to=email,
-                        subject=f"[식스샷] {nickname}님의 나의 이야기",
-                        html=f"""<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'>
-<div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div>
-<div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 식스샷 + 나의 이야기</div>
-<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
-<div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div>
-<hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
-<div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 나의 이야기</div>
-{story_html}
-<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div>
-</div>"""
-                    )
-            except Exception as me:
-                logger.error(f"[STORY-MAIL] {me}")
+            import requests as _req
+            sdata    = firebase_get_sixshot(doc_id)
+            email    = sdata.get("email","") if sdata else ""
+            nickname = sdata.get("nickname") or sdata.get("name","") if sdata else ""
+            poem     = sdata.get("poem","") or "" if sdata else ""
+            if isinstance(sdata.get("poems"), dict):
+                poem = " ".join(sdata["poems"].values())
+            if email:
+                story_html = "".join([
+                    f"<div style='margin-bottom:18px;padding:16px;background:#f9f6f0;border-radius:8px'>"
+                    f"<div style='font-size:11px;color:#888;margin-bottom:6px'>{e['q']}</div>"
+                    f"<div style='font-size:14px;line-height:1.9;white-space:pre-wrap'>{e['a']}</div></div>"
+                    for e in entries if e.get('a')
+                ])
+                _req.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "from": "휴먼다큐 <noreply@humandocu.com>",
+                        "to": [email],
+                        "subject": f"[식스샷] {nickname}님의 나의 이야기",
+                        "html": f"<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'><div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div><div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 나의 이야기</div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:13px;color:#555;line-height:2;white-space:pre-wrap;margin-bottom:24px'>{poem}</div><hr style='border:none;border-top:1px solid #eee;margin:24px 0'><div style='font-size:12px;color:#888;letter-spacing:.1em;margin-bottom:16px'>✦ 나의 이야기</div>{story_html}<div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div></div>"
+                    },
+                    timeout=10
+                )
+        except Exception as me:
+            logger.error(f"[STORY-MAIL] {me}")
         return jsonify({"ok":True})
     except Exception as e:
         logger.error(f"[STORY-SAVE] {e}")
