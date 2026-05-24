@@ -4605,7 +4605,7 @@ def sixshot_page(doc_id):
         og_desc  = f"6장으로 정리한 {nickname}님의 인생 이야기 — {first_poem_line}… · humandocu.com"
 
     page_url_self = f"https://humandocu-server-production.up.railway.app/sixshot/{doc_id}"
-    page_url_kakao = f"https://humandocu.com/today/{doc_id}"
+    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}&type={page_type}"
 
     def poem_html(text):
         lines = [l for l in text.strip().split("\n") if l.strip()]
