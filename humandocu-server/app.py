@@ -5658,10 +5658,15 @@ def today_diary_save():
                         f"<div style='font-size:14px;line-height:1.9;white-space:pre-wrap'>{e['a']}</div></div>"
                         for e in entries if e.get('a')
                     ])
-                    send_email(
-                        to=email,
-                        subject=f"[투*필] {nickname}님의 지금 이 순간 기록",
-                        html=f"""<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'>
+                    import requests as _req
+                    _req.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                        json={
+                            "from": "휴먼다큐 <noreply@humandocu.com>",
+                            "to": [email],
+                            "subject": f"[투*필] {nickname}님의 지금 이 순간 기록",
+                            "html": f"""<div style='max-width:480px;margin:0 auto;font-family:sans-serif;color:#1a1a1a'>
 <div style='text-align:center;padding:32px 0 16px;font-size:22px;color:#C8870A'>✦</div>
 <div style='text-align:center;font-size:18px;font-weight:300;margin-bottom:8px'>{nickname}님의 투*필 + 일기</div>
 <hr style='border:none;border-top:1px solid #eee;margin:24px 0'>
@@ -5671,6 +5676,8 @@ def today_diary_save():
 {diary_html}
 <div style='text-align:center;margin-top:32px;font-size:11px;color:#bbb'>humandocu.com</div>
 </div>"""
+                        },
+                        timeout=10
                     )
             except Exception as mail_err:
                 logger.error(f"[DIARY-MAIL] {mail_err}")
