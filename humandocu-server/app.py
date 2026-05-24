@@ -3932,38 +3932,23 @@ def damnyejang_auth():
 
 def _damnyejang_auth_html(name, error):
     error_block = f'''
-    <div style="background:#fff0f0;border:1px solid #e88;border-radius:4px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c00">
-        {error}
-    </div>''' if error else ""
 
-    name_val = name or ""
-    return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>답례장 신청 · 휴먼다큐</title>
 <style>
   * {{ box-sizing:border-box; margin:0; padding:0; }}
   body {{ background:#f5f2eb; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }}
   .card {{ background:#fff; max-width:420px; width:90%; border-radius:8px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); }}
   .header {{ background:#0f0d09; padding:40px 32px; text-align:center; }}
-  .header-sub {{ font-size:11px; color:rgba(200,169,110,.6); letter-spacing:.2em; margin-bottom:12px; }}
-  .header-title {{ font-size:22px; color:#f9f6f0; font-weight:300; }}
-  .body {{ padding:32px; }}
-  .desc {{ font-size:13px; color:#6b6050; line-height:1.9; margin-bottom:24px; }}
-  label {{ display:block; font-size:12px; color:#9e8250; margin-bottom:6px; letter-spacing:.05em; }}
-  input {{ width:100%; padding:12px 14px; border:1px solid #e5dece; border-radius:4px; font-size:15px; margin-bottom:16px; font-family:inherit; }}
   input:focus {{ outline:none; border-color:#c8a96e; }}
-  .btn {{ width:100%; padding:14px; background:#c8a96e; border:none; border-radius:4px; font-size:15px; font-weight:700; color:#0f0d09; cursor:pointer; letter-spacing:.05em; }}
   .btn:hover {{ background:#b8994e; }}
-  .footer-note {{ font-size:11px; color:#9e8250; text-align:center; margin-top:16px; }}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
-    <div class="header-sub">HUMANDOCU · MEMORIAL</div>
     <div class="header-title">답례장 신청</div>
   </div>
   <div class="body">
@@ -3979,7 +3964,6 @@ def _damnyejang_auth_html(name, error):
       <input type="text" name="password" placeholder="완성 이메일의 6자리 번호" maxlength="6" required inputmode="numeric">
       <button type="submit" class="btn">확인 빈칸</button>
     </form>
-    <div class="footer-note">문의: 031-539-9709</div>
   </div>
 </div>
 </body>
@@ -3987,20 +3971,16 @@ def _damnyejang_auth_html(name, error):
 
 @app.route("/my/<name>", methods=["GET"])
 def my_filmography(name):
-    """이름으로 모아보기 — 이메일 인증 필요"""
     html = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{name}님의 필모그래피 · 휴먼다큐</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#F9F6F0;color:#1A1208;font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}}
 .card{{background:#fff;border-radius:16px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(200,169,110,.12)}}
-.avatar{{width:64px;height:64px;border-radius:50%;background:#C8A96E;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif KR',serif;font-size:24px;color:#0f0d09;margin:0 auto 16px}}
-h2{{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:300;margin-bottom:8px}}
 .sub{{font-size:13px;color:#9e8250;margin-bottom:28px;line-height:1.7}}
 input{{width:100%;padding:13px 16px;border:1px solid rgba(200,169,110,.4);border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;color:#1A1208;background:#fff}}
 input:focus{{border-color:#C8870A}}
