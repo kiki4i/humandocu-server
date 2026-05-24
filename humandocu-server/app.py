@@ -1282,155 +1282,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
         '
 <!-- ✦ 나의 이야기 / 지금의 기록 섹션 -->
-<div id="story-trigger" style="padding:32px 24px 8px;text-align:center;{'display:none' if not is_owner else ''}">
-  <button onclick="openStory()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.35);border-radius:24px;color:rgba(200,135,10,.85);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em">
-    {'✦ 나의 이야기, 조금 더 풀어볼까요?' if page_type != 'today' else '✦ 지금 이 마음, 조금 더 기록해볼까요?'}
-  </button>
-</div>
-
-<div id="story-section" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto;text-align:center">
-  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">{'✦ 나의 이야기' if page_type != 'today' else '✦ 지금의 기록'}</div>
-  <div id="story-prompt" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:24px"></div>
-  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:110px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
-  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
-    <button id="story-skip" style="padding:10px 20px;background:transparent;border:1px solid rgba(249,246,240,.12);border-radius:20px;color:rgba(249,246,240,.35);font-size:12px;cursor:pointer;font-family:inherit">건너뛰기</button>
-    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
-  </div>
-  <div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
-    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:#C8870A;transition:background .3s"></div>
-    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
-    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
-  </div>
-</div>
-
-<div id="story-privacy" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
-  <div style="font-size:10px;letter-spacing:.2em;color:rgba(200,135,10,.6);margin-bottom:14px">✦ 이 기록을</div>
-  <div style="font-size:18px;font-weight:300;color:#f9f6f0;margin-bottom:8px">공개할까요?</div>
-  <div style="font-size:12px;color:rgba(249,246,240,.35);margin-bottom:28px;line-height:1.8">비공개를 선택하면<br>이메일로 합본을 보내드려요</div>
-  <div style="display:flex;gap:12px;justify-content:center">
-    <button id="story-private" style="padding:12px 28px;background:transparent;border:1px solid rgba(249,246,240,.18);border-radius:24px;color:rgba(249,246,240,.55);font-size:13px;cursor:pointer;font-family:inherit">🔒 나만 보기</button>
-    <button id="story-public" style="padding:12px 28px;background:#C8870A;border:none;border-radius:24px;color:#0d0d0d;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌐 공개하기</button>
-  </div>
-</div>
-
-<div id="story-done" style="display:none;padding:28px 24px;text-align:center">
-  <div style="font-size:22px;margin-bottom:14px;color:#C8870A">✦</div>
-  <div style="font-size:15px;font-weight:300;color:#f9f6f0;line-height:1.9">기록이 저장되었어요.<br><span style="color:rgba(200,135,10,.65);font-size:13px">이메일로 합본을 보내드릴게요</span></div>
-</div>
-
-<div id="story-result" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto">
-  <div style="font-size:10px;letter-spacing:.22em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:18px">{'✦ 나의 이야기' if page_type != 'today' else '✦ 지금의 기록'}</div>
-  <div id="story-entries"></div>
-</div>
-
-<div style="text-align:center;padding:4px 0 0">
-  <button id="story-more-btn" style="display:none;padding:10px 24px;background:transparent;border:1px solid rgba(200,135,10,.22);border-radius:20px;color:rgba(200,135,10,.55);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.06em">글 더보기 ↓</button>
-</div>
-
-<script>
-(function(){{
-  var DOC_ID    = '{doc_id}';
-  var IS_OWNER  = {'true' if is_owner else 'false'};
-  var PAGE_TYPE = '{page_type}';
-  var IS_TODAY  = (PAGE_TYPE === 'today');
-  var LANG      = localStorage.getItem('sixshot_lang') || 'KO';
-  var API       = 'https://humandocu-server-production.up.railway.app';
-  var qs = [], as = [], step = 0;
-  var SAVE_API  = IS_TODAY ? '/api/today/diary-save' : '/api/sixshot/story-save';
-  var LOAD_API  = IS_TODAY ? '/api/today/diary-load' : '/api/sixshot/story-load';
-  var Q_API     = IS_TODAY ? '/api/today/diary-questions' : '/api/sixshot/story-questions';
-
-  if (!IS_OWNER) {{
-    var t = document.getElementById('story-trigger');
-    if (t) t.style.display = 'none';
-  }}
-
-  function openStory() {{
-    document.getElementById('story-trigger').style.display = 'none';
-    document.getElementById('story-section').style.display = 'block';
-    fetch(API + Q_API + '?doc_id=' + DOC_ID + '&lang=' + LANG)
-      .then(function(r){{ return r.json(); }})
-      .then(function(d){{ qs = d.questions || []; showQ(0); }})
-      .catch(function(){{
-        qs = IS_TODAY
-          ? ['지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?','이 순간을 한 단어로 표현한다면?','지금의 나에게 한마디 남긴다면?']
-          : ['이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?','나를 지금의 나로 만든 가장 결정적인 순간이 있다면?','미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?'];
-        showQ(0);
-      }});
-  }}
-  window.openStory = openStory;
-
-  function showQ(n) {{
-    step = n;
-    if (n >= qs.length) {{ showPrivacy(); return; }}
-    document.getElementById('story-prompt').textContent = qs[n];
-    document.getElementById('story-input').value = as[n] || '';
-    document.getElementById('story-input').focus();
-    document.querySelectorAll('.s-dot').forEach(function(d,i){{
-      d.style.background = i===n ? '#C8870A' : 'rgba(200,135,10,.2)';
-    }});
-  }}
-
-  document.getElementById('story-next').addEventListener('click', function(){{
-    as[step] = document.getElementById('story-input').value.trim();
-    showQ(step+1);
-  }});
-  document.getElementById('story-skip').addEventListener('click', function(){{
-    as[step] = '';
-    showQ(step+1);
-  }});
-
-  function showPrivacy() {{
-    document.getElementById('story-section').style.display = 'none';
-    document.getElementById('story-privacy').style.display = 'block';
-  }}
-
-  function saveStory(pub) {{
-    var entries = qs.map(function(q,i){{ return {{q:q,a:as[i]||''}}; }}).filter(function(e){{ return e.a; }});
-    document.getElementById('story-privacy').style.display = 'none';
-    if (!entries.length) return;
-    fetch(API + SAVE_API, {{
-      method:'POST', headers:{{'Content-Type':'application/json'}},
-      body: JSON.stringify({{doc_id:DOC_ID, entries:entries, is_public:pub}})
-    }}).catch(function(){{}});
-    if (pub) {{ renderStory(entries); }}
-    else {{ document.getElementById('story-done').style.display = 'block'; }}
-  }}
-
-  document.getElementById('story-private').addEventListener('click', function(){{ saveStory(false); }});
-  document.getElementById('story-public').addEventListener('click', function(){{ saveStory(true); }});
-
-  function renderStory(entries) {{
-    var c = document.getElementById('story-entries');
-    c.innerHTML = '';
-    entries.forEach(function(e){{
-      var d = document.createElement('div');
-      d.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.13);border-radius:8px;padding:20px;margin-bottom:12px';
-      d.innerHTML = '<div style="font-size:10px;color:rgba(200,135,10,.5);margin-bottom:8px;letter-spacing:.08em">' + e.q + '</div>' +
-                    '<div style="font-size:14px;color:rgba(249,246,240,.85);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
-      c.appendChild(d);
-    }});
-    document.getElementById('story-result').style.display = 'block';
-  }}
-
-  // 다른 사람 뷰 — 글 더보기
-  if (!IS_OWNER) {{
-    fetch(API + LOAD_API + '?doc_id=' + DOC_ID)
-      .then(function(r){{ return r.json(); }})
-      .then(function(d){{
-        if (d.is_public && d.entries && d.entries.length) {{
-          var btn = document.getElementById('story-more-btn');
-          btn.style.display = 'block';
-          btn.addEventListener('click', function(){{
-            btn.style.display = 'none';
-            renderStory(d.entries);
-          }});
-        }}
-      }}).catch(function(){{}});
-  }}
-}})();
-</script>
-
+{story_section_html}
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
         '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
         '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
@@ -4411,6 +4263,168 @@ def sixshot_page(doc_id):
     created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
     page_type   = data.get("type", "sixshot")  # "today" or "sixshot"
     is_owner    = getattr(_g, "_is_owner", False)
+
+    # 나의 이야기 / 지금의 기록 섹션 레이블
+    if page_type == "today":
+        story_btn_label    = "✦ 지금 이 마음, 조금 더 기록해볼까요?"
+        story_kicker       = "✦ 지금의 기록"
+        story_result_kicker= "✦ 지금의 기록"
+        story_save_api     = "/api/today/diary-save"
+        story_load_api     = "/api/today/diary-load"
+        story_q_api        = "/api/today/diary-questions"
+        story_fallback_q   = '["지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?","이 순간을 한 단어로 표현한다면?","지금의 나에게 한마디 남긴다면?"]'
+    else:
+        story_btn_label    = "✦ 나의 이야기, 조금 더 풀어볼까요?"
+        story_kicker       = "✦ 나의 이야기"
+        story_result_kicker= "✦ 나의 이야기"
+        story_save_api     = "/api/sixshot/story-save"
+        story_load_api     = "/api/sixshot/story-load"
+        story_q_api        = "/api/sixshot/story-questions"
+        story_fallback_q   = '["이 여섯 장 중 가장 많은 이야기가 담긴 사진은 어떤 건가요?","나를 지금의 나로 만든 가장 결정적인 순간이 있다면?","미래의 나, 혹은 내 가족에게 남기고 싶은 말이 있다면?"]'
+    story_trigger_display = "" if is_owner else "display:none;"
+
+    story_section_html = f'''
+<div id="story-trigger" style="padding:32px 24px 8px;text-align:center;{story_trigger_display}">
+  <button onclick="openStory()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.35);border-radius:24px;color:rgba(200,135,10,.85);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em">
+    {story_btn_label}
+  </button>
+</div>
+
+<div id="story-section" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">{story_kicker}</div>
+  <div id="story-prompt" style="font-size:18px;font-weight:300;color:#f9f6f0;line-height:1.8;margin-bottom:24px"></div>
+  <textarea id="story-input" placeholder="자유롭게 써보세요..." style="width:100%;min-height:110px;background:rgba(255,255,255,.05);border:1px solid rgba(200,135,10,.2);border-radius:8px;padding:16px;color:#f9f6f0;font-size:14px;font-family:inherit;line-height:1.8;resize:none;outline:none"></textarea>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+    <button id="story-skip" style="padding:10px 20px;background:transparent;border:1px solid rgba(249,246,240,.12);border-radius:20px;color:rgba(249,246,240,.35);font-size:12px;cursor:pointer;font-family:inherit">건너뛰기</button>
+    <button id="story-next" style="padding:10px 24px;background:#C8870A;border:none;border-radius:20px;color:#0d0d0d;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">다음 →</button>
+  </div>
+  <div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:#C8870A;transition:background .3s"></div>
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+    <div class="s-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(200,135,10,.2);transition:background .3s"></div>
+  </div>
+</div>
+
+<div id="story-privacy" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.2em;color:rgba(200,135,10,.6);margin-bottom:14px">✦ 이 기록을</div>
+  <div style="font-size:18px;font-weight:300;color:#f9f6f0;margin-bottom:8px">공개할까요?</div>
+  <div style="font-size:12px;color:rgba(249,246,240,.35);margin-bottom:28px;line-height:1.8">비공개를 선택하면<br>이메일로 합본을 보내드려요</div>
+  <div style="display:flex;gap:12px;justify-content:center">
+    <button id="story-private" style="padding:12px 28px;background:transparent;border:1px solid rgba(249,246,240,.18);border-radius:24px;color:rgba(249,246,240,.55);font-size:13px;cursor:pointer;font-family:inherit">🔒 나만 보기</button>
+    <button id="story-public" style="padding:12px 28px;background:#C8870A;border:none;border-radius:24px;color:#0d0d0d;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌐 공개하기</button>
+  </div>
+</div>
+
+<div id="story-done" style="display:none;padding:28px 24px;text-align:center">
+  <div style="font-size:22px;margin-bottom:14px;color:#C8870A">✦</div>
+  <div style="font-size:15px;font-weight:300;color:#f9f6f0;line-height:1.9">기록이 저장되었어요.<br><span style="color:rgba(200,135,10,.65);font-size:13px">이메일로 합본을 보내드릴게요</span></div>
+</div>
+
+<div id="story-result" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto">
+  <div style="font-size:10px;letter-spacing:.22em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:18px">{story_result_kicker}</div>
+  <div id="story-entries"></div>
+</div>
+
+<div style="text-align:center;padding:4px 0 0">
+  <button id="story-more-btn" style="display:none;padding:10px 24px;background:transparent;border:1px solid rgba(200,135,10,.22);border-radius:20px;color:rgba(200,135,10,.55);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.06em">글 더보기 ↓</button>
+</div>
+
+<script>
+(function(){{
+  var DOC_ID   = '{doc_id}';
+  var IS_OWNER = {str(is_owner).lower()};
+  var LANG     = localStorage.getItem('sixshot_lang') || 'KO';
+  var API      = 'https://humandocu-server-production.up.railway.app';
+  var qs=[], as=[], step=0;
+  var SAVE_API = '{story_save_api}';
+  var LOAD_API = '{story_load_api}';
+  var Q_API    = '{story_q_api}';
+  var FALLBACK = {story_fallback_q};
+
+  if (!IS_OWNER) {{
+    var t = document.getElementById('story-trigger');
+    if (t) t.style.display = 'none';
+  }}
+
+  function openStory() {{
+    document.getElementById('story-trigger').style.display = 'none';
+    document.getElementById('story-section').style.display = 'block';
+    fetch(API + Q_API + '?doc_id=' + DOC_ID + '&lang=' + LANG)
+      .then(function(r){{ return r.json(); }})
+      .then(function(d){{ qs = d.questions || []; showQ(0); }})
+      .catch(function(){{ qs = FALLBACK; showQ(0); }});
+  }}
+  window.openStory = openStory;
+
+  function showQ(n) {{
+    step = n;
+    if (n >= qs.length) {{ showPrivacy(); return; }}
+    document.getElementById('story-prompt').textContent = qs[n];
+    document.getElementById('story-input').value = as[n] || '';
+    document.getElementById('story-input').focus();
+    document.querySelectorAll('.s-dot').forEach(function(d,i){{
+      d.style.background = i===n ? '#C8870A' : 'rgba(200,135,10,.2)';
+    }});
+  }}
+
+  document.getElementById('story-next').addEventListener('click', function(){{
+    as[step] = document.getElementById('story-input').value.trim();
+    showQ(step+1);
+  }});
+  document.getElementById('story-skip').addEventListener('click', function(){{
+    as[step] = ''; showQ(step+1);
+  }});
+
+  function showPrivacy() {{
+    document.getElementById('story-section').style.display = 'none';
+    document.getElementById('story-privacy').style.display = 'block';
+  }}
+
+  function saveStory(pub) {{
+    var entries = qs.map(function(q,i){{ return {{q:q,a:as[i]||''}};  }}).filter(function(e){{ return e.a; }});
+    document.getElementById('story-privacy').style.display = 'none';
+    if (!entries.length) return;
+    fetch(API + SAVE_API, {{
+      method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{doc_id:DOC_ID, entries:entries, is_public:pub}})
+    }}).catch(function(){{}});
+    if (pub) {{ renderStory(entries); }}
+    else {{ document.getElementById('story-done').style.display = 'block'; }}
+  }}
+
+  document.getElementById('story-private').addEventListener('click', function(){{ saveStory(false); }});
+  document.getElementById('story-public').addEventListener('click', function(){{ saveStory(true); }});
+
+  function renderStory(entries) {{
+    var c = document.getElementById('story-entries');
+    c.innerHTML = '';
+    entries.forEach(function(e){{
+      var d = document.createElement('div');
+      d.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.13);border-radius:8px;padding:20px;margin-bottom:12px';
+      d.innerHTML = '<div style="font-size:10px;color:rgba(200,135,10,.5);margin-bottom:8px;letter-spacing:.08em">' + e.q + '</div>' +
+                    '<div style="font-size:14px;color:rgba(249,246,240,.85);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
+      c.appendChild(d);
+    }});
+    document.getElementById('story-result').style.display = 'block';
+  }}
+
+  if (!IS_OWNER) {{
+    fetch(API + LOAD_API + '?doc_id=' + DOC_ID)
+      .then(function(r){{ return r.json(); }})
+      .then(function(d){{
+        if (d.is_public && d.entries && d.entries.length) {{
+          var btn = document.getElementById('story-more-btn');
+          btn.style.display = 'block';
+          btn.addEventListener('click', function(){{
+            btn.style.display = 'none';
+            renderStory(d.entries);
+          }});
+        }}
+      }}).catch(function(){{}});
+  }}
+}})();
+</script>
+'''
     lang        = data.get("lang", "ko")
     is_en       = (lang == "en")
     is_ja       = (lang == "ja")
