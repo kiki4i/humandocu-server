@@ -5167,7 +5167,7 @@ def sixshot_page(doc_id):
               sessionStorage.removeItem(SEEN_KEY);
             }}
             if (d.status === 'ok' && d.data && d.data.doc_id) {{
-              window.location.href = '/today/' + d.data.doc_id;
+              window.location.href = ('/{page_type}' === '/today' ? '/today/' : '/sixshot/') + d.data.doc_id;
             }} else {{
               btn.disabled = false;
             }}
