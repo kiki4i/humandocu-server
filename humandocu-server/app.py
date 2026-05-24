@@ -4358,6 +4358,11 @@ def sixshot_page(doc_id):
       }});
   }}
   window.openStory = openStory;
+  function closeStory() {{
+    document.getElementById('story-section').style.display = 'none';
+    document.getElementById('story-trigger').style.display = 'block';
+  }}
+  window.closeStory = closeStory;
 
   function closeStory() {{
     document.getElementById('story-section').style.display = 'none';
