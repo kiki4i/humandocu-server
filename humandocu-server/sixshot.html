@@ -295,6 +295,28 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   </div>
 </div>
 
+<!-- DIARY PRIVACY CHOICE -->
+<div id="diary-privacy" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);margin-bottom:16px">✦ 이 기록을</div>
+  <div style="font-size:18px;font-weight:300;color:#f9f6f0;margin-bottom:8px">공개할까요?</div>
+  <div style="font-size:12px;color:rgba(249,246,240,.35);margin-bottom:32px;line-height:1.8">비공개를 선택하면 투*필과 일기를<br>이메일로 합본 발송해드려요</div>
+  <div style="display:flex;gap:12px;justify-content:center">
+    <button id="btn-private" style="padding:12px 28px;background:transparent;border:1px solid rgba(249,246,240,.2);border-radius:24px;color:rgba(249,246,240,.6);font-size:13px;cursor:pointer;font-family:inherit">🔒 나만 보기</button>
+    <button id="btn-public" style="padding:12px 28px;background:#C8870A;border:none;border-radius:24px;color:#0d0d0d;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌐 공개하기</button>
+  </div>
+</div>
+
+<!-- DIARY DONE — 비공개 완료 -->
+<div id="diary-done" style="display:none;padding:32px 24px;max-width:480px;margin:0 auto;text-align:center">
+  <div style="font-size:22px;margin-bottom:16px">✦</div>
+  <div style="font-size:15px;font-weight:300;color:#f9f6f0;line-height:1.9">기록이 저장되었어요.<br><span style="color:rgba(200,135,10,.7);font-size:13px">투*필과 일기 합본을 이메일로 보내드릴게요</span></div>
+</div>
+
+<!-- 글 더보기 버튼 (다른 사람 뷰) -->
+<div style="text-align:center;padding:8px 0 0">
+  <button id="diary-more-btn" style="display:none;padding:10px 24px;background:transparent;border:1px solid rgba(200,135,10,.25);border-radius:20px;color:rgba(200,135,10,.6);font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.06em">글 더보기 ↓</button>
+</div>
+
 <!-- DIARY RESULT — 완성된 일기 -->
 <div id="diary-result" style="display:none;padding:40px 24px;max-width:480px;margin:0 auto">
   <div style="font-size:10px;letter-spacing:.24em;color:rgba(200,135,10,.6);text-align:center;margin-bottom:20px">✦ 지금의 기록</div>
@@ -304,7 +326,7 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 <!-- DIARY TRIGGER BUTTON -->
 <div id="diary-trigger" style="padding:20px 24px 0;text-align:center">
   <button id="diary-open-btn" onclick="openDiary()" style="padding:12px 28px;background:transparent;border:1px solid rgba(200,135,10,.3);border-radius:24px;color:rgba(200,135,10,.8);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .3s">
-    ✦ 지금 더 남기고 싶은 말이 있나요?
+    ✦ 지금 이 마음, 조금 더 기록해볼까요?
   </button>
 </div>
 
@@ -353,13 +375,20 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
 
 <script>
 (function() {
-  var DOC_ID = '{{ doc_id }}';
-  var LANG   = localStorage.getItem('sixshot_lang') || 'KO';
-  var API    = 'https://humandocu-server-production.up.railway.app';
+  var DOC_ID   = '{{ doc_id }}';
+  var IS_OWNER = '{{ is_owner }}' === 'True';
+  var LANG     = localStorage.getItem('sixshot_lang') || 'KO';
+  var API      = 'https://humandocu-server-production.up.railway.app';
 
   var questions = [];
   var answers   = [];
   var step      = 0;
+
+  // 본인 아니면 트리거 버튼 숨김
+  if (!IS_OWNER) {
+    var t = document.getElementById('diary-trigger');
+    if (t) t.style.display = 'none';
+  }
 
   function openDiary() {
     document.getElementById('diary-trigger').style.display = 'none';
@@ -371,67 +400,89 @@ footer{padding:20px 48px;display:flex;justify-content:space-between;align-items:
   function loadQuestions() {
     fetch(API + '/api/today/diary-questions?doc_id=' + DOC_ID + '&lang=' + LANG)
       .then(function(r){ return r.json(); })
-      .then(function(d){
-        questions = d.questions || [];
-        showStep(0);
-      })
+      .then(function(d){ questions = d.questions || []; showStep(0); })
       .catch(function(){
-        questions = [
-          '지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?',
-          '오늘 하루를 한 단어로 표현한다면?',
-          '내일의 나에게 한마디 남긴다면?'
-        ];
+        questions = ['지금 이 사진 중 가장 오래 바라본 건 어떤 장면이었나요?',
+                     '이 순간을 한 단어로 표현한다면?',
+                     '지금의 나에게 한마디 남긴다면?'];
         showStep(0);
       });
   }
 
   function showStep(n) {
     step = n;
-    if (n >= questions.length) { saveDiary(); return; }
+    if (n >= questions.length) { showPrivacyChoice(); return; }
     document.getElementById('diary-prompt-text').textContent = questions[n];
     document.getElementById('diary-input').value = answers[n] || '';
     document.getElementById('diary-input').focus();
-    document.querySelectorAll('.d-dot').forEach(function(d, i){
-      d.style.background = i === n ? '#C8870A' : 'rgba(200,135,10,.2)';
+    document.querySelectorAll('.d-dot').forEach(function(d,i){
+      d.style.background = i===n ? '#C8870A' : 'rgba(200,135,10,.2)';
     });
   }
 
   document.getElementById('diary-next').addEventListener('click', function(){
-    var val = document.getElementById('diary-input').value.trim();
-    answers[step] = val;
-    showStep(step + 1);
+    answers[step] = document.getElementById('diary-input').value.trim();
+    showStep(step+1);
   });
-
   document.getElementById('diary-skip').addEventListener('click', function(){
     answers[step] = '';
-    showStep(step + 1);
+    showStep(step+1);
   });
 
-  function saveDiary() {
-    var entries = questions.map(function(q, i){ return {q: q, a: answers[i] || ''}; })
-                           .filter(function(e){ return e.a; });
-
+  function showPrivacyChoice() {
     document.getElementById('diary-section').style.display = 'none';
+    document.getElementById('diary-privacy').style.display = 'block';
+  }
 
+  document.getElementById('btn-private').addEventListener('click', function(){ saveDiary(false); });
+  document.getElementById('btn-public').addEventListener('click', function(){ saveDiary(true); });
+
+  function saveDiary(isPublic) {
+    var entries = questions.map(function(q,i){ return {q:q,a:answers[i]||''}; })
+                           .filter(function(e){ return e.a; });
+    document.getElementById('diary-privacy').style.display = 'none';
     if (!entries.length) return;
 
-    // 결과 표시
-    var container = document.getElementById('diary-entries');
+    fetch(API + '/api/today/diary-save', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({doc_id:DOC_ID, entries:entries, is_public:isPublic})
+    }).catch(function(){});
+
+    if (isPublic) {
+      renderDiary(entries);
+    } else {
+      var done = document.getElementById('diary-done');
+      done.style.display = 'block';
+    }
+  }
+
+  function renderDiary(entries) {
+    var c = document.getElementById('diary-entries');
+    c.innerHTML = '';
     entries.forEach(function(e){
-      var div = document.createElement('div');
-      div.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.15);border-radius:8px;padding:20px 20px';
-      div.innerHTML = '<div style="font-size:11px;color:rgba(200,135,10,.6);margin-bottom:8px;letter-spacing:.06em">' + e.q + '</div>' +
-                      '<div style="font-size:14px;color:rgba(249,246,240,.8);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
-      container.appendChild(div);
+      var d = document.createElement('div');
+      d.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(200,135,10,.15);border-radius:8px;padding:20px;margin-bottom:12px';
+      d.innerHTML = '<div style="font-size:10px;color:rgba(200,135,10,.55);margin-bottom:8px;letter-spacing:.08em">' + e.q + '</div>' +
+                    '<div style="font-size:14px;color:rgba(249,246,240,.85);line-height:1.9;white-space:pre-wrap">' + e.a + '</div>';
+      c.appendChild(d);
     });
     document.getElementById('diary-result').style.display = 'block';
+  }
 
-    // 서버에 저장
-    fetch(API + '/api/today/diary-save', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({doc_id: DOC_ID, entries: entries})
-    }).catch(function(){});
+  // 다른 사람 뷰 — "글 더보기 ↓" 버튼
+  var moreBtn = document.getElementById('diary-more-btn');
+  if (moreBtn && !IS_OWNER) {
+    fetch(API + '/api/today/diary-load?doc_id=' + DOC_ID)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.entries && d.entries.length && d.is_public) {
+          moreBtn.style.display = 'block';
+          moreBtn.addEventListener('click', function(){
+            moreBtn.style.display = 'none';
+            renderDiary(d.entries);
+          });
+        }
+      }).catch(function(){});
   }
 })();
 </script>
