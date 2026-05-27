@@ -4775,18 +4775,12 @@ def sixshot_page(doc_id):
         lines = [l for l in text.strip().split("\n") if l.strip()]
         return "".join(f'<div style="line-height:2;font-size:17px;color:#f9f6f0;font-family:Georgia,serif;letter-spacing:.02em">{l}</div>' for l in lines)
 
-    # today 타입: [오늘의 시] 단일 태그 / sixshot 타입: [대표] 태그
-    if page_type == "today":
-        rep_poem  = poem_dict.get("오늘의 시", "") or poem_dict.get("대표", "")
-        rep_poem2 = ""
-        haiku_s   = rep_poem   # 히어로 영역 재활용
-        haiku_h   = ""
-    else:
-        rep_poem  = poem_dict.get("대표", "")
-        rep_poem2 = poem_dict.get("대표2", "")
-        haiku_s   = poem_dict.get("하이쿠감성", "")
-        haiku_h   = poem_dict.get("하이쿠유머", "")
-    logger.warning(f"[SIXSHOT REP] doc={doc_id} type={page_type} rep={repr(rep_poem[:80])}")
+    rep_poem = poem_dict.get("대표", "")
+    rep_poem2 = poem_dict.get("대표2", "")
+    logger.warning(f"[SIXSHOT REP] doc={doc_id} type={page_type} rep={repr(rep_poem[:80])} rep2={repr(rep_poem2[:40])}")
+    logger.warning("[REP DEBUG] rep=%r rep2=%r" % (rep_poem[:50] if rep_poem else None, rep_poem2[:50] if rep_poem2 else None))
+    haiku_s = poem_dict.get("하이쿠감성", "")
+    haiku_h = poem_dict.get("하이쿠유머", "")
     haiku_single = poem_dict.get("하이쿠", "")  # sixshot 전용
 
     def haiku_lines_html(text):
@@ -4849,14 +4843,24 @@ def sixshot_page(doc_id):
         else:
             img_block = ""
         if page_type == "today":
-            shot_poem = poem_dict.get(f"SHOT{i}", "")
-            if shot_poem:
-                poem_block = (
-                    '<div style="border-top:1px solid #e5dece;padding-top:20px">'
-                    '<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
-                    f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem)}</div>'
-                    '</div></div>'
-                )
+            shot_poem_s = poem_dict.get(f"SHOT{i}감성", "")
+            shot_poem_h = poem_dict.get(f"SHOT{i}유머", "")
+            if shot_poem_s or shot_poem_h:
+                dual = '<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
+                if shot_poem_s:
+                    dual += (
+                        f'<div style="color:#9e8250;margin-bottom:6px">{shot_s_label}</div>'
+                        f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_s)}</div>'
+                    )
+                if shot_poem_s and shot_poem_h:
+                    dual += '<hr style="border:none;border-top:1px solid #e5d9c3;margin:12px 0">'
+                if shot_poem_h:
+                    dual += (
+                        f'<div style="color:#9e8250;margin-bottom:6px">{shot_h_label}</div>'
+                        f'<div style="color:#5a4a30;line-height:1.8">{_haiku_lines(shot_poem_h)}</div>'
+                    )
+                dual += '</div>'
+                poem_block = f'<div style="border-top:1px solid #e5dece;padding-top:20px">{dual}</div>'
             else:
                 poem_block = ""
         else:
@@ -7827,9 +7831,6 @@ def today_submit():
         is_public = data.get("is_public", True)
         shots    = data.get("shots", [])  # [{image_b64, caption}, ...]
         lang     = (data.get("lang") or "ko").strip().lower()
-        today_one = (data.get("today_one") or "").strip()
-        last_msg  = (data.get("last_msg") or "").strip()
-        extra     = (data.get("extra") or "").strip()
         lang_instruction = {"en": "IMPORTANT: You MUST write ALL poems, haiku, and text outputs in English only. No Korean allowed.", "ko": "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.", "ja": "重要: 全ての詩、俳句、テキストは必ず日本語のみで書いてください。", "zh": "重要: 所有诗歌、俳句和文字必须只用中文写。"}.get(lang, "중요: 모든 시, 하이쿠, 텍스트는 반드시 한국어로만 작성하세요.")
 
         if not name or not email or not shots:
@@ -7879,27 +7880,54 @@ def today_submit():
             for idx in sorted(shot_captions.keys())
             if shot_captions.get(idx)
         ])
-        OUTPUT_FORMAT = """[오늘의 시]
+        OUTPUT_FORMAT = """[대표]
 (1행)
 (2행)
 (3행)
 
-[SHOT1]
+[대표2]
+(1행)
+(2행)
+(3행)
+
+[하이쿠감성]
+(1행)
+(2행)
+(3행)
+
+[하이쿠유머]
+(1행)
+(2행)
+(3행)
+
+[SHOT1감성]
+(시)
+[SHOT1유머]
 (시)
 
-[SHOT2]
+[SHOT2감성]
+(시)
+[SHOT2유머]
 (시)
 
-[SHOT3]
+[SHOT3감성]
+(시)
+[SHOT3유머]
 (시)
 
-[SHOT4]
+[SHOT4감성]
+(시)
+[SHOT4유머]
 (시)
 
-[SHOT5]
+[SHOT5감성]
+(시)
+[SHOT5유머]
 (시)
 
-[SHOT6]
+[SHOT6감성]
+(시)
+[SHOT6유머]
 (시)
 
 [이모지]
@@ -7911,80 +7939,76 @@ hashtags: #태그1 #태그2 #태그3
 [팔레트]
 palette: #hex1 #hex2 #hex3"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
-
-지금 당신 앞에 한 사람의 오늘이 있습니다.
-
-닉네임: {nickname}
-오늘 하루를 한 문장으로: {today_one if today_one else '(없음)'}
-{('마지막으로 남긴 말: ' + last_msg) if last_msg else ''}
-
-그 사람이 오늘 찍은 사진들과 각 순간의 솔직한 속마음:
-{shots_text}
-
-이 모든 것이 합쳐진 게 이 사람의 오늘입니다.
-
-당신은 40년간 일상의 찰나를 시로 포착해온 시인입니다.
-사진을 봅니다 — 색감, 빛의 방향, 배경의 사물, 표정, 사진 속 글자까지 전부.
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 사진 속 글자, 표정까지 전부.
 설명이 짧아도 괜찮습니다. 사진이 다 말해줍니다.
-
-[중요] 시를 쓰기 전에 이 사람의 오늘 전체 톤을 먼저 읽으세요.
-- 슬프거나 잔잔하거나 그리운 하루 → 감성으로
-- 웃기거나 자조적이거나 덤덤한 하루 → 유머로
-- 억지로 다른 톤을 만들지 마세요. 슬픈 하루에 유머를 쓰거나, 웃긴 하루에 감성을 억지로 쓰면 오히려 이상합니다.
-
-유머 신호 (하나라도 있으면 유머 톤으로):
-- 설명에 ㅋㅋ, ㅎㅎ, ㄷㄷ, ㅠㅠ 등 초성/이모티콘
-- "망했다", "죽겠다", "미치겠다", "결국", "또" 같은 자조적 단어
-- 음식 사진 + 짧고 건조한 설명 (예: "오늘 점심", "드디어 먹음")
-- 느낌표(!) 2개 이상
-
-감성 신호 (위 신호 없고 설명이 서술형이면 감성):
-- 사람, 풍경, 기억, 감정을 담담하게 묘사
-- 그리움, 피로, 위로, 설렘 같은 감정 단어
-
 규칙:
 - 거창한 철학이나 교훈 금지
 - "삶이란", "존재란" 같은 추상어 금지
-- 구체적인 사물, 색깔, 소리, 온도로 써라
-- 시는 2~3줄. 형식 없음. 음절 맞추지 말 것.
-- 목표: 읽는 사람이 "맞아, 오늘 그랬지" 하고 멈추게
-- 사진 속 텍스트(간판, 포스터 등)는 직접 인용 금지. 분위기·색감·감정으로만.
-- 고유명사(사람 이름, 장소명, 행사명)는 사용자가 설명에 직접 쓴 것만 허용.
-- 현재는 2026년. 사진 날짜 해석 시 "내년"이라고 쓰지 마라.
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라
+- 읽는 사람이 "맞아, 오늘 그랬지" 하고 무릎 치게
+- 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것. 읽는 사람이 '헉' 하고 멈추게 만드는 것이 목표.
+
+각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 시에 담아줘.
+- 사용자가 "더 하고 싶은 이야기"를 별도로 남겼다면, 그 감정과 맥락을 시와 총평에 자연스럽게 녹여줘.
+- 사진 속 텍스트(간판, 포스터, 현수막, 스크린 등)는 절대 시에 직접 인용하거나 옮겨 쓰지 마라. 텍스트는 참고만 하고, 그 장면의 분위기·색감·감정으로만 시를 써라.
+- 고유명사(사람 이름, 목사/직함, 행사명, 장소명)는 절대 시에 넣지 마라. 사용자가 설명에 직접 쓴 단어가 아니면 언급 금지.
+- 날짜 해석 주의: 현재는 2026년이다. 사진에 2026년 날짜가 있으면 올해 또는 다음 달 등 가까운 미래로 해석하라. "내년"이라고 쓰지 마라.
+- 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
+아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
+
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
+
+오늘의 장면들:
+{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+
+{lang_instruction}
 
 다음을 작성해주세요.
 
-1. [오늘의 시] - 닉네임, 사진들, 설명들, 오늘 한 문장, 남긴 말 — 이 모든 것을 종합해서
-   이 사람의 오늘 전체를 하나의 시로 담아라.
-   앞에서 파악한 톤(감성 또는 유머) 그대로.
-   2~3줄. 읽는 사람이 "헉, 이게 나야" 하고 멈추게.
-   기법 중 하나:
-   ① 반전: 평범하게 시작해서 마지막 줄에서 완전히 뒤집어라
-   ② 날것: 누구나 느끼지만 아무도 말 안 하는 걸 그대로
-   ③ 보편: 이 사람 얘기인데 읽는 누구나 "나도 그래" 하게
-   좋은 예(감성): "일주일을 버텼다 / 금요일 밤이 되어서야 / 비로소 나였다"
-   좋은 예(유머): "일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다"
+1. [대표] - 오늘 하루 전체를 담은 짧은 시 1편 (시적·감각적 톤)
+   특별할 것 없는 오늘이지만, 읽으면 뭔가 마음에 남는 느낌.
+   거창하지 않게, 오늘이라는 하루의 온도를 담아주세요.
 
-2. [SHOT별 시] - 제출된 각 SHOT마다 시 하나씩.
-   [SHOT1] — 이 사진과 설명의 톤을 읽어라.
-   유머 신호 있으면 유머로, 없으면 감성으로. 단 하나만 써라.
-   2~3줄. 사진 설명을 그대로 쓰지 마라. 그 뒤에 있는 것을 꺼내라.
-   [SHOT2] ~ [SHOT6] 도 동일하게. 제출되지 않은 SHOT은 건너뛰어라.
+2. [대표2] - 같은 오늘을 산문체·직접적 톤으로 3행
+   꾸밈 없이 담담하게. 오히려 더 세게 꽂히는 느낌.
 
-3. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+3. [하이쿠감성] - 오늘 하루 전체의 핵심 감정 하나를 찌르는 짧은 시.
+   2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
+   목표: 읽는 사람이 '헉' 하고 멈추게.
+   3가지 기법 중 하나를 골라라:
+   1) 반전: 평범해 보이다가 마지막 줄에서 뒤집어라.
+   2) 날것의 솔직함: 누구나 느끼지만 아무도 말 안 하는 것을 그대로.
+   3) 보편적 진실: 이 사람 이야기인데 읽는 누구나 '나도 그래' 하게.
+   나쁜 예: '여름날에 시작하고 끝나는 하나씩' (형식에 맞추느라 의미 없음)
+   좋은 예: '일주일을 버텼다 / 금요일 밤이 되어서야 / 비로소 나였다'
+
+4. [하이쿠유머] - 같은 오늘을 유머·자조로 찌르는 짧은 시.
+   2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
+   진짜 웃긴 거. 날것의 현실 자조. '맞아 나도 그래' 하고 피식 웃게.
+   좋은 예: '일주일을 버텼다 / 그래서 치킨 시켰다 / 이게 인생이다'
+
+5. [SHOT별 시] - 제출된 각 SHOT마다 두 가지 짧은 시를 써라. (2~3줄, 형식 규칙 없음)
+   [SHOT1감성] — SHOT 1 장면의 핵심 감정 하나를 찌르는 시. 반전·솔직함·보편적 진실 중 하나로.
+   [SHOT1유머] — 같은 장면을 유머·자조로 찌르는 시. 날것으로. 웃기게.
+   [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
+
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
    - ☀️😊🌙✨ 같은 뻔한 것 금지
    - 이 사람만의 오늘이 느껴지게
-   - 닉네임, 사진, 설명, 오늘 한 문장 전부 종합해서
+   - 닉네임, 사진, 속마음 전부 종합해서
    - 이모지만 5개, 설명 없이, 한 줄로
-   - 2015년 이전 출시 범용 이모지만 사용 (Unicode 8.0 이하)
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
    예: 😤💼🍱🚇😬
 
-4. [해시태그] - 오늘을 표현하는 해시태그 3개.
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개.
    lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
-   형식: hashtags: #태그1 #태그2 #태그3
+   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
 
-5. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개 hex.
-   형식: palette: #hex1 #hex2 #hex3
+8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
+   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
 
 {lang_instruction}
 
