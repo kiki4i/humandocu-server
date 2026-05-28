@@ -6098,8 +6098,8 @@ def today_card(doc_id):
         # ── 치수 ──
         W       = 1080
         PHOTO_H = 1080
-        DARK_H  = 270
-        H       = PHOTO_H + DARK_H   # 1350
+        DARK_H  = 350
+        H       = PHOTO_H + DARK_H   # 1430
 
         # 검정 배경으로 시작 (사진 미로드시 사진 영역도 검정)
         canvas = Image.new("RGB", (W, H), (0, 0, 0))
@@ -6193,12 +6193,12 @@ def today_card(doc_id):
 
         # ── 레이아웃 상수 ──
         SIDE_PAD       = 44    # 좌우 여백
-        BOTTOM_PAD     = 14    # 브랜드 라인 하단 여백
-        BRAND_DATE_GAP = 10    # 날짜행↔브랜드행 간격
-        LINE_GAP       = 10    # 시 줄간격
-        BADGE_POEM_GAP = 12    # 배지↔시 간격
-        POEM_DESC_GAP  = 14    # 시↔설명문구 간격
-        TOP_PAD        = 12    # 가변 블록 상단 최소 여백
+        BOTTOM_PAD     = 20    # 브랜드 라인 하단 여백
+        BRAND_DATE_GAP = 14    # 날짜행↔브랜드행 간격
+        LINE_GAP       = 14    # 시 줄간격
+        BADGE_POEM_GAP = 16    # 배지↔시 간격
+        POEM_DESC_GAP  = 18    # 시↔설명문구 간격
+        TOP_PAD        = 18    # 가변 블록 상단 최소 여백
 
         desc_text = "오늘을 사진 한 장과 시 한 편으로 기록합니다"
 
