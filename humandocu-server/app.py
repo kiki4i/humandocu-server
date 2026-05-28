@@ -6147,10 +6147,10 @@ def today_card(doc_id):
                     pass
             return ImageFont.load_default()
 
-        font_poem = _load(38)
-        font_tone = _load(22)
-        font_date = _load(20)
-        font_wm   = _load(18)
+        font_poem = _load(42)
+        font_tone = _load(36)
+        font_date = _load(28)
+        font_wm   = _load(28)
 
         # ── 오대 사진 ──
         if img_url and not img_url.startswith("["):
@@ -6176,38 +6176,39 @@ def today_card(doc_id):
                 draw.rectangle([(0, 0), (W, PHOTO_H)], fill=(240, 235, 225))
 
         # ── 하단 배경 ──
-        draw.rectangle([(0, TEXT_Y0), (W, H)], fill=(15, 13, 9))
+        draw.rectangle([(0, TEXT_Y0), (W, H)], fill=(17, 17, 17))
 
         pad = 52
         y = TEXT_Y0 + pad
 
-        # 톤 배지
+        # 톤 배지 — 흰 배경 + 진한 텍스트
         TONE_BG = {
-            "감동명작":    ((249, 243, 224), (123, 79, 30)),
+            "감동명작":    ((255, 243, 224), (123, 79, 30)),
             "유쾌한코미디": ((255, 240, 232), (181, 69, 26)),
             "담백한일상":  ((247, 248, 250), (74, 85, 104)),
             "열정다큐":   ((255, 240, 240), (139, 26, 26)),
         }
         if today_tone:
-            bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((249, 243, 224), (123, 79, 30)))
+            bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((255, 243, 224), (123, 79, 30)))
             bbox = draw.textbbox((0, 0), today_tone, font=font_tone)
             tw = bbox[2] - bbox[0]
             th = bbox[3] - bbox[1]
-            bpad_x, bpad_y = 18, 8
+            bpad_x, bpad_y = 22, 12
             draw.rounded_rectangle(
                 [(pad, y), (pad + tw + bpad_x * 2, y + th + bpad_y * 2)],
-                radius=16, fill=bg_rgb
+                radius=20, fill=bg_rgb
             )
             draw.text((pad + bpad_x, y + bpad_y), today_tone, font=font_tone, fill=fg_rgb)
-            y += th + bpad_y * 2 + 28
+            y += th + bpad_y * 2 + 36
 
-        # 시 본문
+        # 시 본문 — 흰색, 줄간격 넉넉하게
         if today_poem:
-            poem_color = (249, 246, 240)
+            poem_color = (255, 255, 255)
+            line_gap = 20
             for line in [l for l in today_poem.split("\n") if l.strip()]:
                 draw.text((pad, y), line, font=font_poem, fill=poem_color)
                 bb = draw.textbbox((pad, y), line, font=font_poem)
-                y += (bb[3] - bb[1]) + 14
+                y += (bb[3] - bb[1]) + line_gap
 
         # 날짜 (좌하단)
         if created:
@@ -6217,13 +6218,13 @@ def today_card(doc_id):
                 date_str = f"{d.year}.{d.month:02d}.{d.day:02d}"
             except Exception:
                 date_str = created[:10]
-            draw.text((pad, H - 56), date_str, font=font_date, fill=(150, 130, 100))
+            draw.text((pad, H - 64), date_str, font=font_date, fill=(160, 150, 140))
 
         # 워터마크 (우하단)
         wm = "투*필 · humandocu.com"
         wm_bb = draw.textbbox((0, 0), wm, font=font_wm)
         wm_w = wm_bb[2] - wm_bb[0]
-        draw.text((W - pad - wm_w, H - 56), wm, font=font_wm, fill=(100, 85, 60))
+        draw.text((W - pad - wm_w, H - 64), wm, font=font_wm, fill=(160, 150, 140))
 
         buf = _io.BytesIO()
         canvas.save(buf, format="PNG", optimize=True)
