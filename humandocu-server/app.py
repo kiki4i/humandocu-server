@@ -50,6 +50,10 @@ def sixshot_b64_preflight():
 def today_preflight():
     return "", 204
 
+@app.route("/api/today/card/<doc_id>", methods=["OPTIONS"])
+def today_card_preflight(doc_id=None):
+    return "", 204
+
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO    = "kiki4i/humandocu"
@@ -5614,6 +5618,26 @@ def today_v2_page(doc_id, data):
         og_title            = f"{nickname}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
         og_desc             = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — humandocu.com"
 
+    # 오대 카드 다운로드 버튼 레이블
+    card_btn_label = (
+        "📥 Save Today Card"         if is_en  else
+        "📥 カードを保存"              if is_ja  else
+        "📥 保存卡片"                  if is_zh  else
+        "📥 오대 카드 저장"
+    )
+    card_guide = (
+        "Use for Instagram, KakaoTalk, or wallpaper"       if is_en  else
+        "Instagram・KakaoTalk・壁紙としてご活用ください"        if is_ja  else
+        "可用于Instagram、KakaoTalk或手机壁纸"                 if is_zh  else
+        "인스타, 카카오, 배경화면으로 활용해보세요"
+    )
+    card_saving_label = (
+        "Saving..."    if is_en  else
+        "保存中..."     if is_ja  else
+        "保存中..."     if is_zh  else
+        "저장 중..."
+    )
+
     og_image = ""
     for k in ["1", "2", "3", "4", "5", "6"]:
         if shot_images.get(k):
@@ -5873,6 +5897,41 @@ def today_v2_page(doc_id, data):
     </script>
   </div>
 
+  <div style="background:#faf7f2;padding:28px 40px;border-top:1px solid #e5dece;text-align:center">
+    <button id="card-dl-btn" onclick="downloadCard()"
+      style="display:inline-block;padding:14px 32px;background:#1a1208;color:#FFF8ED;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.04em;transition:opacity .2s">
+      {card_btn_label}
+    </button>
+    <div style="font-size:12px;color:#9e8250;margin-top:10px;line-height:1.7">{card_guide}</div>
+    <script>
+    async function downloadCard() {{
+      const btn = document.getElementById('card-dl-btn');
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '{card_saving_label}';
+      try {{
+        const res = await fetch('/api/today/card/{doc_id}');
+        if (!res.ok) throw new Error('error');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'today_card_{doc_id}.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        btn.textContent = '✓ Done';
+        setTimeout(function() {{ btn.textContent = origText; btn.disabled = false; }}, 2000);
+      }} catch(e) {{
+        btn.textContent = origText;
+        btn.disabled = false;
+        alert('카드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }}
+    }}
+    </script>
+  </div>
+
   <div style="background:#C8870A;padding:36px 40px;text-align:center">
     <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">{cta_tag}</div>
     <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">{cta_title}</div>
@@ -6005,6 +6064,187 @@ function confirmDelete(){{
 </script>
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.route("/api/today/card/<doc_id>", methods=["GET"])
+def today_card(doc_id):
+    """오대 카드 이미지 생성 — 1080×1350px PNG (4:5)"""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import io as _io
+        import urllib.request as _urllib_req
+        import glob as _glob
+        import subprocess as _sub
+
+        data = firebase_get_today(doc_id)
+        if data is None:
+            return "<h2>페이지를 찾을 수 없습니다.</h2>", 404
+
+        shot_images = data.get("shot_images", {})
+        img_url = shot_images.get("1", "")
+        if not img_url:
+            for k in ["2", "3", "4", "5", "6"]:
+                if shot_images.get(k):
+                    img_url = shot_images[k]
+                    break
+
+        poems_raw = data.get("poems", "")
+        import re as _re
+        poem_dict = {}
+        if poems_raw:
+            for m in _re.finditer(r'\[([^\]]+)\](.*?)(?=\[[^\]]+\]|$)', poems_raw, _re.DOTALL):
+                key = m.group(1).strip()
+                content = m.group(2).strip()
+                if content:
+                    poem_dict[key] = content
+
+        today_poem = poem_dict.get("오늘의시", "").strip()
+        today_tone = poem_dict.get("오늘의시톤", "").strip()
+        created = (data.get("created_at") or "")[:10]
+
+        W, H = 1080, 1350
+        PHOTO_H = int(H * 0.70)
+        TEXT_Y0 = PHOTO_H
+
+        canvas = Image.new("RGB", (W, H), (255, 255, 255))
+        draw = ImageDraw.Draw(canvas)
+
+        # ── 폰트 로드 ──
+        def _find_font(bold=False):
+            candidates = []
+            suffix = "Bold" if bold else ""
+            base = "NanumGothic"
+            # 직접 경로
+            candidates += [
+                f"/usr/share/fonts/truetype/nanum/{base}{suffix}.ttf",
+                f"/usr/share/fonts/nanum/{base}{suffix}.ttf",
+            ]
+            # Nix store glob
+            candidates += _glob.glob(f"/nix/store/*/share/fonts/truetype/nanum/{base}*.ttf")
+            candidates += _glob.glob(f"/nix/store/*/share/fonts/truetype/nanum/Nanum*.ttf")
+            # fc-list
+            try:
+                fc = _sub.run(
+                    ["fc-list", ":lang=ko", "--format", "%{file}\n"],
+                    capture_output=True, text=True, timeout=3
+                )
+                for line in fc.stdout.strip().split("\n"):
+                    p = line.strip()
+                    if p:
+                        candidates.insert(0, p)
+            except Exception:
+                pass
+            # DejaVu 폴백
+            candidates += [
+                f"/usr/share/fonts/truetype/dejavu/DejaVuSans{'-Bold' if bold else ''}.ttf",
+                f"/usr/share/fonts/truetype/liberation/LiberationSans-{'Bold' if bold else 'Regular'}.ttf",
+            ]
+            for p in candidates:
+                if p and os.path.exists(p):
+                    return p
+            return None
+
+        def _load(size, bold=False):
+            p = _find_font(bold)
+            if p:
+                try:
+                    return ImageFont.truetype(p, size)
+                except Exception:
+                    pass
+            return ImageFont.load_default()
+
+        font_poem = _load(38)
+        font_tone = _load(22)
+        font_date = _load(20)
+        font_wm   = _load(18)
+
+        # ── 오대 사진 ──
+        if img_url and not img_url.startswith("["):
+            try:
+                req = _urllib_req.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
+                with _urllib_req.urlopen(req, timeout=10) as resp:
+                    photo_bytes = resp.read()
+                photo = Image.open(_io.BytesIO(photo_bytes)).convert("RGB")
+                pw, ph = photo.size
+                target_ratio = W / PHOTO_H
+                photo_ratio = pw / ph
+                if photo_ratio > target_ratio:
+                    new_w = int(ph * target_ratio)
+                    x = (pw - new_w) // 2
+                    photo = photo.crop((x, 0, x + new_w, ph))
+                else:
+                    new_h = int(pw / target_ratio)
+                    y = (ph - new_h) // 2
+                    photo = photo.crop((0, y, pw, y + new_h))
+                photo = photo.resize((W, PHOTO_H), Image.LANCZOS)
+                canvas.paste(photo, (0, 0))
+            except Exception:
+                draw.rectangle([(0, 0), (W, PHOTO_H)], fill=(240, 235, 225))
+
+        # ── 하단 배경 ──
+        draw.rectangle([(0, TEXT_Y0), (W, H)], fill=(15, 13, 9))
+
+        pad = 52
+        y = TEXT_Y0 + pad
+
+        # 톤 배지
+        TONE_BG = {
+            "감동명작":    ((249, 243, 224), (123, 79, 30)),
+            "유쾌한코미디": ((255, 240, 232), (181, 69, 26)),
+            "담백한일상":  ((247, 248, 250), (74, 85, 104)),
+            "열정다큐":   ((255, 240, 240), (139, 26, 26)),
+        }
+        if today_tone:
+            bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((249, 243, 224), (123, 79, 30)))
+            bbox = draw.textbbox((0, 0), today_tone, font=font_tone)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            bpad_x, bpad_y = 18, 8
+            draw.rounded_rectangle(
+                [(pad, y), (pad + tw + bpad_x * 2, y + th + bpad_y * 2)],
+                radius=16, fill=bg_rgb
+            )
+            draw.text((pad + bpad_x, y + bpad_y), today_tone, font=font_tone, fill=fg_rgb)
+            y += th + bpad_y * 2 + 28
+
+        # 시 본문
+        if today_poem:
+            poem_color = (249, 246, 240)
+            for line in [l for l in today_poem.split("\n") if l.strip()]:
+                draw.text((pad, y), line, font=font_poem, fill=poem_color)
+                bb = draw.textbbox((pad, y), line, font=font_poem)
+                y += (bb[3] - bb[1]) + 14
+
+        # 날짜 (좌하단)
+        if created:
+            try:
+                from datetime import datetime as _dtt
+                d = _dtt.strptime(created[:10], "%Y-%m-%d")
+                date_str = f"{d.year}.{d.month:02d}.{d.day:02d}"
+            except Exception:
+                date_str = created[:10]
+            draw.text((pad, H - 56), date_str, font=font_date, fill=(150, 130, 100))
+
+        # 워터마크 (우하단)
+        wm = "투*필 · humandocu.com"
+        wm_bb = draw.textbbox((0, 0), wm, font=font_wm)
+        wm_w = wm_bb[2] - wm_bb[0]
+        draw.text((W - pad - wm_w, H - 56), wm, font=font_wm, fill=(100, 85, 60))
+
+        buf = _io.BytesIO()
+        canvas.save(buf, format="PNG", optimize=True)
+        buf.seek(0)
+        from flask import send_file
+        return send_file(
+            buf,
+            mimetype="image/png",
+            as_attachment=True,
+            download_name=f"today_card_{doc_id}.png"
+        )
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/check-today", methods=["GET"])
