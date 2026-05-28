@@ -5359,15 +5359,13 @@ function confirmDelete(){{
 
 @app.route("/today/<doc_id>", methods=["GET"])
 def today_page(doc_id):
-    """today 컬렉션 조회 후 렌더러 분기"""
+    """today 컬렉션 조회 후 sixshot_page 렌더러 재사용"""
     from flask import g as _g
     data = firebase_get_today(doc_id)
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
-    if data.get("type") == "today_v2":
-        return _v2_render(doc_id, data)
     _g._doc_data_override = data
-    _g._is_owner = True
+    _g._is_owner = True   # today 페이지는 본인만 직접 접근
     return sixshot_page(doc_id)
 
 
