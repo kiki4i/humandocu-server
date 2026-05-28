@@ -6096,43 +6096,36 @@ def today_card(doc_id):
         today_tone = poem_dict.get("오늘의시톤", "").strip()
         created = (data.get("created_at") or "")[:10]
 
-        W, H = 1080, 1350
-        PHOTO_H = int(H * 0.70)
-        TEXT_Y0 = PHOTO_H
+        # ── 캔버스 치수 ──
+        W       = 1080   # 전체 너비
+        PHOTO_W = 1080   # 사진 정사각형
+        PHOTO_H = 1080   # 사진 정사각형
+        WHITE_H = 270    # 하단 흰 영역
+        H       = PHOTO_H + WHITE_H  # 1350
 
         canvas = Image.new("RGB", (W, H), (255, 255, 255))
-        draw = ImageDraw.Draw(canvas)
 
         # ── 폰트 로드 ──
         _HERE = os.path.dirname(os.path.abspath(__file__))
 
-        def _find_font(bold=False):
-            candidates = []
-            # 1순위: 레포 내 번들 폰트 (Railway 환경에서도 확실히 존재)
-            candidates += [
+        def _find_font():
+            candidates = [
                 os.path.join(_HERE, "fonts", "NanumGothic-Regular.ttf"),
+                "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                "/usr/share/fonts/nanum/NanumGothic.ttf",
             ]
-            # 2순위: 시스템 NanumGothic
-            suffix = "Bold" if bold else ""
-            base = "NanumGothic"
+            candidates += _glob.glob("/nix/store/*/share/fonts/truetype/nanum/NanumGothic*.ttf")
             candidates += [
-                f"/usr/share/fonts/truetype/nanum/{base}{suffix}.ttf",
-                f"/usr/share/fonts/nanum/{base}{suffix}.ttf",
-            ]
-            # Nix store glob
-            candidates += _glob.glob(f"/nix/store/*/share/fonts/truetype/nanum/{base}*.ttf")
-            # DejaVu 폴백
-            candidates += [
-                f"/usr/share/fonts/truetype/dejavu/DejaVuSans{'-Bold' if bold else ''}.ttf",
-                f"/usr/share/fonts/truetype/liberation/LiberationSans-{'Bold' if bold else 'Regular'}.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
             ]
             for p in candidates:
                 if p and os.path.exists(p):
                     return p
             return None
 
-        def _load(size, bold=False):
-            p = _find_font(bold)
+        def _load(size):
+            p = _find_font()
             if p:
                 try:
                     return ImageFont.truetype(p, size)
@@ -6140,70 +6133,110 @@ def today_card(doc_id):
                     pass
             return ImageFont.load_default()
 
-        font_poem = _load(42)
-        font_tone = _load(36)
-        font_date = _load(28)
-        font_wm   = _load(28)
+        font_poem  = _load(44)   # 시 본문
+        font_tone  = _load(32)   # 톤 배지
+        font_brand = _load(22)   # 하단 브랜드 레이블
+        font_desc  = _load(28)   # 하단 설명
+        font_url   = _load(26)   # 하단 URL
 
-        # ── 오대 사진 ──
+        # ── 텍스트 중앙정렬 헬퍼 ──
+        def _text_w(text, font):
+            bb = ImageDraw.Draw(canvas).textbbox((0, 0), text, font=font)
+            return bb[2] - bb[0], bb[3] - bb[1]
+
+        def _cx(text, font):
+            tw, _ = _text_w(text, font)
+            return (W - tw) // 2
+
+        # ── 사진: 1080×1080 정사각형 크롭 ──
+        photo_img = None
         if img_url and not img_url.startswith("["):
             try:
                 req = _urllib_req.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
                 with _urllib_req.urlopen(req, timeout=10) as resp:
                     photo_bytes = resp.read()
-                photo = Image.open(_io.BytesIO(photo_bytes)).convert("RGB")
-                pw, ph = photo.size
-                target_ratio = W / PHOTO_H
-                photo_ratio = pw / ph
-                if photo_ratio > target_ratio:
-                    new_w = int(ph * target_ratio)
-                    x = (pw - new_w) // 2
-                    photo = photo.crop((x, 0, x + new_w, ph))
-                else:
-                    new_h = int(pw / target_ratio)
-                    y = (ph - new_h) // 2
-                    photo = photo.crop((0, y, pw, y + new_h))
-                photo = photo.resize((W, PHOTO_H), Image.LANCZOS)
-                canvas.paste(photo, (0, 0))
+                p = Image.open(_io.BytesIO(photo_bytes)).convert("RGB")
+                pw, ph = p.size
+                # 정사각형 센터 크롭
+                if pw > ph:
+                    x0 = (pw - ph) // 2
+                    p = p.crop((x0, 0, x0 + ph, ph))
+                elif ph > pw:
+                    y0 = (ph - pw) // 2
+                    p = p.crop((0, y0, pw, y0 + pw))
+                photo_img = p.resize((PHOTO_W, PHOTO_H), Image.LANCZOS)
             except Exception:
-                draw.rectangle([(0, 0), (W, PHOTO_H)], fill=(240, 235, 225))
+                pass
 
-        # ── 하단 배경 ──
-        draw.rectangle([(0, TEXT_Y0), (W, H)], fill=(17, 17, 17))
+        if photo_img:
+            canvas.paste(photo_img, (0, 0))
+        else:
+            draw_bg = ImageDraw.Draw(canvas)
+            draw_bg.rectangle([(0, 0), (PHOTO_W, PHOTO_H)], fill=(230, 225, 215))
 
-        pad = 52
-        y = TEXT_Y0 + pad
+        # ── 그라데이션 오버레이 (사진 하단부: 투명→검정) ──
+        GRAD_H = 500   # 그라데이션이 덮는 높이
+        grad_y0 = PHOTO_H - GRAD_H
+        overlay = Image.new("RGBA", (W, PHOTO_H), (0, 0, 0, 0))
+        for i in range(GRAD_H):
+            t = i / GRAD_H                    # 0.0(위, 투명) → 1.0(아래, 불투명)
+            alpha = int(215 * (t ** 0.55))    # ease-in 커브, 최대 ~215
+            ImageDraw.Draw(overlay).line(
+                [(0, grad_y0 + i), (W, grad_y0 + i)],
+                fill=(0, 0, 0, alpha)
+            )
+        canvas_rgba = canvas.convert("RGBA")
+        canvas_rgba.alpha_composite(overlay)
+        canvas = canvas_rgba.convert("RGB")
 
-        # 톤 배지 — 흰 배경 + 진한 텍스트
+        draw = ImageDraw.Draw(canvas)
+
+        # ── 그라데이션 위 텍스트 레이아웃 (중앙정렬) ──
         TONE_BG = {
-            "감동명작":    ((255, 243, 224), (123, 79, 30)),
-            "유쾌한코미디": ((255, 240, 232), (181, 69, 26)),
-            "담백한일상":  ((247, 248, 250), (74, 85, 104)),
-            "열정다큐":   ((255, 240, 240), (139, 26, 26)),
+            "감동명작":    ((255, 243, 224), (123,  79, 30)),
+            "유쾌한코미디": ((255, 240, 232), (181,  69, 26)),
+            "담백한일상":  ((247, 248, 250), ( 74,  85, 104)),
+            "열정다큐":   ((255, 240, 240), (139,  26,  26)),
         }
+
+        poem_lines = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
+        LINE_H     = 44 + 22  # font_size + line_gap
+        BADGE_H    = (32 + 12 * 2 + 32) if today_tone else 0  # th + pad*2 + gap_below
+
+        total_block_h = BADGE_H + len(poem_lines) * LINE_H
+
+        # 어두운 구간(그라데이션 하단 65%)의 수직 중앙에 배치
+        dark_y0 = PHOTO_H - int(GRAD_H * 0.72)
+        dark_h  = PHOTO_H - dark_y0
+        block_y = dark_y0 + max(0, (dark_h - total_block_h) // 2)
+        block_y = max(block_y, dark_y0 + 24)   # 최소 여백
+
+        cy = block_y
+
+        # 톤 배지 (수평 중앙)
         if today_tone:
             bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((255, 243, 224), (123, 79, 30)))
-            bbox = draw.textbbox((0, 0), today_tone, font=font_tone)
-            tw = bbox[2] - bbox[0]
-            th = bbox[3] - bbox[1]
-            bpad_x, bpad_y = 22, 12
-            draw.rounded_rectangle(
-                [(pad, y), (pad + tw + bpad_x * 2, y + th + bpad_y * 2)],
-                radius=20, fill=bg_rgb
-            )
-            draw.text((pad + bpad_x, y + bpad_y), today_tone, font=font_tone, fill=fg_rgb)
-            y += th + bpad_y * 2 + 36
+            tw, th = _text_w(today_tone, font_tone)
+            bpad_x, bpad_y = 24, 12
+            bw = tw + bpad_x * 2
+            bh = th + bpad_y * 2
+            bx = (W - bw) // 2
+            draw.rounded_rectangle([(bx, cy), (bx + bw, cy + bh)], radius=22, fill=bg_rgb)
+            draw.text((bx + bpad_x, cy + bpad_y), today_tone, font=font_tone, fill=fg_rgb)
+            cy += bh + 32
 
-        # 시 본문 — 흰색, 줄간격 넉넉하게
-        if today_poem:
-            poem_color = (255, 255, 255)
-            line_gap = 20
-            for line in [l for l in today_poem.split("\n") if l.strip()]:
-                draw.text((pad, y), line, font=font_poem, fill=poem_color)
-                bb = draw.textbbox((pad, y), line, font=font_poem)
-                y += (bb[3] - bb[1]) + line_gap
+        # 시 본문 (각 줄 수평 중앙)
+        for line in poem_lines:
+            draw.text((_cx(line, font_poem), cy), line, font=font_poem, fill=(255, 255, 255))
+            _, lh = _text_w(line, font_poem)
+            cy += lh + 22
 
-        # 날짜 (좌하단)
+        # ── 하단 흰 영역 (270px) ──
+        WHITE_Y0 = PHOTO_H
+        draw.rectangle([(0, WHITE_Y0), (W, H)], fill=(255, 255, 255))
+
+        # 날짜 텍스트 (선택)
+        date_str = ""
         if created:
             try:
                 from datetime import datetime as _dtt
@@ -6211,13 +6244,28 @@ def today_card(doc_id):
                 date_str = f"{d.year}.{d.month:02d}.{d.day:02d}"
             except Exception:
                 date_str = created[:10]
-            draw.text((pad, H - 64), date_str, font=font_date, fill=(160, 150, 140))
 
-        # 워터마크 (우하단)
-        wm = "투*필 · humandocu.com"
-        wm_bb = draw.textbbox((0, 0), wm, font=font_wm)
-        wm_w = wm_bb[2] - wm_bb[0]
-        draw.text((W - pad - wm_w, H - 64), wm, font=font_wm, fill=(160, 150, 140))
+        # 하단 세 줄 텍스트 자동 수직 배분
+        brand_text = "투*필  ·  TODAY FILMOGRAPHY"
+        desc_text  = "오늘을 사진 한 장과 시 한 편으로 기록합니다"
+        url_text   = "humandocu.com/today"
+
+        _, bh_brand = _text_w(brand_text, font_brand)
+        _, bh_desc  = _text_w(desc_text,  font_desc)
+        _, bh_url   = _text_w(url_text,   font_url)
+
+        GAP = 18
+        block_h = bh_brand + GAP + bh_desc + GAP + bh_url
+        ty = WHITE_Y0 + (WHITE_H - block_h) // 2
+
+        draw.text((_cx(brand_text, font_brand), ty),
+                  brand_text, font=font_brand, fill=(200, 165, 100))
+        ty += bh_brand + GAP
+        draw.text((_cx(desc_text, font_desc), ty),
+                  desc_text, font=font_desc, fill=(80, 70, 55))
+        ty += bh_desc + GAP
+        draw.text((_cx(url_text, font_url), ty),
+                  url_text, font=font_url, fill=(40, 35, 25))
 
         buf = _io.BytesIO()
         canvas.save(buf, format="PNG", optimize=True)
