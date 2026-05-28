@@ -5904,7 +5904,7 @@ def today_v2_page(doc_id, data):
     </button>
     <div style="font-size:12px;color:#9e8250;margin-top:10px;line-height:1.7">{card_guide}</div>
     <div id="ios-card-hint" style="display:none;font-size:11px;color:#b8860b;margin-top:8px;line-height:1.7">
-      📱 iOS에서는 이미지를 길게 눌러 &ldquo;사진 앱에 저장&rdquo;을 선택하세요
+      📱 iOS에서는 열린 이미지를 길게 눌러 &ldquo;사진 앱에 저장&rdquo;을 선택하세요
     </div>
     <script>
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {{
@@ -5912,42 +5912,15 @@ def today_v2_page(doc_id, data):
     }}
     </script>
     <script>
-    async function downloadCard() {{
+    function downloadCard() {{
       var btn = document.getElementById('card-dl-btn');
-      var origText = btn.textContent.trim();
-      btn.disabled = true;
-      btn.textContent = '{card_saving_label}';
-      try {{
-        var res = await fetch('/api/today/card/{doc_id}');
-        if (!res.ok) throw new Error('server error');
-        var blob = await res.blob();
-        var blobUrl = URL.createObjectURL(blob);
-        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (isIOS) {{
-          // iOS Safari는 blob: URL의 download 어트리뷰트 미지원 → 새 탭에서 열기
-          // 사용자가 이미지를 길게 눌러 사진 저장
-          window.open(blobUrl, '_blank');
-          btn.textContent = '✓ 새 탭에서 저장하세요';
-          setTimeout(function() {{
-            URL.revokeObjectURL(blobUrl);
-            btn.textContent = origText;
-            btn.disabled = false;
-          }}, 3000);
-        }} else {{
-          var a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = 'today_card_{doc_id}.png';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(function() {{ URL.revokeObjectURL(blobUrl); }}, 1000);
-          btn.textContent = '✓ 저장됨';
-          setTimeout(function() {{ btn.textContent = origText; btn.disabled = false; }}, 2000);
-        }}
-      }} catch(e) {{
-        btn.textContent = origText;
-        btn.disabled = false;
-        alert('카드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIOS) {{
+        // iOS: 새 탭에서 열기 → 길게 눌러 저장
+        window.open('/api/today/card/{doc_id}', '_blank');
+      }} else {{
+        // Android Chrome / Desktop: Content-Disposition: attachment 로 자동 다운로드
+        window.location.href = '/api/today/card/{doc_id}';
       }}
     }}
     </script>
