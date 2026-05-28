@@ -5681,7 +5681,7 @@ def today_v2_page(doc_id, data):
             f'<img src="{img_url}" alt="SHOT {i}" style="width:100%;display:block;height:auto">'
             f'</div>'
         ) if img_url else ""
-        shot_poem = poem_dict.get(f"SHOT{i}시", "")
+        shot_poem = poem_dict.get(f"SHOT{i}시", "") or poem_dict.get(f"SHOT{i}", "")
         shot_tone = poem_dict.get(f"SHOT{i}톤", "").strip()
         poem_block = ""
         if shot_poem:
@@ -9367,17 +9367,17 @@ def today_submit_v2():
             if shot_captions.get(idx)
         ])
 
-        # 제출된 SHOT 수에 맞게 출력 형식 동적 생성
+        # 제출된 SHOT 인덱스 목록
         submitted_idxs = [str(s.get("index", i+1)) for i, s in enumerate(shots[:6]) if s.get("image_b64") or s.get("caption")]
         shot_fmt = ""
         for idx in submitted_idxs:
-            shot_fmt += f"\n[SHOT{idx}시]\n(2~3줄 시)\n\n[SHOT{idx}톤]\n(감동명작 | 유쾌한코미디 | 담백한일상 | 열정다큐 중 하나)\n"
+            shot_fmt += f"\n[SHOT{idx}시]\n(시 내용 2~3줄)\n\n[SHOT{idx}톤]\n감동명작\n"
 
         OUTPUT_FORMAT = f"""[오늘의시]
-(2~3줄 시)
+(시 내용 2~3줄)
 
 [오늘의시톤]
-(감동명작 | 유쾌한코미디 | 담백한일상 | 열정다큐 중 하나)
+감동명작
 {shot_fmt}
 [이모지]
 (이모지 5개, 한 줄)
@@ -9387,6 +9387,16 @@ hashtags: #태그1 #태그2 #태그3
 
 [팔레트]
 palette: #hex1 #hex2 #hex3"""
+
+        # 출력 태그 이름 잠금용 system prompt
+        system_prompt = (
+            "You are a poet. "
+            "Output structural tags EXACTLY as shown — [오늘의시], [오늘의시톤], "
+            "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], "
+            "[이모지], [해시태그], [팔레트]. "
+            "Do NOT rename, abbreviate, or omit any tag. "
+            "Each tag on its own line, content on the lines that follow."
+        )
 
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
@@ -9400,7 +9410,7 @@ palette: #hex1 #hex2 #hex3"""
 - 목표: 읽는 사람이 '헉' 하고 멈추게 만드는 것.
 
 각 장면마다 딱 한 편의 시를 써라.
-그 장면의 분위기를 보고 아래 4가지 톤 중 가장 잘 맞는 것 하나를 골라 그 톤으로:
+그 장면의 분위기를 보고 아래 4가지 톤 중 하나를 골라 그 톤으로 써라:
 - 감동명작: 마지막 줄에서 마음을 찌르는 깊이 있는 시
 - 유쾌한코미디: 날것의 유머·자조. '맞아 나도 그래' 하고 피식 웃게
 - 담백한일상: 꾸밈없이 담담한 시. 오히려 더 세게 꽂히는
@@ -9413,35 +9423,31 @@ palette: #hex1 #hex2 #hex3"""
 
 {lang_instruction}
 
-다음을 작성해주세요.
+⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
+[오늘의시] / [오늘의시톤] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤]
+[이모지] / [해시태그] / [팔레트]
+태그는 반드시 대괄호 포함, 각 줄에 단독으로, 정확히 위 이름 그대로 출력하세요.
 
-1. [오늘의시] — 닉네임, 오늘 한 줄, 한 마디, 모든 사진을 종합해 오늘 하루 전체를 담은 시 1편 (2~3줄)
-   읽으면 오늘 이 사람의 하루 전체가 느껴지게. 특별할 것 없는 오늘이지만 마음에 남는 느낌.
-   [오늘의시톤]에는 이 시가 어떤 톤인지 4가지 중 하나만 적어라.
-
-2. [SHOT별 시] — 제출된 각 SHOT마다 딱 한 편의 시 (2~3줄)
-   4가지 톤 중 그 장면에 가장 잘 맞는 것 하나를 골라 그 톤으로.
-   [SHOTn톤]에는 선택한 톤만 적어라. 제출되지 않은 SHOT은 건너뛰어라.
-
-3. [이모지] — 오늘 하루를 가장 잘 대표하는 이모지 5개.
-   뻔한 것 금지. 이 사람만의 오늘이 느껴지게. 이모지만 5개, 설명 없이, 한 줄로.
-   2015년 이전 범용 이모지만 사용 (Unicode 8.0 이하).
-
-4. [해시태그] — 오늘을 표현하는 해시태그 3개.
-   lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
-   형식: hashtags: #태그1 #태그2 #태그3
-
-5. [팔레트] — 오늘 분위기를 대표하는 색상 3개 hex.
-   형식: palette: #hex1 #hex2 #hex3
+작성 순서:
+1. [오늘의시] — 닉네임·오늘 한 줄·한 마디·모든 사진을 종합한 시 1편 (2~3줄)
+   읽으면 오늘 이 사람의 하루 전체가 느껴지게. 특별할 것 없어도 마음에 남는 느낌.
+2. [오늘의시톤] — 위 시의 톤: 4가지 중 하나만 (예: 담백한일상)
+3. 제출된 각 SHOT마다 [SHOT{n}시] — 시 1편 (2~3줄), [SHOT{n}톤] — 4가지 중 하나만
+   미제출 SHOT은 건너뜀.
+4. [이모지] — 이 사람만의 오늘이 느껴지는 이모지 5개, 한 줄, 설명 없이.
+   2015년 이전 범용 이모지만 (Unicode 8.0 이하).
+5. [해시태그] — hashtags: #태그1 #태그2 #태그3 형식
+6. [팔레트] — palette: #hex1 #hex2 #hex3 형식
 
 {lang_instruction}
 
-출력 형식 (정확히 이 형식으로):
+출력 형식 (이 형식 그대로):
 {OUTPUT_FORMAT}"""})
 
-        resp    = client.messages.create(
+        resp = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=3000,
+            system=system_prompt,
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
