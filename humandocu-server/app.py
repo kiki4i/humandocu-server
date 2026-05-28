@@ -6104,30 +6104,23 @@ def today_card(doc_id):
         draw = ImageDraw.Draw(canvas)
 
         # ── 폰트 로드 ──
+        _HERE = os.path.dirname(os.path.abspath(__file__))
+
         def _find_font(bold=False):
             candidates = []
+            # 1순위: 레포 내 번들 폰트 (Railway 환경에서도 확실히 존재)
+            candidates += [
+                os.path.join(_HERE, "fonts", "NanumGothic-Regular.ttf"),
+            ]
+            # 2순위: 시스템 NanumGothic
             suffix = "Bold" if bold else ""
             base = "NanumGothic"
-            # 직접 경로
             candidates += [
                 f"/usr/share/fonts/truetype/nanum/{base}{suffix}.ttf",
                 f"/usr/share/fonts/nanum/{base}{suffix}.ttf",
             ]
             # Nix store glob
             candidates += _glob.glob(f"/nix/store/*/share/fonts/truetype/nanum/{base}*.ttf")
-            candidates += _glob.glob(f"/nix/store/*/share/fonts/truetype/nanum/Nanum*.ttf")
-            # fc-list
-            try:
-                fc = _sub.run(
-                    ["fc-list", ":lang=ko", "--format", "%{file}\n"],
-                    capture_output=True, text=True, timeout=3
-                )
-                for line in fc.stdout.strip().split("\n"):
-                    p = line.strip()
-                    if p:
-                        candidates.insert(0, p)
-            except Exception:
-                pass
             # DejaVu 폴백
             candidates += [
                 f"/usr/share/fonts/truetype/dejavu/DejaVuSans{'-Bold' if bold else ''}.ttf",
