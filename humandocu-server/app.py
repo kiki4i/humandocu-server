@@ -5359,14 +5359,652 @@ function confirmDelete(){{
 
 @app.route("/today/<doc_id>", methods=["GET"])
 def today_page(doc_id):
-    """today 컬렉션 조회 후 sixshot_page 렌더러 재사용"""
+    """today 컬렉션 조회 — today_v2는 전용 렌더러, today는 sixshot_page 재사용"""
     from flask import g as _g
     data = firebase_get_today(doc_id)
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
+    if data.get("type") == "today_v2":
+        return today_v2_page(doc_id, data)
     _g._doc_data_override = data
     _g._is_owner = True   # today 페이지는 본인만 직접 접근
     return sixshot_page(doc_id)
+
+
+def today_v2_page(doc_id, data):
+    """투*필 v2 전용 렌더러 — 톤 자동판단, SHOT별 시 1편"""
+    name        = data.get("name", "")
+    nickname    = data.get("nickname", "") or name
+    email       = data.get("email", "")
+    identity    = data.get("identity", "")
+    last_to     = data.get("last_to", "")
+    last_msg    = data.get("last_msg", "")
+    poems_raw   = data.get("poems", "")
+    shots       = data.get("shots", {})
+    shot_images = data.get("shot_images", {})
+    created     = data.get("created_at", "")[:10] if data.get("created_at") else ""
+    lang        = data.get("lang", "ko")
+    is_en       = (lang == "en")
+    is_ja       = (lang == "ja")
+    is_zh       = (lang == "zh")
+
+    # 시 파싱
+    import re as _re
+    poem_dict = {}
+    if poems_raw:
+        for m in _re.finditer(r'\[([^\]]+)\](.*?)(?=\[[^\]]+\]|$)', poems_raw, _re.DOTALL):
+            key     = m.group(1).strip()
+            content = m.group(2).strip()
+            if content:
+                poem_dict[key] = content
+
+    today_emojis      = poem_dict.get("이모지", "").strip()
+    today_hashtags_str = data.get("hashtags", "")
+    if not today_hashtags_str:
+        _ht_raw = poem_dict.get("해시태그", "")
+        if _ht_raw:
+            _m = _re.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', _ht_raw)
+            if _m:
+                today_hashtags_str = _m.group(1).strip()
+    today_palette_list = data.get("palette", [])
+    if not today_palette_list:
+        _pl_raw = poem_dict.get("팔레트", "")
+        if _pl_raw:
+            _m = _re.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', _pl_raw, _re.IGNORECASE)
+            if _m:
+                today_palette_list = _m.group(1).strip().split()
+
+    # 톤 배지 색상
+    TONE_COLORS = {
+        "감동명작":   ("#7B4F1E", "#FFF3E0"),
+        "유쾌한코미디": ("#B5451A", "#FFF0E8"),
+        "담백한일상":  ("#4A5568", "#F7F8FA"),
+        "열정다큐":   ("#8B1A1A", "#FFF0F0"),
+        # English
+        "touching masterpiece": ("#7B4F1E", "#FFF3E0"),
+        "cheerful comedy":      ("#B5451A", "#FFF0E8"),
+        "quiet everyday":       ("#4A5568", "#F7F8FA"),
+        "passionate documentary": ("#8B1A1A", "#FFF0F0"),
+    }
+    def tone_badge_html(tone_raw):
+        tone = tone_raw.strip()
+        tone_key = tone.lower()
+        fg, bg = TONE_COLORS.get(tone, TONE_COLORS.get(tone_key, ("#7B4F1E", "#FFF3E0")))
+        return (
+            f'<span style="display:inline-block;padding:3px 10px;border-radius:20px;'
+            f'background:{bg};color:{fg};font-size:11px;letter-spacing:.08em;font-weight:600">'
+            f'{tone}</span>'
+        )
+
+    # 언어별 UI 레이블
+    if is_en:
+        poem_section_title  = "✦ A poem capturing today"
+        scene_section_title = "Today's Six Shot"
+        hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+        hero_tagline        = f"{nickname}'s Today Filmography"
+        share_tagline       = "Record every day.<br>Collect them — that's you."
+        cta_tag             = "HUMANDOCU · TODAY FILMOGRAPHY"
+        cta_title           = "Your today<br>can be a poem too"
+        cta_sub             = "6 photos + one line · Free · Result by email"
+        cta_btn             = "Create My Filmography →"
+        nav_today_lbl       = "📽️ Browse Other Filmographies"
+        ai_today_label      = "Today, as AI sees it"
+        to_nobody_label     = "A word for someone"
+        play_label          = "▶ Play"
+        pause_label         = "⏸ Pause"
+        link_section_label  = "My Filmography Link"
+        copy_link_label     = "🔗 Copy Link"
+        my_link_btn_label   = "📬 Get My Records Link"
+        my_link_sending     = "Sending..."
+        my_link_sent        = "✓ Email Sent"
+        my_link_sent_msg    = f"{mask_email(email)} — check your inbox."
+        my_link_error_pfx   = "Error: "
+        nav_sixshot_lbl     = "🎞️ Life Six Shot"
+        nav_home_lbl        = "🏠 Back to humandocu.com"
+        footer_text         = "Made with Humandocu · humandocu.com"
+        delete_label        = "🗑 Delete"
+        delete_confirm_msg  = "Delete this Today Filmography? This cannot be undone."
+        delete_sending      = "Sending verification email..."
+        delete_cancel_btn   = "Cancel"
+        delete_sent_title   = "✉️ Verification email sent"
+        delete_sent_sub     = "Check your registered email."
+        delete_method1_title = "Option 1 — Delete directly from email"
+        delete_method1_desc  = 'Tap &ldquo;Delete now&rdquo; in the email —<br>no need to return to this page.'
+        delete_method2_title = "Option 2 — Enter code here"
+        delete_code_btn     = "Confirm"
+        delete_success_msg  = "Deleted."
+        delete_done_sub     = "Redirecting to humandocu.com..."
+        delete_error_msg    = "Code is invalid or expired."
+        kakao_view_btn      = "View Filmography"
+        kakao_create_btn    = "Create Mine"
+        copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
+        page_title_str      = f"Today Filmography · {nickname}"
+        og_title            = f"{nickname}'s Today Filmography · Humandocu"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
+    elif is_ja:
+        poem_section_title  = "✦ AIが完成させた詩"
+        scene_section_title = "今日のフィルモグラフィー"
+        hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+        hero_tagline        = f"{nickname}のフィルモグラフィー"
+        share_tagline       = "毎日を記録しましょう。<br>積み重ねると、それがあなたになります。"
+        cta_tag             = "HUMANDOCU · TODAY FILM"
+        cta_title           = "今日のあなたの一日も、<br>詩になれます"
+        cta_sub             = "写真6枚 + 一言 · 無料 · 結果はメールで"
+        cta_btn             = "私のToday Filmを作る →"
+        nav_today_lbl       = "📽️ 他のToday Filmを見る"
+        ai_today_label      = "AIが読んだ今日"
+        to_nobody_label     = "誰かへの一言"
+        play_label          = "▶ 再生"
+        pause_label         = "⏸ 一時停止"
+        link_section_label  = "私のフィルモグラフィーリンク"
+        copy_link_label     = "🔗 リンクをコピー"
+        my_link_btn_label   = "📬 記録リンクを受け取る"
+        my_link_sending     = "送信中..."
+        my_link_sent        = "✓ メール送信完了"
+        my_link_sent_msg    = f"{mask_email(email)} — メールをご確認ください。"
+        my_link_error_pfx   = "エラー: "
+        nav_sixshot_lbl     = "🎞️ ライフシックスショットを見る"
+        nav_home_lbl        = "🏠 HumanDocuを見る"
+        footer_text         = "Humandocuで作りました · humandocu.com"
+        delete_label        = "🗑 削除する"
+        delete_confirm_msg  = "このToday Filmを削除しますか？元に戻すことはできません。"
+        delete_sending      = "認証メール送信中..."
+        delete_cancel_btn   = "キャンセル"
+        delete_sent_title   = "✉️ 認証メールを送信しました"
+        delete_sent_sub     = "登録済みのメールでご確認ください。"
+        delete_method1_title = "方法1 — メールから直接削除"
+        delete_method1_desc  = 'メールの&ldquo;今すぐ削除&rdquo;ボタンを押すと<br>このページに戻らなくても削除されます。'
+        delete_method2_title = "方法2 — ここでコードを入力"
+        delete_code_btn     = "確認"
+        delete_success_msg  = "削除しました。"
+        delete_done_sub     = "humandocu.comへ移動します..."
+        delete_error_msg    = "コードが正しくないか、期限切れです。"
+        kakao_view_btn      = "フィルモグラフィーを見る"
+        kakao_create_btn    = "私も作る"
+        copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
+        page_title_str      = f"Today Film · {nickname}の今日"
+        og_title            = f"{nickname}のToday Film · Humandocu"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}6枚の写真と詩で今日を記録しました。"
+    elif is_zh:
+        poem_section_title  = "✦ AI完成的诗"
+        scene_section_title = "今日的人生影志"
+        hero_sub_label      = "HUMANDOCU · TODAY FILMOGRAPHY"
+        hero_tagline        = f"{nickname}的人生影志"
+        share_tagline       = "每天都记录下来。<br>积累起来，那就是你。"
+        cta_tag             = "HUMANDOCU · TODAY FILM"
+        cta_title           = "今天你的一天，<br>也可以成为一首诗"
+        cta_sub             = "6张照片 + 一句话 · 免费 · 结果通过邮件发送"
+        cta_btn             = "创建我的Today Film →"
+        nav_today_lbl       = "📽️ 浏览其他Today Film"
+        ai_today_label      = "AI读出的今天"
+        to_nobody_label     = "给某人的留言"
+        play_label          = "▶ 播放"
+        pause_label         = "⏸ 暂停"
+        link_section_label  = "我的人生影志链接"
+        copy_link_label     = "🔗 复制链接"
+        my_link_btn_label   = "📬 获取我的记录链接"
+        my_link_sending     = "发送中..."
+        my_link_sent        = "✓ 邮件发送完成"
+        my_link_sent_msg    = f"{mask_email(email)} — 请检查您的邮箱。"
+        my_link_error_pfx   = "错误："
+        nav_sixshot_lbl     = "🎞️ 浏览人生六格照"
+        nav_home_lbl        = "🏠 浏览HumanDocu"
+        footer_text         = "由Humandocu制作 · humandocu.com"
+        delete_label        = "🗑 删除"
+        delete_confirm_msg  = "确定要删除这个Today Film吗？此操作无法撤销。"
+        delete_sending      = "发送验证邮件中..."
+        delete_cancel_btn   = "取消"
+        delete_sent_title   = "✉️ 已发送验证邮件"
+        delete_sent_sub     = "请检查您注册的邮箱。"
+        delete_method1_title = "方法1 — 直接从邮件中删除"
+        delete_method1_desc  = '点击邮件中的&ldquo;立即删除&rdquo;按钮，<br>无需返回此页面即可直接删除。'
+        delete_method2_title = "方法2 — 在此输入验证码"
+        delete_code_btn     = "确认"
+        delete_success_msg  = "已删除。"
+        delete_done_sub     = "正在前往humandocu.com..."
+        delete_error_msg    = "验证码不正确或已过期。"
+        kakao_view_btn      = "查看人生影志"
+        kakao_create_btn    = "我也来创建"
+        copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
+        page_title_str      = f"Today Film · {nickname}的今天"
+        og_title            = f"{nickname}的Today Film · Humandocu"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}用6张照片和诗记录了今天。"
+    else:
+        poem_section_title  = "✦ 오늘을 담은 시"
+        scene_section_title = "오늘의 식스샷(Six Shot)"
+        hero_sub_label      = "HUMANDOCU · 필모그래피"
+        hero_tagline        = f"{nickname}님의 필모그래피"
+        share_tagline       = "매일을 담아보세요.<br>모으면 그것이 당신이에요."
+        cta_tag             = "HUMANDOCU · 투*필"
+        cta_title           = "오늘 당신의 하루도<br>시가 될 수 있어요"
+        cta_sub             = "사진 6장 + 한 줄 · 무료 · 결과는 이메일로"
+        cta_btn             = "나의 투*필 만들기 →"
+        nav_today_lbl       = "📽️ 다른 투*필 둘러보기"
+        ai_today_label      = "AI가 읽은 오늘"
+        to_nobody_label     = "누군가에게 남기는 한 줄"
+        play_label          = "▶ 재생"
+        pause_label         = "⏸ 멈춤"
+        link_section_label  = "나의 필모그래피 링크"
+        copy_link_label     = "🔗 링크 복사"
+        my_link_btn_label   = "📬 내 기록 모음 링크 받기"
+        my_link_sending     = "전송 중..."
+        my_link_sent        = "✓ 이메일 발송 완료"
+        my_link_sent_msg    = f"{mask_email(email)} 으로 링크를 보냈어요. 메일함을 확인해주세요."
+        my_link_error_pfx   = "오류: "
+        nav_sixshot_lbl     = "🎞️ 인생 식스샷 둘러보기"
+        nav_home_lbl        = "🏠 휴먼다큐닷컴 둘러보기"
+        footer_text         = "휴먼다큐로 만들었습니다 · humandocu.com"
+        delete_label        = "🗑 삭제하기"
+        delete_confirm_msg  = "이 투·필을 삭제하시겠어요? 복구할 수 없습니다."
+        delete_sending      = "인증 이메일 발송 중..."
+        delete_cancel_btn   = "취소"
+        delete_sent_title   = "✉️ 인증 이메일을 발송했습니다"
+        delete_sent_sub     = "등록된 이메일에서 확인해주세요."
+        delete_method1_title = "방법 1 — 이메일에서 바로 삭제"
+        delete_method1_desc  = '이메일의 &ldquo;바로 삭제하기&rdquo; 버튼을 누르시면<br>이 페이지로 돌아오지 않아도 바로 삭제됩니다.'
+        delete_method2_title = "방법 2 — 여기서 코드 입력"
+        delete_code_btn     = "확인"
+        delete_success_msg  = "삭제되었습니다."
+        delete_done_sub     = "humandocu.com으로 이동합니다..."
+        delete_error_msg    = "코드가 올바르지 않거나 만료되었습니다."
+        kakao_view_btn      = "필모그래피 보기"
+        kakao_create_btn    = "나도 만들기"
+        copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
+        page_title_str      = f"투*필 · {nickname}님의 오늘"
+        og_title            = f"{nickname}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — humandocu.com"
+
+    og_image = ""
+    for k in ["1", "2", "3", "4", "5", "6"]:
+        if shot_images.get(k):
+            og_image = shot_images[k]
+            break
+    if not og_image:
+        og_image = "https://humandocu.com/today_og.png"
+
+    page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
+    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}"
+
+    # 해시태그·팔레트 히어로 바
+    today_hero_extra_html = ""
+    if today_hashtags_str or today_palette_list:
+        _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
+        _pl_part = ""
+        if today_palette_list:
+            _dots = "".join(
+                f'<span style="width:14px;height:14px;border-radius:50%;background:{c};display:inline-block"></span>'
+                for c in today_palette_list[:3]
+            )
+            _pl_part = f'<span style="display:inline-flex;gap:6px;align-items:center;margin-left:10px">{_dots}</span>'
+        today_hero_extra_html = (
+            f'<div style="margin-top:20px">'
+            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:6px">{ai_today_label}</p>'
+            f'<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">{_ht_part}{_pl_part}</div>'
+            f'</div>'
+        )
+
+    def poem_lines_html(text, font_size="17px", color="#f9f6f0"):
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        return "".join(
+            f'<div style="line-height:2;font-size:{font_size};color:{color};'
+            f'font-family:Georgia,serif;letter-spacing:.02em">{l}</div>'
+            for l in lines
+        )
+
+    def haiku_lines(text):
+        return "<br>".join(l for l in text.strip().split("\n") if l.strip())
+
+    # 오늘의 시 섹션
+    today_poem      = poem_dict.get("오늘의시", "")
+    today_poem_tone = poem_dict.get("오늘의시톤", "").strip()
+    tone_badge_str  = tone_badge_html(today_poem_tone) if today_poem_tone else ""
+    poem_section_html = ""
+    if today_poem:
+        poem_section_html = (
+            f'<div class="section">'
+            f'<div class="section-label">{poem_section_title}</div>'
+            + (f'<div style="text-align:center;margin-bottom:14px">{tone_badge_str}</div>' if tone_badge_str else "")
+            + f'<div class="rep-poem">{poem_lines_html(today_poem)}</div>'
+            f'</div>'
+        )
+
+    # 장면별 카드
+    scene_cards = ""
+    for i in range(1, 7):
+        key       = str(i)
+        shot_text = shots.get(key, shots.get(i, ""))
+        img_url   = shot_images.get(key, "")
+        if not shot_text and not img_url:
+            continue
+        img_block = (
+            f'<div style="overflow:hidden">'
+            f'<img src="{img_url}" alt="SHOT {i}" style="width:100%;display:block;height:auto">'
+            f'</div>'
+        ) if img_url else ""
+        shot_poem = poem_dict.get(f"SHOT{i}시", "")
+        shot_tone = poem_dict.get(f"SHOT{i}톤", "").strip()
+        poem_block = ""
+        if shot_poem:
+            badge = tone_badge_html(shot_tone) if shot_tone else ""
+            poem_block = (
+                f'<div style="border-top:1px solid #e5dece;padding-top:20px">'
+                f'<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
+                + (f'<div style="margin-bottom:8px">{badge}</div>' if badge else "")
+                + f'<div style="color:#5a4a30;line-height:1.8">{haiku_lines(shot_poem)}</div>'
+                f'</div></div>'
+            )
+        scene_cards += (
+            f'<div style="margin-bottom:40px;background:#faf7f2;border-radius:4px;overflow:hidden">'
+            f'{img_block}'
+            f'<div style="padding:24px 28px">'
+            f'<div style="font-size:11px;color:#9e8250;letter-spacing:.15em;margin-bottom:6px">SHOT {i:02d}</div>'
+            f'<div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:20px;font-style:italic">{shot_text}</div>'
+            f'{poem_block}'
+            f'</div>'
+            f'</div>'
+        )
+
+    to_label = f"To. {last_to}" if last_to else to_nobody_label
+    last_msg_block = (
+        f'<div style="margin:40px 0;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">'
+        f'<div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:10px">{to_label}</div>'
+        f'<div style="font-size:18px;color:#2d2a22;font-style:italic;line-height:1.8">{last_msg}</div>'
+        f'</div>'
+    ) if last_msg else ""
+
+    # 슬라이드쇼
+    slide_imgs = [shot_images.get(str(i)) for i in range(1, 7) if shot_images.get(str(i))]
+    slideshow_section = ""
+    if slide_imgs:
+        poem_lines_list = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
+        slide_list = []
+        for idx, url in enumerate(slide_imgs):
+            subtitle = poem_lines_list[idx] if idx < len(poem_lines_list) else ""
+            slide_list.append((url, subtitle))
+        if len(slide_imgs) >= 6:
+            to_msg = f"To. {last_to}<br>{last_msg}" if (last_to and last_msg) else (last_msg or "")
+            slide_list.append((slide_imgs[-1], to_msg))
+        slides_html = ""
+        dots_html   = ""
+        for i, (url, subtitle) in enumerate(slide_list):
+            display = "block" if i == 0 else "none"
+            dot_bg  = "#c8a96e" if i == 0 else "rgba(200,169,110,0.3)"
+            slides_html += (
+                f'<div class="sl" style="display:{display};text-align:center">'
+                f'<img src="{url}" style="width:100%;max-height:500px;object-fit:contain;display:block;background:#0f0d09;">'
+                + (f'<div style="font-size:15px;color:#f5e8c8;margin-top:16px;line-height:2;font-family:Georgia,serif;letter-spacing:.04em;padding:0 24px">{subtitle}</div>' if subtitle else "")
+                + '</div>'
+            )
+            dots_html += (
+                f'<span class="dt" onclick="goSl({i})" '
+                f'style="display:inline-block;width:8px;height:8px;border-radius:50%;'
+                f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
+            )
+        n_total = len(slide_list)
+        slideshow_js = (
+            f"var _si=0,_st={n_total};"
+            "function goSl(n){document.querySelectorAll('.sl').forEach(function(e,i){e.style.display=i===n?'block':'none';});"
+            "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
+            "_si=n;}"
+            "function nxSl(){goSl((_si+1)%_st);}"
+            "var _bgm=document.getElementById('bgm-ss');"
+            "var _timer=null;var _playing=false;"
+            "function togglePlay(){var btn=document.getElementById('bgm-btn-ss');"
+            "if(!_playing){_playing=true;_bgm.play().catch(function(){});_timer=setInterval(nxSl,3500);"
+            f"btn.textContent='{pause_label}';"
+            "}else{_playing=false;_bgm.pause();clearInterval(_timer);"
+            f"btn.textContent='{play_label}';}}"
+        )
+        slideshow_section = (
+            '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
+            '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
+            f'<button id="bgm-btn-ss" onclick="togglePlay()" style="position:absolute;top:14px;right:14px;background:rgba(200,169,110,0.92);border:none;border-radius:28px;padding:12px 28px;font-size:16px;font-weight:700;color:#0f0d09;cursor:pointer;letter-spacing:.06em;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.4);min-width:100px;z-index:10">{play_label}</button>'
+            + slides_html
+            + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
+            + f'<script>{slideshow_js}</script>'
+            + '</div>'
+        )
+
+    html = f"""<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{page_title_str}</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="{og_title}">
+<meta property="og:description" content="{og_desc}">
+<meta property="og:image" content="{og_image}">
+<meta property="og:url" content="{page_url_self}">
+<meta property="og:site_name" content="{'humandocu.com' if (is_en or is_ja or is_zh) else '휴먼다큐'}">
+<meta property="og:locale" content="{'en_US' if is_en else 'ja_JP' if is_ja else 'zh_CN' if is_zh else 'ko_KR'}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{og_image}">
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ background: #f5f2eb; font-family: 'Noto Sans KR', sans-serif; color: #2d2a22; }}
+  .wrap {{ max-width: 680px; margin: 0 auto; background: #fff; }}
+  .hero {{ background: #0f0d09; padding: 64px 40px; text-align: center; }}
+  .hero-sub {{ font-size: 11px; color: rgba(200,169,110,.6); letter-spacing: .25em; margin-bottom: 16px; }}
+  .hero-name {{ font-family: Georgia, serif; font-size: 36px; color: #f9f6f0; font-weight: 300; margin-bottom: 8px; }}
+  .hero-tagline {{ font-size: 13px; color: rgba(200,169,110,.7); letter-spacing: .05em; margin-bottom: 16px; }}
+  .hero-identity {{ font-size: 15px; color: rgba(249,246,240,.5); font-style: italic; line-height: 1.8; }}
+  .section {{ padding: 48px 40px; }}
+  .section-label {{ font-size: 11px; color: #9e8250; letter-spacing: .2em; margin-bottom: 24px; }}
+  .rep-poem {{ padding: 32px; background: #0f0d09; border-radius: 4px; text-align: center; }}
+  .footer {{ padding: 24px 40px; background: #f9f6f0; text-align: center; border-top: 1px solid #e5dece; }}
+  .footer a {{ color: #9e8250; text-decoration: none; font-size: 12px; }}
+  @media (max-width: 600px) {{
+    .section {{ padding: 32px 20px; }}
+    .hero {{ padding: 48px 20px; }}
+  }}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-sub">{hero_sub_label}</div>
+    <div class="hero-name">{nickname}</div>
+    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
+    <div class="hero-identity">{identity}</div>
+    {today_hero_extra_html}
+    {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
+  </div>
+
+  {poem_section_html}
+
+  <div class="section" style="padding-top:0">
+    <div class="section-label">{scene_section_title}</div>
+    {scene_cards}
+  </div>
+
+  {last_msg_block}
+
+  {slideshow_section}
+
+  <div style="background:#faf7f2;padding:20px 40px;border-top:1px solid #e5dece;text-align:center">
+    <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:8px">{link_section_label}</div>
+    <div style="font-size:12px;color:#6b6050;margin-bottom:12px;word-break:break-all">{page_url_self}</div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="kakaoShare()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#FEE500;border:none;border-radius:20px;font-size:13px;color:#3C1E1E;cursor:pointer;font-family:inherit;font-weight:600">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><ellipse cx="9" cy="8" rx="8" ry="6.5" fill="#3C1E1E"/><path d="M5.5 10.5c.3.7 1 1.2 2 1.5l-.5 2 2-1.5c.3 0 .7.1 1 .1 3.3 0 6-2 6-4.5S12.3 3.5 9 3.5 3 5.5 3 8c0 1 .6 2 1.5 2.5z" fill="#FEE500"/></svg>
+        KakaoTalk
+      </button>
+      <button onclick="copyPageUrl()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;border:1px solid #c8a96e;border-radius:20px;font-size:13px;color:#9e8250;cursor:pointer;font-family:inherit">
+        {copy_link_label}
+      </button>
+    </div>
+    <div style="font-size:12px;color:#c8a96e;margin-top:4px;line-height:1.8">{share_tagline}</div>
+    <div style="margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+      <button onclick="sendMyLink()" id="my-link-btn"
+         style="display:inline-block;padding:8px 20px;background:#C8870A;border:none;border-radius:20px;font-size:12px;color:#FFF8ED;cursor:pointer;font-family:inherit">
+        {my_link_btn_label}
+      </button>
+    </div>
+    <div id="my-link-msg" style="font-size:12px;color:#c8a96e;margin-top:10px;display:none;text-align:center"></div>
+    <script>
+    async function sendMyLink() {{
+      const btn = document.getElementById('my-link-btn');
+      btn.textContent = '{my_link_sending}';
+      btn.disabled = true;
+      try {{
+        const res = await fetch('/api/my/send-link', {{
+          method: 'POST',
+          headers: {{'Content-Type': 'application/json'}},
+          body: JSON.stringify({{name: '{name}', email: '{email}'}})
+        }});
+        const data = await res.json();
+        const msg = document.getElementById('my-link-msg');
+        msg.style.display = 'block';
+        if (data.ok) {{
+          btn.textContent = '{my_link_sent}';
+          msg.textContent = '{my_link_sent_msg}';
+        }} else {{
+          btn.textContent = '{my_link_btn_label}';
+          btn.disabled = false;
+          msg.textContent = '{my_link_error_pfx}' + (data.error || '');
+        }}
+      }} catch(e) {{
+        btn.textContent = '{my_link_btn_label}';
+        btn.disabled = false;
+      }}
+    }}
+    </script>
+  </div>
+
+  <div style="background:#C8870A;padding:36px 40px;text-align:center">
+    <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">{cta_tag}</div>
+    <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">{cta_title}</div>
+    <div style="font-size:13px;color:rgba(255,248,237,.75);margin-bottom:20px;line-height:1.7">{cta_sub}</div>
+    <a href="https://humandocu.com/today.html"
+       style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
+      {cta_btn}
+    </a>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:20px auto 0;">
+    <button id="btn-next-today" onclick="goNextToday()" style="display:block;width:100%;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;cursor:pointer;font-family:inherit;">
+      {nav_today_lbl}
+    </button>
+    <script>
+    (function(){{
+      var SEEN_KEY = 'seen_today_ids';
+      var CUR_ID   = '{doc_id}';
+      function getSeen() {{ try {{ return JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]'); }} catch(e) {{ return []; }} }}
+      function addSeen(id) {{ var seen = getSeen(); if (seen.indexOf(id) === -1) seen.push(id); sessionStorage.setItem(SEEN_KEY, JSON.stringify(seen)); }}
+      addSeen(CUR_ID);
+      window.goNextToday = function() {{
+        var btn = document.getElementById('btn-next-today');
+        btn.disabled = true;
+        var seen = getSeen();
+        var url = '/api/sixshot/random?type=today' + seen.map(function(id){{ return '&exclude='+encodeURIComponent(id); }}).join('');
+        fetch(url)
+          .then(function(r){{ return r.json(); }})
+          .then(function(d){{
+            if (d.reset) {{ alert({json.dumps("You've seen all Today Filmographies! Starting over." if is_en else "すべてのToday Filmを見ました！最初からやり直します。" if is_ja else "已看完所有Today Film！从头开始。" if is_zh else "모든 투*필을 다 보셨어요! 처음부터 다시 시작합니다.")}); sessionStorage.removeItem(SEEN_KEY); }}
+            if (d.status === 'ok' && d.data && d.data.doc_id) {{ window.location.href = '/today/' + d.data.doc_id; }}
+            else {{ btn.disabled = false; }}
+          }})
+          .catch(function(){{ btn.disabled = false; }});
+      }};
+    }})();
+    </script>
+    <a href="https://humandocu.com/sixshot.html" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">{nav_sixshot_lbl}</a>
+    <a href="https://humandocu.com" style="display:block;padding:14px;border-radius:12px;border:1px solid rgba(200,135,10,.3);background:#fff;color:#C8870A;text-align:center;font-size:14px;text-decoration:none;">{nav_home_lbl}</a>
+  </div>
+
+  <div id="del-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+    <div style="background:#fff;border-radius:14px;padding:28px 22px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <div id="del-sending" style="text-align:center">
+        <p style="font-size:15px;color:#6b5a3a;margin:0 0 22px;line-height:1.7">{delete_sending}</p>
+        <button onclick="closeDelModal()" style="padding:10px 28px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
+      </div>
+      <div id="del-sent" style="display:none">
+        <p style="font-size:18px;font-weight:700;color:#1a1208;margin:0 0 4px;text-align:center">{delete_sent_title}</p>
+        <p style="font-size:13px;color:#9e8250;margin:0 0 20px;text-align:center">{delete_sent_sub}</p>
+        <div style="background:#fdf8f0;border:1.5px solid #e8c97a;border-radius:10px;padding:16px 18px;margin-bottom:14px">
+          <p style="font-size:13px;font-weight:700;color:#b8860b;margin:0 0 8px">{delete_method1_title}</p>
+          <p style="font-size:13px;color:#6b5a3a;margin:0;line-height:1.75">{delete_method1_desc}</p>
+        </div>
+        <div style="border:1px solid #e0d4b8;border-radius:10px;padding:16px 18px;margin-bottom:16px">
+          <p style="font-size:13px;font-weight:600;color:#4a3f2f;margin:0 0 12px">{delete_method2_title}</p>
+          <input id="del-code" type="text" inputmode="numeric" maxlength="4" placeholder="_ _ _ _"
+                 style="width:100%;padding:14px;border:1.5px solid #e0d4b8;border-radius:8px;font-size:26px;text-align:center;box-sizing:border-box;margin-bottom:10px;font-family:inherit;letter-spacing:.3em;color:#1a1208">
+          <button onclick="confirmDelete()" style="width:100%;padding:13px;background:#1a1208;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em">{delete_code_btn}</button>
+        </div>
+        <p id="del-err" style="display:none;font-size:13px;color:#c0392b;text-align:center;margin:0 0 14px;line-height:1.6"></p>
+        <div style="text-align:center">
+          <button onclick="closeDelModal()" style="padding:10px 28px;background:#fff;color:#9e8250;border:1px solid #e0d4b8;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit">{delete_cancel_btn}</button>
+        </div>
+      </div>
+      <div id="del-done" style="display:none;text-align:center;padding:8px 0">
+        <p style="font-size:24px;font-weight:700;color:#1a1208;margin:0 0 10px">{delete_success_msg}</p>
+        <p style="font-size:13px;color:#9e8250;margin:0">{delete_done_sub}</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:16px 0 24px">
+    <button type="button" onclick="openDelModal()"
+            style="background:transparent;border:1.5px solid #e74c3c;color:#e74c3c;font-size:13px;font-weight:500;padding:8px 24px;border-radius:20px;cursor:pointer;letter-spacing:.04em;font-family:inherit">
+      {delete_label}
+    </button>
+  </div>
+
+  <div class="footer"><a href="https://humandocu.com">{footer_text}</a></div>
+
+</div>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" crossorigin="anonymous"></script>
+<script>
+if (window.Kakao && !Kakao.isInitialized()) {{ Kakao.init('5b7821698a09c74f1d72c0b52165d557'); }}
+function kakaoShare() {{
+  if (!window.Kakao || !Kakao.isInitialized()) {{ copyPageUrl(); return; }}
+  Kakao.Share.sendDefault({{
+    objectType: 'feed',
+    content: {{
+      title: {json.dumps(og_title)},
+      description: {json.dumps(og_desc)},
+      imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
+      link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }},
+    }},
+    buttons: [
+      {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }} }},
+      {{ title: {json.dumps(kakao_create_btn)}, link: {{ mobileWebUrl: 'https://humandocu.com/today.html', webUrl: 'https://humandocu.com/today.html' }} }},
+    ],
+  }});
+}}
+function copyPageUrl(){{
+  var url = window.location.href;
+  if (navigator.clipboard) {{ navigator.clipboard.writeText(url).then(function() {{ alert({json.dumps(copy_alert)}); }}); }}
+  else {{ var el = document.createElement("textarea"); el.value = url; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); alert({json.dumps(copy_alert)}); }}
+}}
+function openDelModal(){{
+  var modal = document.getElementById('del-modal');
+  modal.style.display = 'flex';
+  document.getElementById('del-sending').style.display = 'block';
+  document.getElementById('del-sent').style.display = 'none';
+  document.getElementById('del-done').style.display = 'none';
+  fetch('/api/delete-request/{doc_id}', {{method:'POST'}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{ document.getElementById('del-sending').style.display = 'none'; document.getElementById('del-sent').style.display = 'block'; document.getElementById('del-code').value = ''; document.getElementById('del-err').style.display = 'none'; }})
+    .catch(function(){{ modal.style.display = 'none'; alert('오류가 발생했습니다. 다시 시도해주세요.'); }});
+}}
+function closeDelModal(){{ document.getElementById('del-modal').style.display = 'none'; }}
+function confirmDelete(){{
+  var code = document.getElementById('del-code').value.replace(/[^0-9]/g,'').trim();
+  if(code.length !== 4) return;
+  fetch('/api/delete-confirm/{doc_id}', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{code:code}})}})
+  .then(function(r){{return r.json();}})
+  .then(function(d){{
+    if(d.status==='deleted'){{ document.getElementById('del-sent').style.display = 'none'; document.getElementById('del-done').style.display = 'block'; setTimeout(function(){{window.location.href='https://humandocu.com';}},2000); }}
+    else{{ var err = document.getElementById('del-err'); err.textContent = {json.dumps(delete_error_msg, ensure_ascii=False)}; err.style.display = 'block'; }}
+  }})
+  .catch(function(){{ var err = document.getElementById('del-err'); err.textContent = {json.dumps(delete_error_msg, ensure_ascii=False)}; err.style.display = 'block'; }});
+}}
+</script>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
 @app.route("/api/check-today", methods=["GET"])
@@ -8662,6 +9300,191 @@ palette: #hex1 #hex2 #hex3"""
             "poems":    poems,
             "identity": identity,
             "overall":  overall,
+        })
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/today/submit-v2", methods=["POST"])
+def today_submit_v2():
+    """투*필 v2 — SHOT별 시 1편(톤 자동판단) + 오늘의 시 1편"""
+    try:
+        import uuid, datetime as dt
+        data           = request.get_json() or {}
+        name           = (data.get("name") or "").strip()
+        nickname       = (data.get("nickname") or name).strip()
+        email          = (data.get("email") or "").strip().lower()
+        is_public      = data.get("is_public", True)
+        shots          = data.get("shots", [])
+        today_sentence = data.get("today_sentence", "")
+        last_to        = data.get("last_to", "")
+        last_msg       = data.get("last_msg", "")
+        lang           = (data.get("lang") or "ko").strip().lower()
+        lang_instruction = {
+            "en": "IMPORTANT: You MUST write ALL poems and text outputs in English only. No Korean allowed.",
+            "ko": "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.",
+            "ja": "重要: 全ての詩とテキストは必ず日本語のみで書いてください。",
+            "zh": "重要: 所有诗歌和文字必须只用中文写。",
+        }.get(lang, "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.")
+
+        if not name or not email:
+            return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
+        if not shots:
+            return jsonify({"ok": False, "error": "사진을 올려주세요"}), 400
+
+        doc_id        = uuid.uuid4().hex[:12]
+        client        = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        content_parts = []
+        shot_images   = {}
+        shot_captions = {}
+
+        for shot in shots[:6]:
+            idx     = str(shot.get("index", 1))
+            b64     = shot.get("image_b64", "")
+            caption = shot.get("caption", "")
+            shot_captions[idx] = caption
+            if b64:
+                raw = b64.split(",")[1] if "," in b64 else b64
+                try:
+                    fname = f"{doc_id}_shot{idx}_{uuid.uuid4().hex[:6]}.jpg"
+                    url   = _upload_to_firebase_storage(b64, fname)
+                    shot_images[idx] = url if url else f"[base64_image_{idx}]"
+                except Exception:
+                    shot_images[idx] = f"[base64_image_{idx}]"
+                content_parts.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": "image/jpeg", "data": raw}
+                })
+            content_parts.append({"type": "text", "text": f"[SHOT {idx}] {caption}"})
+
+        last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
+        today_line    = f"\n오늘 하루를 한 문장으로: {today_sentence}" if today_sentence else ""
+        shots_text    = "\n".join([
+            f"SHOT {idx} : {shot_captions[idx]}"
+            for idx in sorted(shot_captions.keys())
+            if shot_captions.get(idx)
+        ])
+
+        # 제출된 SHOT 수에 맞게 출력 형식 동적 생성
+        submitted_idxs = [str(s.get("index", i+1)) for i, s in enumerate(shots[:6]) if s.get("image_b64") or s.get("caption")]
+        shot_fmt = ""
+        for idx in submitted_idxs:
+            shot_fmt += f"\n[SHOT{idx}시]\n(2~3줄 시)\n\n[SHOT{idx}톤]\n(감동명작 | 유쾌한코미디 | 담백한일상 | 열정다큐 중 하나)\n"
+
+        OUTPUT_FORMAT = f"""[오늘의시]
+(2~3줄 시)
+
+[오늘의시톤]
+(감동명작 | 유쾌한코미디 | 담백한일상 | 열정다큐 중 하나)
+{shot_fmt}
+[이모지]
+(이모지 5개, 한 줄)
+
+[해시태그]
+hashtags: #태그1 #태그2 #태그3
+
+[팔레트]
+palette: #hex1 #hex2 #hex3"""
+
+        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
+나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신이 몸에 배어 있습니다.
+당신은 사진을 봅니다. 색감, 빛의 방향, 배경의 사물, 표정까지 전부.
+
+규칙:
+- 거창한 철학이나 교훈 금지. "삶이란", "존재란" 같은 추상어 금지.
+- 구체적인 사물, 색깔, 소리, 온도로 시를 써라.
+- 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
+- 목표: 읽는 사람이 '헉' 하고 멈추게 만드는 것.
+
+각 장면마다 딱 한 편의 시를 써라.
+그 장면의 분위기를 보고 아래 4가지 톤 중 가장 잘 맞는 것 하나를 골라 그 톤으로:
+- 감동명작: 마지막 줄에서 마음을 찌르는 깊이 있는 시
+- 유쾌한코미디: 날것의 유머·자조. '맞아 나도 그래' 하고 피식 웃게
+- 담백한일상: 꾸밈없이 담담한 시. 오히려 더 세게 꽂히는
+- 열정다큐: 에너지 넘치고 생생한 시. 그 순간의 열기가 느껴지게
+
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+
+오늘의 장면들:
+{shots_text}
+
+{lang_instruction}
+
+다음을 작성해주세요.
+
+1. [오늘의시] — 닉네임, 오늘 한 줄, 한 마디, 모든 사진을 종합해 오늘 하루 전체를 담은 시 1편 (2~3줄)
+   읽으면 오늘 이 사람의 하루 전체가 느껴지게. 특별할 것 없는 오늘이지만 마음에 남는 느낌.
+   [오늘의시톤]에는 이 시가 어떤 톤인지 4가지 중 하나만 적어라.
+
+2. [SHOT별 시] — 제출된 각 SHOT마다 딱 한 편의 시 (2~3줄)
+   4가지 톤 중 그 장면에 가장 잘 맞는 것 하나를 골라 그 톤으로.
+   [SHOTn톤]에는 선택한 톤만 적어라. 제출되지 않은 SHOT은 건너뛰어라.
+
+3. [이모지] — 오늘 하루를 가장 잘 대표하는 이모지 5개.
+   뻔한 것 금지. 이 사람만의 오늘이 느껴지게. 이모지만 5개, 설명 없이, 한 줄로.
+   2015년 이전 범용 이모지만 사용 (Unicode 8.0 이하).
+
+4. [해시태그] — 오늘을 표현하는 해시태그 3개.
+   lang이 ko면 한국어, ja면 일본어, zh면 중국어, en이면 영어로.
+   형식: hashtags: #태그1 #태그2 #태그3
+
+5. [팔레트] — 오늘 분위기를 대표하는 색상 3개 hex.
+   형식: palette: #hex1 #hex2 #hex3
+
+{lang_instruction}
+
+출력 형식 (정확히 이 형식으로):
+{OUTPUT_FORMAT}"""})
+
+        resp    = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": content_parts}]
+        )
+        ai_text = resp.content[0].text if resp.content else ""
+
+        import re as _re_ht
+        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
+        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
+        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
+
+        now = dt.datetime.utcnow().isoformat()
+        _get_db().collection("today").document(doc_id).set({
+            "doc_id":         doc_id,
+            "name":           name,
+            "nickname":       nickname,
+            "email":          email,
+            "type":           "today_v2",
+            "is_public":      is_public,
+            "shot_images":    shot_images,
+            "shots":          shot_captions,
+            "poems":          ai_text,
+            "identity":       today_sentence,
+            "today_sentence": today_sentence,
+            "last_to":        last_to,
+            "last_msg":       last_msg,
+            "lang":           lang,
+            "hashtags":       _hashtags_parsed,
+            "palette":        _palette_parsed,
+            "created_at":     now,
+        })
+
+        page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
+        try:
+            send_email_sixshot(email, nickname, ai_text, today_sentence, last_msg, page_url, type="today", lang="ko")
+        except Exception:
+            import traceback; traceback.print_exc()
+
+        return jsonify({
+            "ok":       True,
+            "doc_id":   doc_id,
+            "page_url": page_url,
+            "poems":    ai_text,
+            "identity": today_sentence,
         })
 
     except Exception as e:
