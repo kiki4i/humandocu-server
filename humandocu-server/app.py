@@ -6140,14 +6140,14 @@ def today_card(doc_id):
                     photo_bytes = resp.read()
                 p = Image.open(_io.BytesIO(photo_bytes)).convert("RGB")
                 pw, ph = p.size
-                # 너비 1080에 맞게 비율 유지 스케일
-                new_h = int(ph * W / pw)
-                p = p.resize((W, new_h), Image.LANCZOS)
-                if new_h >= PHOTO_H:
-                    # 높이 초과 → 중앙 50% 기준 크롭
-                    y0 = (new_h - PHOTO_H) // 2
-                    p = p.crop((0, y0, W, y0 + PHOTO_H))
-                # 높이 미만 → 상단에 붙이고 나머지는 검정 (canvas 기본)
+                # cover: 짧은 쪽을 1080에 맞추고 긴 쪽은 중앙 크롭 — 검은 여백 없음
+                scale = max(W / pw, PHOTO_H / ph)
+                new_w = int(pw * scale)
+                new_h = int(ph * scale)
+                p = p.resize((new_w, new_h), Image.LANCZOS)
+                x0 = (new_w - W) // 2
+                y0 = (new_h - PHOTO_H) // 2
+                p = p.crop((x0, y0, x0 + W, y0 + PHOTO_H))
                 canvas.paste(p, (0, 0))
             except Exception:
                 pass
