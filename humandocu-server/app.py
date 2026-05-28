@@ -6160,6 +6160,7 @@ def today_card(doc_id):
         # ── 폰트 ──
         font_tone  = _load(26)
         font_poem  = _load(30)
+        font_desc  = _load(22)
         font_date  = _load(20)
         font_brand = _load(17)
 
@@ -6196,7 +6197,10 @@ def today_card(doc_id):
         BRAND_DATE_GAP = 10    # 날짜행↔브랜드행 간격
         LINE_GAP       = 10    # 시 줄간격
         BADGE_POEM_GAP = 12    # 배지↔시 간격
-        TOP_PAD        = 14    # 가변 블록 상단 최소 여백
+        POEM_DESC_GAP  = 14    # 시↔설명문구 간격
+        TOP_PAD        = 12    # 가변 블록 상단 최소 여백
+
+        desc_text = "오늘을 사진 한 장과 시 한 편으로 기록합니다"
 
         # ── 고정 하단 행: 브랜드 (맨 아래 중앙) ──
         brand_text = "투*필  ·  TODAY FILMOGRAPHY  /  humandocu.com/today"
@@ -6208,7 +6212,7 @@ def today_card(doc_id):
         _, dh = _tw(wm_text, font_date)
         date_y = brand_y - BRAND_DATE_GAP - dh
 
-        # ── 가변 블록 높이 계산 (톤 배지 + 시 본문) ──
+        # ── 가변 블록 높이 계산 (톤 배지 + 시 본문 + 설명문구) ──
         poem_lines = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
 
         BADGE_PAD_X, BADGE_PAD_Y = 20, 8
@@ -6222,8 +6226,10 @@ def today_card(doc_id):
             _, poem_lh = _tw(poem_lines[0], font_poem)
         poem_block_h = poem_lh * len(poem_lines) + LINE_GAP * max(0, len(poem_lines) - 1)
 
+        _, desc_h = _tw(desc_text, font_desc)
+
         gap_bp = BADGE_POEM_GAP if (badge_block_h and poem_block_h) else 0
-        total_block_h = badge_block_h + gap_bp + poem_block_h
+        total_block_h = badge_block_h + gap_bp + poem_block_h + POEM_DESC_GAP + desc_h
 
         # 가변 블록 세로 중앙: DARK_Y0+TOP_PAD ~ date_y-TOP_PAD
         avail_top = DARK_Y0 + TOP_PAD
@@ -6247,6 +6253,10 @@ def today_card(doc_id):
             draw.text((_cx(line, font_poem), cy), line, font=font_poem, fill=(240, 235, 225))
             _, lh = _tw(line, font_poem)
             cy += lh + LINE_GAP
+
+        # ── 설명 문구 (시 아래, 중앙, 회색) ──
+        cy += POEM_DESC_GAP - LINE_GAP   # LINE_GAP 은 마지막 줄 뒤에 이미 더해졌으므로 조정
+        draw.text((_cx(desc_text, font_desc), cy), desc_text, font=font_desc, fill=(160, 150, 140))
 
         # ── 날짜(좌) + 워터마크(우) ──
         if date_str:
