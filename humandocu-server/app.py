@@ -6068,7 +6068,6 @@ def today_card(doc_id):
         import io as _io
         import urllib.request as _urllib_req
         import glob as _glob
-        import subprocess as _sub
 
         data = firebase_get_today(doc_id)
         if data is None:
@@ -6096,14 +6095,14 @@ def today_card(doc_id):
         today_tone = poem_dict.get("오늘의시톤", "").strip()
         created = (data.get("created_at") or "")[:10]
 
-        # ── 캔버스 치수 ──
-        W       = 1080   # 전체 너비
-        PHOTO_W = 1080   # 사진 정사각형
-        PHOTO_H = 1080   # 사진 정사각형
-        WHITE_H = 270    # 하단 흰 영역
-        H       = PHOTO_H + WHITE_H  # 1350
+        # ── 치수 ──
+        W       = 1080
+        PHOTO_H = 1080
+        DARK_H  = 270
+        H       = PHOTO_H + DARK_H   # 1350
 
-        canvas = Image.new("RGB", (W, H), (255, 255, 255))
+        # 검정 배경으로 시작 (사진 미로드시 사진 영역도 검정)
+        canvas = Image.new("RGB", (W, H), (0, 0, 0))
 
         # ── 폰트 로드 ──
         _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -6133,23 +6132,7 @@ def today_card(doc_id):
                     pass
             return ImageFont.load_default()
 
-        font_poem  = _load(44)   # 시 본문
-        font_tone  = _load(32)   # 톤 배지
-        font_brand = _load(22)   # 하단 브랜드 레이블
-        font_desc  = _load(28)   # 하단 설명
-        font_url   = _load(26)   # 하단 URL
-
-        # ── 텍스트 중앙정렬 헬퍼 ──
-        def _text_w(text, font):
-            bb = ImageDraw.Draw(canvas).textbbox((0, 0), text, font=font)
-            return bb[2] - bb[0], bb[3] - bb[1]
-
-        def _cx(text, font):
-            tw, _ = _text_w(text, font)
-            return (W - tw) // 2
-
-        # ── 사진: 1080×1080 정사각형 크롭 ──
-        photo_img = None
+        # ── 사진: 너비=1080 맞춤, 높이 처리 ──
         if img_url and not img_url.startswith("["):
             try:
                 req = _urllib_req.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
@@ -6157,85 +6140,39 @@ def today_card(doc_id):
                     photo_bytes = resp.read()
                 p = Image.open(_io.BytesIO(photo_bytes)).convert("RGB")
                 pw, ph = p.size
-                # 정사각형 센터 크롭
-                if pw > ph:
-                    x0 = (pw - ph) // 2
-                    p = p.crop((x0, 0, x0 + ph, ph))
-                elif ph > pw:
-                    y0 = (ph - pw) // 2
-                    p = p.crop((0, y0, pw, y0 + pw))
-                photo_img = p.resize((PHOTO_W, PHOTO_H), Image.LANCZOS)
+                # 너비 1080에 맞게 비율 유지 스케일
+                new_h = int(ph * W / pw)
+                p = p.resize((W, new_h), Image.LANCZOS)
+                if new_h >= PHOTO_H:
+                    # 높이 초과 → 중앙 50% 기준 크롭
+                    y0 = (new_h - PHOTO_H) // 2
+                    p = p.crop((0, y0, W, y0 + PHOTO_H))
+                # 높이 미만 → 상단에 붙이고 나머지는 검정 (canvas 기본)
+                canvas.paste(p, (0, 0))
             except Exception:
                 pass
 
-        if photo_img:
-            canvas.paste(photo_img, (0, 0))
-        else:
-            draw_bg = ImageDraw.Draw(canvas)
-            draw_bg.rectangle([(0, 0), (PHOTO_W, PHOTO_H)], fill=(230, 225, 215))
-
-        # ── 그라데이션 오버레이 (사진 하단부: 투명→검정) ──
-        GRAD_H = 500   # 그라데이션이 덮는 높이
-        grad_y0 = PHOTO_H - GRAD_H
-        overlay = Image.new("RGBA", (W, PHOTO_H), (0, 0, 0, 0))
-        for i in range(GRAD_H):
-            t = i / GRAD_H                    # 0.0(위, 투명) → 1.0(아래, 불투명)
-            alpha = int(215 * (t ** 0.55))    # ease-in 커브, 최대 ~215
-            ImageDraw.Draw(overlay).line(
-                [(0, grad_y0 + i), (W, grad_y0 + i)],
-                fill=(0, 0, 0, alpha)
-            )
-        canvas_rgba = canvas.convert("RGBA")
-        canvas_rgba.alpha_composite(overlay)
-        canvas = canvas_rgba.convert("RGB")
-
+        # ── 하단 어두운 영역 (#111111) ──
         draw = ImageDraw.Draw(canvas)
+        DARK_Y0 = PHOTO_H
+        draw.rectangle([(0, DARK_Y0), (W, H)], fill=(17, 17, 17))
 
-        # ── 그라데이션 위 텍스트 레이아웃 (중앙정렬) ──
-        TONE_BG = {
-            "감동명작":    ((255, 243, 224), (123,  79, 30)),
-            "유쾌한코미디": ((255, 240, 232), (181,  69, 26)),
-            "담백한일상":  ((247, 248, 250), ( 74,  85, 104)),
-            "열정다큐":   ((255, 240, 240), (139,  26,  26)),
-        }
+        # ── 폰트 ──
+        font_tone  = _load(26)
+        font_poem  = _load(30)
+        font_date  = _load(20)
+        font_brand = _load(17)
 
-        poem_lines = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
-        LINE_H     = 44 + 22  # font_size + line_gap
-        BADGE_H    = (32 + 12 * 2 + 32) if today_tone else 0  # th + pad*2 + gap_below
+        # ── 헬퍼 ──
+        def _tw(text, font):
+            bb = draw.textbbox((0, 0), text, font=font)
+            return bb[2] - bb[0], bb[3] - bb[1]
 
-        total_block_h = BADGE_H + len(poem_lines) * LINE_H
+        def _cx(text, font):
+            tw, _ = _tw(text, font)
+            return (W - tw) // 2
 
-        # 어두운 구간(그라데이션 하단 65%)의 수직 중앙에 배치
-        dark_y0 = PHOTO_H - int(GRAD_H * 0.72)
-        dark_h  = PHOTO_H - dark_y0
-        block_y = dark_y0 + max(0, (dark_h - total_block_h) // 2)
-        block_y = max(block_y, dark_y0 + 24)   # 최소 여백
-
-        cy = block_y
-
-        # 톤 배지 (수평 중앙)
-        if today_tone:
-            bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((255, 243, 224), (123, 79, 30)))
-            tw, th = _text_w(today_tone, font_tone)
-            bpad_x, bpad_y = 24, 12
-            bw = tw + bpad_x * 2
-            bh = th + bpad_y * 2
-            bx = (W - bw) // 2
-            draw.rounded_rectangle([(bx, cy), (bx + bw, cy + bh)], radius=22, fill=bg_rgb)
-            draw.text((bx + bpad_x, cy + bpad_y), today_tone, font=font_tone, fill=fg_rgb)
-            cy += bh + 32
-
-        # 시 본문 (각 줄 수평 중앙)
-        for line in poem_lines:
-            draw.text((_cx(line, font_poem), cy), line, font=font_poem, fill=(255, 255, 255))
-            _, lh = _text_w(line, font_poem)
-            cy += lh + 22
-
-        # ── 하단 흰 영역 (270px) ──
-        WHITE_Y0 = PHOTO_H
-        draw.rectangle([(0, WHITE_Y0), (W, H)], fill=(255, 255, 255))
-
-        # 날짜 텍스트 (선택)
+        # ── 날짜 문자열 ──
         date_str = ""
         if created:
             try:
@@ -6245,27 +6182,81 @@ def today_card(doc_id):
             except Exception:
                 date_str = created[:10]
 
-        # 하단 세 줄 텍스트 자동 수직 배분
-        brand_text = "투*필  ·  TODAY FILMOGRAPHY"
-        desc_text  = "오늘을 사진 한 장과 시 한 편으로 기록합니다"
-        url_text   = "humandocu.com/today"
+        # ── 톤 배지 색상표 ──
+        TONE_BG = {
+            "감동명작":    ((255, 243, 224), (123,  79, 30)),
+            "유쾌한코미디": ((255, 240, 232), (181,  69, 26)),
+            "담백한일상":  ((247, 248, 250), ( 74,  85, 104)),
+            "열정다큐":   ((255, 240, 240), (139,  26,  26)),
+        }
 
-        _, bh_brand = _text_w(brand_text, font_brand)
-        _, bh_desc  = _text_w(desc_text,  font_desc)
-        _, bh_url   = _text_w(url_text,   font_url)
+        # ── 레이아웃 상수 ──
+        SIDE_PAD       = 44    # 좌우 여백
+        BOTTOM_PAD     = 14    # 브랜드 라인 하단 여백
+        BRAND_DATE_GAP = 10    # 날짜행↔브랜드행 간격
+        LINE_GAP       = 10    # 시 줄간격
+        BADGE_POEM_GAP = 12    # 배지↔시 간격
+        TOP_PAD        = 14    # 가변 블록 상단 최소 여백
 
-        GAP = 18
-        block_h = bh_brand + GAP + bh_desc + GAP + bh_url
-        ty = WHITE_Y0 + (WHITE_H - block_h) // 2
+        # ── 고정 하단 행: 브랜드 (맨 아래 중앙) ──
+        brand_text = "투*필  ·  TODAY FILMOGRAPHY  /  humandocu.com/today"
+        _, bh = _tw(brand_text, font_brand)
+        brand_y = H - BOTTOM_PAD - bh
 
-        draw.text((_cx(brand_text, font_brand), ty),
-                  brand_text, font=font_brand, fill=(200, 165, 100))
-        ty += bh_brand + GAP
-        draw.text((_cx(desc_text, font_desc), ty),
-                  desc_text, font=font_desc, fill=(80, 70, 55))
-        ty += bh_desc + GAP
-        draw.text((_cx(url_text, font_url), ty),
-                  url_text, font=font_url, fill=(40, 35, 25))
+        # ── 날짜 + 워터마크 행 (브랜드 바로 위) ──
+        wm_text = "humandocu.com/today"
+        _, dh = _tw(wm_text, font_date)
+        date_y = brand_y - BRAND_DATE_GAP - dh
+
+        # ── 가변 블록 높이 계산 (톤 배지 + 시 본문) ──
+        poem_lines = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
+
+        BADGE_PAD_X, BADGE_PAD_Y = 20, 8
+        badge_block_h = 0
+        if today_tone:
+            _, th = _tw(today_tone, font_tone)
+            badge_block_h = th + BADGE_PAD_Y * 2
+
+        poem_lh = 0
+        if poem_lines:
+            _, poem_lh = _tw(poem_lines[0], font_poem)
+        poem_block_h = poem_lh * len(poem_lines) + LINE_GAP * max(0, len(poem_lines) - 1)
+
+        gap_bp = BADGE_POEM_GAP if (badge_block_h and poem_block_h) else 0
+        total_block_h = badge_block_h + gap_bp + poem_block_h
+
+        # 가변 블록 세로 중앙: DARK_Y0+TOP_PAD ~ date_y-TOP_PAD
+        avail_top = DARK_Y0 + TOP_PAD
+        avail_bot = date_y - TOP_PAD
+        avail_h   = avail_bot - avail_top
+        cy = avail_top + max(0, (avail_h - total_block_h) // 2)
+
+        # ── 톤 배지 그리기 (중앙) ──
+        if today_tone:
+            bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((255, 243, 224), (123, 79, 30)))
+            tw, th = _tw(today_tone, font_tone)
+            bw = tw + BADGE_PAD_X * 2
+            bh2 = th + BADGE_PAD_Y * 2
+            bx = (W - bw) // 2
+            draw.rounded_rectangle([(bx, cy), (bx + bw, cy + bh2)], radius=16, fill=bg_rgb)
+            draw.text((bx + BADGE_PAD_X, cy + BADGE_PAD_Y), today_tone, font=font_tone, fill=fg_rgb)
+            cy += bh2 + gap_bp
+
+        # ── 시 본문 그리기 (각 줄 중앙) ──
+        for line in poem_lines:
+            draw.text((_cx(line, font_poem), cy), line, font=font_poem, fill=(240, 235, 225))
+            _, lh = _tw(line, font_poem)
+            cy += lh + LINE_GAP
+
+        # ── 날짜(좌) + 워터마크(우) ──
+        if date_str:
+            draw.text((SIDE_PAD, date_y), date_str, font=font_date, fill=(150, 145, 135))
+        wm_w, _ = _tw(wm_text, font_date)
+        draw.text((W - SIDE_PAD - wm_w, date_y), wm_text, font=font_date, fill=(120, 115, 105))
+
+        # ── 브랜드 라인 (맨 아래 중앙, 금색) ──
+        draw.text((_cx(brand_text, font_brand), brand_y),
+                  brand_text, font=font_brand, fill=(185, 155, 90))
 
         buf = _io.BytesIO()
         canvas.save(buf, format="PNG", optimize=True)
