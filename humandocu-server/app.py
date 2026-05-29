@@ -5765,26 +5765,54 @@ def today_v2_page(doc_id, data):
                 f'background:{dot_bg};margin:0 4px;cursor:pointer;transition:background .3s"></span>'
             )
         n_total = len(slide_list)
+        arrow_style = (
+            "position:absolute;top:50%;transform:translateY(-50%);"
+            "background:rgba(0,0,0,0.45);border:none;color:rgba(200,169,110,0.9);"
+            "font-size:32px;line-height:1;padding:18px 16px;cursor:pointer;z-index:5;"
+            "touch-action:manipulation;-webkit-tap-highlight-color:transparent;"
+        )
         slideshow_js = (
             f"var _si=0,_st={n_total};"
-            "function goSl(n){document.querySelectorAll('.sl').forEach(function(e,i){e.style.display=i===n?'block':'none';});"
-            "document.querySelectorAll('.dt').forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
-            "_si=n;}"
+            "var _ssEl=document.getElementById('ss-inner');"
+            "function goSl(n){"
+            "  var els=_ssEl.querySelectorAll('.sl');"
+            "  var dts=document.getElementById('ss-dots').querySelectorAll('.dt');"
+            "  els.forEach(function(e,i){e.style.display=i===n?'block':'none';});"
+            "  dts.forEach(function(e,i){e.style.background=i===n?'#c8a96e':'rgba(200,169,110,0.3)';});"
+            "  _si=n;}"
             "function nxSl(){goSl((_si+1)%_st);}"
+            "function pvSl(){goSl((_si-1+_st)%_st);}"
             "var _bgm=document.getElementById('bgm-ss');"
             "var _timer=null;var _playing=false;"
             "function togglePlay(){var btn=document.getElementById('bgm-btn-ss');"
             "if(!_playing){_playing=true;_bgm.play().catch(function(){});_timer=setInterval(nxSl,3500);"
             f"btn.textContent='{pause_label}';"
             "}else{_playing=false;_bgm.pause();clearInterval(_timer);"
-            f"btn.textContent='{play_label}';}}"
+            f"btn.textContent='{play_label}'; }}"
+            # 터치 스와이프
+            "var _tx=0;"
+            "_ssEl.addEventListener('touchstart',function(e){_tx=e.changedTouches[0].clientX;},{passive:true});"
+            "_ssEl.addEventListener('touchend',function(e){"
+            "  var dx=e.changedTouches[0].clientX-_tx;"
+            "  if(dx<-40)nxSl();"
+            "  else if(dx>40)pvSl();"
+            "},{passive:true});"
+            # 클릭으로 다음 (화살표 버튼 영역 제외)
+            "_ssEl.addEventListener('click',function(e){"
+            "  if(e.target.closest('.ss-arrow'))return;"
+            "  nxSl();"
+            "});"
         )
         slideshow_section = (
             '<div id="ss-wrap" style="background:#0f0d09;padding:32px 0 40px;margin-top:1px;position:relative">'
             '<audio id="bgm-ss" src="https://kiki4i.github.io/humandocu/bugo/BGM.mp3" loop></audio>'
             f'<button id="bgm-btn-ss" onclick="togglePlay()" style="position:absolute;top:14px;right:14px;background:rgba(200,169,110,0.92);border:none;border-radius:28px;padding:12px 28px;font-size:16px;font-weight:700;color:#0f0d09;cursor:pointer;letter-spacing:.06em;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.4);min-width:100px;z-index:10">{play_label}</button>'
+            '<div id="ss-inner" style="position:relative;cursor:pointer">'
             + slides_html
-            + f'<div style="text-align:center;margin-top:18px">{dots_html}</div>'
+            + f'<button class="ss-arrow" onclick="pvSl()" style="{arrow_style}left:0">&#8249;</button>'
+            + f'<button class="ss-arrow" onclick="nxSl()" style="{arrow_style}right:0">&#8250;</button>'
+            + '</div>'
+            + f'<div id="ss-dots" style="text-align:center;margin-top:18px">{dots_html}</div>'
             + f'<script>{slideshow_js}</script>'
             + '</div>'
         )
