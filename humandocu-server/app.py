@@ -6222,7 +6222,7 @@ def today_card(doc_id):
         try:
             import qrcode as _qrcode
             _qr = _qrcode.QRCode(box_size=10, border=1)
-            _qr.add_data("https://humandocu.com")
+            _qr.add_data("https://www.humandocu.com")
             _qr.make(fit=True)
             qr_img = _qr.make_image(fill_color="black", back_color="white").convert("RGB")
             qr_img = qr_img.resize((QR_SIZE, QR_SIZE), Image.LANCZOS)
@@ -6284,7 +6284,7 @@ def today_card(doc_id):
         # ── 사이트 URL (굵게, 좌정렬) ──
         if poem_lines:
             cy += POEM_SITE_GAP - LINE_GAP
-        draw.text((LEFT_X, cy), "humandocu.com", font=font_site, fill=(210, 200, 185))
+        draw.text((LEFT_X, cy), "www.humandocu.com", font=font_site, fill=(210, 200, 185))
 
         # ── 날짜 (좌하단 고정, 작게) ──
         if date_str:
