@@ -5424,6 +5424,12 @@ def today_v2_page(doc_id, data):
         "유쾌한코미디": ("#B5451A", "#FFF0E8"),
         "담백한일상":  ("#4A5568", "#F7F8FA"),
         "열정다큐":   ("#8B1A1A", "#FFF0F0"),
+        # 장르 선택 (6개)
+        "히어로 액션": ("#7A0000", "#FFEAEA"),
+        "잔잔한 다큐": ("#1A2A5E", "#EAF0FF"),
+        "멜로 로맨스": ("#7A1040", "#FFF0F5"),
+        "병맛 코미디": ("#7A3A00", "#FFF5E8"),
+        "반전 스릴러": ("#3A0060", "#F5EAFF"),
         # English
         "touching masterpiece": ("#7B4F1E", "#FFF3E0"),
         "cheerful comedy":      ("#B5451A", "#FFF0E8"),
@@ -5680,7 +5686,7 @@ def today_v2_page(doc_id, data):
 
     # 오늘의 시 섹션
     today_poem      = poem_dict.get("오늘의시", "")
-    today_poem_tone = poem_dict.get("오늘의시톤", "").strip()
+    today_poem_tone = (data.get("genre") or poem_dict.get("오늘의시톤", "")).strip()
     tone_badge_str  = tone_badge_html(today_poem_tone) if today_poem_tone else ""
     poem_section_html = ""
     if today_poem:
@@ -9630,6 +9636,17 @@ def today_submit_v2():
             "zh": "重要: 所有诗歌和文字必须只用中文写。",
         }.get(lang, "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.")
 
+        genre = (data.get("genre") or "").strip()
+        genre_prompts = {
+            "감동명작":    "오늘 하루를 감동적인 영화 한 장면처럼 써라. 진하고 뭉클하게. 평범한 순간에서 깊은 감동을 꺼내라.",
+            "히어로 액션": "오늘 하루를 세상을 구하는 전사의 이야기처럼 써라. 장엄하고 유쾌하게. 지하철도 전장이고 점심도 전투 식량이다.",
+            "잔잔한 다큐": "오늘 하루를 다큐멘터리 내레이터처럼 담담하고 사실적으로 써라. 꾸밈 없이, 있는 그대로의 하루.",
+            "멜로 로맨스": "오늘 하루를 감성적인 드라마처럼 써라. 감정선을 세밀하게, 일상의 모든 것이 드라마틱하게.",
+            "병맛 코미디": "오늘 하루를 자조적이고 웃기게 써라. 날것으로, 피식이 아니라 빵 터지게. 이게 내 인생이다.",
+            "반전 스릴러": "오늘 하루를 긴장감 있게 써라. 평범하게 시작해서 마지막 줄에서 완전히 뒤집어라. 반전이 핵심.",
+        }
+        genre_instruction = genre_prompts.get(genre, "")
+
         if not name or not email:
             return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
         if not shots:
@@ -9676,9 +9693,6 @@ def today_submit_v2():
 
         OUTPUT_FORMAT = f"""[오늘의시]
 (시 내용 2~3줄)
-
-[오늘의시톤]
-감동명작
 {shot_fmt}
 [이모지]
 (이모지 5개, 한 줄)
@@ -9692,7 +9706,7 @@ palette: #hex1 #hex2 #hex3"""
         # 출력 태그 이름 잠금용 system prompt
         system_prompt = (
             "You are a poet. "
-            "Output structural tags EXACTLY as shown — [오늘의시], [오늘의시톤], "
+            "Output structural tags EXACTLY as shown — [오늘의시], "
             "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], "
             "[이모지], [해시태그], [팔레트]. "
             "Do NOT rename, abbreviate, or omit any tag. "
@@ -9710,12 +9724,9 @@ palette: #hex1 #hex2 #hex3"""
 - 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
 - 목표: 읽는 사람이 '헉' 하고 멈추게 만드는 것.
 
-각 장면마다 딱 한 편의 시를 써라.
-그 장면의 분위기를 보고 아래 4가지 톤 중 하나를 골라 그 톤으로 써라:
-- 감동명작: 마지막 줄에서 마음을 찌르는 깊이 있는 시
-- 유쾌한코미디: 날것의 유머·자조. '맞아 나도 그래' 하고 피식 웃게
-- 담백한일상: 꾸밈없이 담담한 시. 오히려 더 세게 꽂히는
-- 열정다큐: 에너지 넘치고 생생한 시. 그 순간의 열기가 느껴지게
+오늘 하루의 장르: {genre}
+장르 지시: {genre_instruction}
+모든 시를 이 장르의 분위기로 써라. 오늘의 시도, 각 장면의 시도 전부.
 
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
 
@@ -9731,14 +9742,13 @@ palette: #hex1 #hex2 #hex3"""
 
 작성 순서:
 1. [오늘의시] — 닉네임·오늘 한 줄·한 마디·모든 사진을 종합한 시 1편 (2~3줄)
-   읽으면 오늘 이 사람의 하루 전체가 느껴지게. 특별할 것 없어도 마음에 남는 느낌.
-2. [오늘의시톤] — 위 시의 톤: 4가지 중 하나만 (예: 담백한일상)
-3. 제출된 각 SHOT마다 [SHOT숫자시] — 시 1편 (2~3줄), [SHOT숫자톤] — 4가지 중 하나만
+   읽으면 오늘 이 사람의 하루 전체가 느껴지게. 장르 "{genre}"의 분위기로.
+2. 제출된 각 SHOT마다 [SHOT숫자시] — 시 1편 (2~3줄), [SHOT숫자톤] — 장르명
    미제출 SHOT은 건너뜀.
-4. [이모지] — 이 사람만의 오늘이 느껴지는 이모지 5개, 한 줄, 설명 없이.
+3. [이모지] — 이 사람만의 오늘이 느껴지는 이모지 5개, 한 줄, 설명 없이.
    2015년 이전 범용 이모지만 (Unicode 8.0 이하).
-5. [해시태그] — hashtags: #태그1 #태그2 #태그3 형식
-6. [팔레트] — palette: #hex1 #hex2 #hex3 형식
+4. [해시태그] — hashtags: #태그1 #태그2 #태그3 형식
+5. [팔레트] — palette: #hex1 #hex2 #hex3 형식
 
 {lang_instruction}
 
@@ -9777,6 +9787,7 @@ palette: #hex1 #hex2 #hex3"""
             "lang":           lang,
             "hashtags":       _hashtags_parsed,
             "palette":        _palette_parsed,
+            "genre":          genre,
             "created_at":     now,
         })
 
