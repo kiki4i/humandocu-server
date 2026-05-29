@@ -6175,20 +6175,15 @@ def today_card(doc_id):
         draw.rectangle([(0, DARK_Y0), (W, H)], fill=(17, 17, 17))
 
         # ── 폰트 ──
-        font_tone  = _load(26)
+        font_badge = _load(26)
         font_poem  = _load(30)
-        font_desc  = _load(22)
-        font_date  = _load(20)
-        font_brand = _load(17)
+        font_site  = _load(36)
+        font_date  = _load(18)
 
         # ── 헬퍼 ──
         def _tw(text, font):
             bb = draw.textbbox((0, 0), text, font=font)
             return bb[2] - bb[0], bb[3] - bb[1]
-
-        def _cx(text, font):
-            tw, _ = _tw(text, font)
-            return (W - tw) // 2
 
         # ── 날짜 문자열 ──
         date_str = ""
@@ -6206,7 +6201,6 @@ def today_card(doc_id):
             "유쾌한코미디": ((255, 240, 232), (181,  69,  26)),
             "담백한일상":  ((247, 248, 250), ( 74,  85, 104)),
             "열정다큐":   ((255, 240, 240), (139,  26,  26)),
-            # 장르 선택 6개
             "히어로 액션": ((255, 234, 234), (122,   0,   0)),
             "잔잔한 다큐": ((234, 240, 255), ( 26,  42,  94)),
             "멜로 로맨스": ((255, 240, 245), (122,  16,  64)),
@@ -6215,33 +6209,40 @@ def today_card(doc_id):
         }
 
         # ── 레이아웃 상수 ──
-        SIDE_PAD       = 44    # 좌우 여백
-        BOTTOM_PAD     = 20    # 브랜드 라인 하단 여백
-        BRAND_DATE_GAP = 14    # 날짜행↔브랜드행 간격
-        LINE_GAP       = 14    # 시 줄간격
-        BADGE_POEM_GAP = 16    # 배지↔시 간격
-        POEM_DESC_GAP  = 18    # 시↔설명문구 간격
-        TOP_PAD        = 18    # 가변 블록 상단 최소 여백
+        SIDE_PAD       = 44
+        BOTTOM_PAD     = 22
+        TOP_PAD        = 26
+        LINE_GAP       = 12
+        BADGE_POEM_GAP = 14
+        POEM_SITE_GAP  = 18
+        QR_SIZE        = 200
+        QR_PAD         = 36   # QR 우측/상하 여백
 
-        desc_text = "오늘을 사진 한 장과 시 한 편으로 기록합니다"
+        # ── QR 코드 생성 및 붙이기 (우측, 세로 중앙) ──
+        try:
+            import qrcode as _qrcode
+            _qr = _qrcode.QRCode(box_size=10, border=1)
+            _qr.add_data("https://humandocu.com")
+            _qr.make(fit=True)
+            qr_img = _qr.make_image(fill_color="black", back_color="white").convert("RGB")
+            qr_img = qr_img.resize((QR_SIZE, QR_SIZE), Image.LANCZOS)
+            qr_x = W - QR_PAD - QR_SIZE
+            qr_y = DARK_Y0 + (DARK_H - QR_SIZE) // 2
+            canvas.paste(qr_img, (qr_x, qr_y))
+        except Exception:
+            qr_x = W - QR_PAD - QR_SIZE   # 위치 계산은 유지
 
-        # ── 고정 하단 행: 브랜드 (맨 아래 중앙) ──
-        brand_text = "투*필  ·  TODAY FILMOGRAPHY  /  humandocu.com/today"
-        _, bh = _tw(brand_text, font_brand)
-        brand_y = H - BOTTOM_PAD - bh
+        # ── 좌측 텍스트 열 범위 ──
+        LEFT_X  = SIDE_PAD
+        LEFT_MAX = qr_x - 20   # QR 왼쪽 여백
 
-        # ── 날짜 + 워터마크 행 (브랜드 바로 위) ──
-        wm_text = "humandocu.com/today"
-        _, dh = _tw(wm_text, font_date)
-        date_y = brand_y - BRAND_DATE_GAP - dh
-
-        # ── 가변 블록 높이 계산 (톤 배지 + 시 본문 + 설명문구) ──
+        # ── 높이 계산 (배지 + 시 + 사이트URL) ──
         poem_lines = [l for l in today_poem.split("\n") if l.strip()] if today_poem else []
 
-        BADGE_PAD_X, BADGE_PAD_Y = 20, 8
+        BADGE_PAD_X, BADGE_PAD_Y = 18, 7
         badge_block_h = 0
         if today_tone:
-            _, th = _tw(today_tone, font_tone)
+            _, th = _tw(today_tone, font_badge)
             badge_block_h = th + BADGE_PAD_Y * 2
 
         poem_lh = 0
@@ -6249,47 +6250,45 @@ def today_card(doc_id):
             _, poem_lh = _tw(poem_lines[0], font_poem)
         poem_block_h = poem_lh * len(poem_lines) + LINE_GAP * max(0, len(poem_lines) - 1)
 
-        _, desc_h = _tw(desc_text, font_desc)
+        _, site_h = _tw("humandocu.com", font_site)
+        _, date_h = _tw("2025.01.01", font_date)
 
         gap_bp = BADGE_POEM_GAP if (badge_block_h and poem_block_h) else 0
-        total_block_h = badge_block_h + gap_bp + poem_block_h + POEM_DESC_GAP + desc_h
+        total_block_h = badge_block_h + gap_bp + poem_block_h + POEM_SITE_GAP + site_h
 
-        # 가변 블록 세로 중앙: DARK_Y0+TOP_PAD ~ date_y-TOP_PAD
+        # 날짜 고정 하단
+        date_y = H - BOTTOM_PAD - date_h
+
+        # 가변 블록 세로 중앙: DARK_Y0+TOP_PAD ~ date_y-8
         avail_top = DARK_Y0 + TOP_PAD
-        avail_bot = date_y - TOP_PAD
+        avail_bot = date_y - 8
         avail_h   = avail_bot - avail_top
         cy = avail_top + max(0, (avail_h - total_block_h) // 2)
 
-        # ── 톤 배지 그리기 (중앙) ──
+        # ── 장르 배지 (좌정렬) ──
         if today_tone:
             bg_rgb, fg_rgb = TONE_BG.get(today_tone, ((255, 243, 224), (123, 79, 30)))
-            tw, th = _tw(today_tone, font_tone)
+            tw, th = _tw(today_tone, font_badge)
             bw = tw + BADGE_PAD_X * 2
             bh2 = th + BADGE_PAD_Y * 2
-            bx = (W - bw) // 2
-            draw.rounded_rectangle([(bx, cy), (bx + bw, cy + bh2)], radius=16, fill=bg_rgb)
-            draw.text((bx + BADGE_PAD_X, cy + BADGE_PAD_Y), today_tone, font=font_tone, fill=fg_rgb)
+            draw.rounded_rectangle([(LEFT_X, cy), (LEFT_X + bw, cy + bh2)], radius=14, fill=bg_rgb)
+            draw.text((LEFT_X + BADGE_PAD_X, cy + BADGE_PAD_Y), today_tone, font=font_badge, fill=fg_rgb)
             cy += bh2 + gap_bp
 
-        # ── 시 본문 그리기 (각 줄 중앙) ──
+        # ── 시 본문 (좌정렬) ──
         for line in poem_lines:
-            draw.text((_cx(line, font_poem), cy), line, font=font_poem, fill=(240, 235, 225))
+            draw.text((LEFT_X, cy), line, font=font_poem, fill=(240, 235, 225))
             _, lh = _tw(line, font_poem)
             cy += lh + LINE_GAP
 
-        # ── 설명 문구 (시 아래, 중앙, 회색) ──
-        cy += POEM_DESC_GAP - LINE_GAP   # LINE_GAP 은 마지막 줄 뒤에 이미 더해졌으므로 조정
-        draw.text((_cx(desc_text, font_desc), cy), desc_text, font=font_desc, fill=(160, 150, 140))
+        # ── 사이트 URL (굵게, 좌정렬) ──
+        if poem_lines:
+            cy += POEM_SITE_GAP - LINE_GAP
+        draw.text((LEFT_X, cy), "humandocu.com", font=font_site, fill=(210, 200, 185))
 
-        # ── 날짜(좌) + 워터마크(우) ──
+        # ── 날짜 (좌하단 고정, 작게) ──
         if date_str:
-            draw.text((SIDE_PAD, date_y), date_str, font=font_date, fill=(150, 145, 135))
-        wm_w, _ = _tw(wm_text, font_date)
-        draw.text((W - SIDE_PAD - wm_w, date_y), wm_text, font=font_date, fill=(120, 115, 105))
-
-        # ── 브랜드 라인 (맨 아래 중앙, 금색) ──
-        draw.text((_cx(brand_text, font_brand), brand_y),
-                  brand_text, font=font_brand, fill=(185, 155, 90))
+            draw.text((LEFT_X, date_y), date_str, font=font_date, fill=(130, 125, 115))
 
         buf = _io.BytesIO()
         canvas.save(buf, format="PNG", optimize=True)
