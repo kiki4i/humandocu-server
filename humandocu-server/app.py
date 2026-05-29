@@ -6693,6 +6693,18 @@ def sixshot_feed():
         db = _get_db()
         from google.cloud.firestore_v1.base_query import FieldFilter
         docs = db.collection("sixshot")            .where(filter=FieldFilter("is_public", "==", True))            .limit(500).get()
+
+        def _first_poem_line(poems_raw):
+            if not poems_raw:
+                return ""
+            import re as _re
+            m = _re.search(r'\[대표\](.*?)(?=\[|$)', poems_raw, _re.DOTALL)
+            if m:
+                for line in m.group(1).strip().splitlines():
+                    if line.strip():
+                        return line.strip()
+            return ""
+
         all_items = []
         for doc in docs:
             d = doc.to_dict() or {}
@@ -6706,6 +6718,7 @@ def sixshot_feed():
                 "identity": d.get("identity", ""),
                 "photo1": photo1,
                 "photo2": photo2,
+                "poem_line": _first_poem_line(d.get("poems", "")),
                 "created_at": d.get("created_at", ""),
             })
         all_items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
