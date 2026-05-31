@@ -2622,7 +2622,16 @@ palette: #hex1 #hex2 #hex3"""
      ✅ '장바구니 속 빨간 토마토 / 오늘을 살고 있다는 증거다 / 나는 아직 여기 있다'
    [SHOT1] ~ [SHOT6]: 제출된 SHOT만 작성. 제출되지 않은 SHOT은 건너뛰어라.
 
-6. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개를 한국어로 생성.
+6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
+   규칙:
+   - ☀️😊🌙✨ 같은 뻔한 것 금지
+   - 이 사람만의 오늘이 느껴지게
+   - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
+   - 이모지만 5개, 설명 없이, 한 줄로
+   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
+   예: 😤💼🍱🚇😬
+
+7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개를 한국어로 생성.
    예: #출근길 #빨간차 #왕의기운
    형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
 
@@ -2691,7 +2700,16 @@ Please write the following:
    The last line must be a turn — unexpected, not description.
    [SHOT1] ~ [SHOT6]: write only for submitted shots. Skip shots that were not submitted.
 
-6. [해시태그] - 3 hashtags in English that capture today based on the photos and one-sentence summary.
+6. [이모지] - 5 emojis that best capture this person's day.
+   Rules:
+   - No generic ones (☀️😊🌙✨)
+   - Must feel specific to THIS person's today
+   - Consider nickname, photos, feelings, and summary together
+   - Just 5 emojis, no explanation, one line
+   - Only use universally supported emoji released before 2015 (Unicode 8.0 or lower). No newer emoji like 🪷🫶🪸 (introduced after 2019).
+   Example: 😤💼🍱🚇😬
+
+7. [해시태그] - 3 hashtags in English that capture today based on the photos and one-sentence summary.
    Example: #morningcommute #redcar #royalvibes
    Format: hashtags: #tag1 #tag2 #tag3 (strictly follow this format)
 
@@ -4949,7 +4967,7 @@ def sixshot_page(doc_id):
 
     # Build hashtag/palette HTML for today hero (combined single row)
     today_hero_extra_html = ""
-    if False:
+    if (today_hashtags_str or today_palette_list) and page_type == "today":
         _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
         _pl_part = ""
         if today_palette_list:
@@ -5449,7 +5467,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
         page_title_str      = f"Today Filmography · {nickname}"
         og_title            = f"{nickname}'s Today Filmography · Humandocu"
-        og_desc             = "AI captured today in 6 photos and a poem."
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
     elif is_ja:
         poem_section_title  = "✦ AIが完成させた詩"
         scene_section_title = "今日のフィルモグラフィー"
@@ -5493,7 +5511,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
         page_title_str      = f"Today Film · {nickname}の今日"
         og_title            = f"{nickname}のToday Film · Humandocu"
-        og_desc             = "6枚の写真と詩で今日を記録しました。"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}6枚の写真と詩で今日を記録しました。"
     elif is_zh:
         poem_section_title  = "✦ AI完成的诗"
         scene_section_title = "今日的人生影志"
@@ -5537,7 +5555,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
         page_title_str      = f"Today Film · {nickname}的今天"
         og_title            = f"{nickname}的Today Film · Humandocu"
-        og_desc             = "用6张照片和诗记录了今天。"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}用6张照片和诗记录了今天。"
     else:
         poem_section_title  = "✦ 오늘을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)"
@@ -5581,7 +5599,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
         page_title_str      = f"투*필 · {nickname}님의 오늘"
         og_title            = f"{nickname}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
-        og_desc             = "사진 6장으로 담은 오늘 — humandocu.com"
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — humandocu.com"
 
     # 오대 카드 다운로드 버튼 레이블
     card_btn_label = (
@@ -5616,7 +5634,7 @@ def today_v2_page(doc_id, data):
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
-    if False:
+    if today_hashtags_str or today_palette_list:
         _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
         _pl_part = ""
         if today_palette_list:
@@ -8839,6 +8857,9 @@ def today_submit():
 [SHOT6유머]
 (시)
 
+[이모지]
+(이모지 5개, 한 줄)
+
 [해시태그]
 hashtags: #태그1 #태그2 #태그3
 
@@ -9089,6 +9110,9 @@ def today_submit_url():
 (시)
 [SHOT6유머]
 (시)
+
+[이모지]
+(이모지 5개, 한 줄)
 
 [해시태그]
 hashtags: #태그1 #태그2 #태그3
@@ -9427,6 +9451,9 @@ def today_submit_b64():
 [SHOT6유머]
 (시)
 
+[이모지]
+(이모지 5개, 한 줄)
+
 [해시태그]
 hashtags: #태그1 #태그2 #태그3
 
@@ -9652,6 +9679,9 @@ def today_submit_v2():
         OUTPUT_FORMAT = f"""[오늘의시]
 (시 내용 3~4줄)
 {shot_fmt}
+[이모지]
+(이모지 5개, 한 줄)
+
 [해시태그]
 hashtags: #태그1 #태그2 #태그3
 
