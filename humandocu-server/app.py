@@ -2427,6 +2427,10 @@ def webhook_today():
 
         today_one = (fields.get("오늘 하루를 한 문장으로", "") or
                      fields.get("Today in one sentence", ""))
+        extra = (fields.get("더 남기고 싶은 이야기", "") or
+                 fields.get("더 하고 싶은 말", "") or
+                 fields.get("More to say", "") or
+                 fields.get("diary", "") or "")
         last_to   = (
             fields.get("대상", "") or
             fields.get("누군가에게 한 마디", "") or
@@ -2450,7 +2454,7 @@ def webhook_today():
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 detect_source = (today_one or '') + ' '.join(str(v) for v in shots.values() if v)
                 lang = _detect_lang(detect_source)
-                poems = generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images)
+                poems = generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images, extra=extra)
                 logger.warning(f"[TODAY] 시 생성 완료 lang={lang}")
 
                 import datetime
@@ -2500,7 +2504,7 @@ def _detect_lang(text):
     return 'zh' if has_cjk_unified else 'en'
 
 
-def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
+def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None, extra=""):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
         f"SHOT {i} : {shots.get(i, '(없음)')}"
@@ -2575,10 +2579,12 @@ palette: #hex1 #hex2 #hex3"""
 아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
-오늘 하루를 한 문장으로: {today_one}{last_msg_text}
+오늘 하루를 한 문장으로: {today_one}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+
+{"★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}
 
 {lang_instruction}
 
