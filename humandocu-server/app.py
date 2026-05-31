@@ -9138,10 +9138,11 @@ palette: #hex1 #hex2 #hex3"""
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -9477,10 +9478,11 @@ palette: #hex1 #hex2 #hex3"""
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -9609,6 +9611,7 @@ def today_submit_v2():
         today_sentence = data.get("today_sentence", "")
         last_to        = data.get("last_to", "")
         last_msg       = data.get("last_msg", "")
+        extra          = (data.get("extra") or "").strip()
         lang           = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {
             "en": "IMPORTANT: You MUST write ALL poems and text outputs in English only. No Korean allowed.",
@@ -9670,10 +9673,10 @@ def today_submit_v2():
         submitted_idxs = [str(s.get("index", i+1)) for i, s in enumerate(shots[:6]) if s.get("image_b64") or s.get("caption")]
         shot_fmt = ""
         for idx in submitted_idxs:
-            shot_fmt += f"\n[SHOT{idx}시]\n(시 내용 2~3줄)\n\n[SHOT{idx}톤]\n감동명작\n"
+            shot_fmt += f"\n[SHOT{idx}시]\n(시 내용 3~4줄)\n\n[SHOT{idx}톤]\n감동명작\n"
 
         OUTPUT_FORMAT = f"""[오늘의시]
-(시 내용 2~3줄)
+(시 내용 3~4줄)
 {shot_fmt}
 [이모지]
 (이모지 5개, 한 줄)
@@ -9702,17 +9705,19 @@ palette: #hex1 #hex2 #hex3"""
 규칙:
 - 거창한 철학이나 교훈 금지. "삶이란", "존재란" 같은 추상어 금지.
 - 구체적인 사물, 색깔, 소리, 온도로 시를 써라.
-- 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
+- 시는 3~4줄. 반드시 3줄 이상. 형식 규칙 없음. 음절 맞추지 말 것.
+- 마지막 줄은 반드시 예상 밖으로 틀어라. 묘사로 끝내지 마라.
 - 목표: 읽는 사람이 '헉' 하고 멈추게 만드는 것.
 
 오늘 하루의 장르: {genre}
 장르 지시: {genre_instruction}
 모든 시를 이 장르의 분위기로 써라. 오늘의 시도, 각 장면의 시도 전부.
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
 {shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}
 
 {lang_instruction}
 
@@ -9722,9 +9727,9 @@ palette: #hex1 #hex2 #hex3"""
 태그는 반드시 대괄호 포함, 각 줄에 단독으로, 정확히 위 이름 그대로 출력하세요.
 
 작성 순서:
-1. [오늘의시] — 닉네임·오늘 한 줄·한 마디·모든 사진을 종합한 시 1편 (2~3줄)
+1. [오늘의시] — 닉네임·오늘 한 줄·한 마디·더 남긴 이야기·모든 사진을 종합한 시 1편 (3~4줄). 마지막 줄 반드시 반전.
    읽으면 오늘 이 사람의 하루 전체가 느껴지게. 장르 "{genre}"의 분위기로.
-2. 제출된 각 SHOT마다 [SHOT숫자시] — 시 1편 (2~3줄), [SHOT숫자톤] — 장르명
+2. 제출된 각 SHOT마다 [SHOT숫자시] — 시 1편 (3~4줄). 마지막 줄 반드시 반전. [SHOT숫자톤] — 장르명
    미제출 SHOT은 건너뜀.
 3. [이모지] — 이 사람만의 오늘이 느껴지는 이모지 5개, 한 줄, 설명 없이.
    2015년 이전 범용 이모지만 (Unicode 8.0 이하).
