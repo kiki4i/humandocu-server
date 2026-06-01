@@ -100,100 +100,6 @@ def fmt_time(val):
         return f"{ampm} {h}시 {t.minute:02d}분"
     except: return val
 
-def parse_tally(payload):
-    fields = {}
-    try:
-        prev_label = None
-        for field in payload["data"]["fields"]:
-            label = field.get("label")
-            if label is not None: label = label.strip()
-            value = field.get("value", "")
-            field_type = field.get("type", "")
-            options = field.get("options", [])
-            if field_type in ("MULTIPLE_CHOICE", "MULTI_SELECT") and options:
-                option_map = {o["id"]: o["text"] for o in options}
-                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
-                else: value = option_map.get(value, value)
-            else:
-                if isinstance(value, list): value = value[0] if value else ""
-            if field_type == "INPUT_TIME" and label is None and prev_label:
-                fields[prev_label + " 시간"] = str(value).strip() if value else ""
-            elif label:
-                fields[label] = str(value).strip() if value else ""
-                prev_label = label
-    except Exception as e:
-        print(f"[parse_tally] 오류: {e}")
-    return fields
-
-def parse_tally_advanced(payload):
-    """어드밴스드 전용 파서. fields(label→value)와 fields_by_key(key→value) 함께 반환."""
-    fields = {}
-    fields_by_key = {}  # Tally 프리필용: field.key → value
-    try:
-        prev_label = None
-        prev_key = None
-        for field in payload["data"]["fields"]:
-            label = field.get("label")
-            if label is not None: label = label.strip()
-            tally_key = field.get("key", "")  # Tally 내부 식별자 (예: question_abc123)
-            value = field.get("value", "")
-            field_type = field.get("type", "")
-            options = field.get("options", [])
-
-            if field_type == "MULTIPLE_CHOICE" and options:
-                option_map = {o["id"]: o["text"] for o in options}
-                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
-                else: value = option_map.get(value, value)
-
-            elif field_type == "CHECKBOXES" and options and isinstance(value, list):
-                option_map = {o["id"]: o["text"] for o in options}
-                value = ", ".join([option_map.get(v, v) for v in value])
-
-            elif field_type == "MULTI_SELECT" and options:
-                option_map = {o["id"]: o["text"] for o in options}
-                if isinstance(value, list): value = ", ".join([option_map.get(v, v) for v in value])
-
-            elif field_type == "FILE_UPLOAD":
-                if isinstance(value, list) and value:
-                    url = value[0].get("url", "") if isinstance(value[0], dict) else str(value[0])
-                else:
-                    url = ""
-                if label and label.startswith("생애 사진") and "설명" in label:
-                    num = ''.join(filter(str.isdigit, label))
-                    fields[f"생애 사진{num}"] = url
-                    continue  # 아래 elif label: 블록 스킵 - 가비지 문자열 저장 방지
-                else:
-                    value = url
-
-            else:
-                if isinstance(value, list): value = value[0] if value else ""
-
-            if field_type == "INPUT_TIME" and label is None and prev_label:
-                fields[prev_label + " 시간"] = str(value).strip() if value else ""
-                if prev_key:
-                    fields_by_key[prev_key + "_time"] = str(value).strip() if value else ""
-            elif label:
-                if field_type == "CHECKBOXES" and "(" in label and ")" in label and options == []:
-                    pass
-                else:
-                    str_val = str(value).strip() if value else ""
-                    fields[label] = str_val
-                    if tally_key and field_type != "FILE_UPLOAD":
-                        fields_by_key[tally_key] = str_val
-                    prev_label = label
-                    prev_key = tally_key
-    except Exception as e:
-        print(f"[parse_tally_advanced] 오류: {e}")
-    # Tally 폼 라벨 정규화: "사진N에 대한 간단한 설명" → "생애 사진N 설명"
-    import re as _re
-    for old_key in list(fields.keys()):
-        m = _re.match(r"사진(\d)에 대한 간단한 설명", old_key)
-        if m:
-            new_key = f"생애 사진{m.group(1)} 설명"
-            if new_key not in fields:
-                fields[new_key] = fields[old_key]
-    print(f"[parse_tally_advanced] key→label 매핑: { {k: v for k, v in zip([f.get('key','') for f in payload.get('data',{}).get('fields',[])], [f.get('label','') for f in payload.get('data',{}).get('fields',[])])} }")
-    return fields, fields_by_key
 def generate_tribute_advanced(deceased_name, gender, title, intro, memory, personality, bright_moment, last_words, style="A"):
     """어드밴스드용 추모글 생성 - 직함/한줄소개 추가 반영"""
     gender_hint = "남성" if "남" in gender else "여성"
@@ -593,25 +499,7 @@ def build_html_memorial(deceased_name, fields, adv_data, life_events, photo_url)
         '</body></html>'
     )
     return html
-ADVANCED_TALLY_FORM_ID = "7RVAZa"
 _PHOTO_KEYS = {"고인 사진(영정)", "생애 사진1", "생애 사진2", "생애 사진3", "생애 사진4", "생애 사진5"}
-
-def build_tally_prefill_url(pending_id, fields, fields_by_key=None):
-    """저장된 텍스트 필드를 프리필한 Tally URL 생성.
-    fields_by_key가 있으면 Tally 내부 key(question_xxx)로 파라미터 생성.
-    없으면 label(한글)로 폴백 — 프리필이 안 될 수 있음."""
-    params = {"pending_id": pending_id}
-    if fields_by_key:
-        for k, v in fields_by_key.items():
-            if v:
-                params[k] = v
-        print(f"[PREFILL] fields_by_key 사용: {list(fields_by_key.keys())}")
-    else:
-        for k, v in fields.items():
-            if k not in _PHOTO_KEYS and v:
-                params[k] = v
-        print(f"[PREFILL] 폴백: label 사용 (fields_by_key 없음)")
-    return f"https://tally.so/r/{ADVANCED_TALLY_FORM_ID}?" + urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
 
 def build_edit_url(pending_id, fields):
     """이메일용 수정 링크 — 서버 리다이렉트 엔드포인트 URL 반환."""
@@ -1810,78 +1698,8 @@ def send_email(to_email, deceased_name, pages_url):
     resp.raise_for_status()
     print(f"[BASIC] 이메일 발송 완료: {resp.status_code}")
 
-@app.route("/webhook/basic", methods=["POST"])
-def webhook_basic():
-    try:
-        payload = request.get_json(force=True)
-        print("[BASIC] 웹훅 수신")
-        fields = parse_tally(payload)
-        print("[BASIC] 파싱:", json.dumps(fields, ensure_ascii=False))
-        deceased_name = fields.get("고인 성함", "").strip()
-        if not deceased_name:
-            return jsonify({"error": "고인 성함 없음"}), 400
-        gender        = fields.get("성별", "")
-        memory        = fields.get("고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?", "")
-        personality   = fields.get("고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?", "")
-        bright_moment = fields.get("고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?", "")
-        last_words    = fields.get("끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.", "")
-        contact_email = fields.get("신청자 이메일", "")
-        print("[BASIC] Claude API 호출 - 버전A...")
-        one_liner_a, tribute_para_a = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words)
-        print("[BASIC] Claude API 호출 - 버전B...")
-        one_liner_b, tribute_para_b = generate_tribute(deceased_name, gender, memory, personality, bright_moment, last_words, style="B")
-        print(f"[BASIC] 추모글A: {one_liner_a}")
-        print(f"[BASIC] 추모글B: {one_liner_b}")
-        filename   = safe_filename(deceased_name)
-        filename_b = filename + "-b"
-        url_a = upload_to_github(filename,   build_html(fields, one_liner_a, tribute_para_a, alt_url=filename_b + ".html"))
-        url_b = upload_to_github(filename_b, build_html(fields, one_liner_b, tribute_para_b, alt_url=filename   + ".html"))
-        print(f"[BASIC] Pages URL: {url_a}")
-        if contact_email:
-            send_email(contact_email, deceased_name, url_a)
-        return jsonify({"status": "success", "deceased": deceased_name, "url": url_a}), 200
-    except Exception as e:
-        print(f"[BASIC] 오류: {e}")
-        import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
 
 
-
-@app.route("/test/memorial-form", methods=["GET"])
-def test_memorial_form():
-    """테스트용 — 결제 없이 메모리얼 폼으로 바로 이동"""
-    test_pending_id = "test_" + __import__('uuid').uuid4().hex[:8]
-    import datetime
-    _get_db().collection("advanced_pending").document(test_pending_id).set({
-        "fields": {}, "fields_by_key": {}, "deceased_name": "",
-        "status": "test", "source": "test",
-        "created_at": datetime.datetime.utcnow().isoformat(),
-    })
-    return __import__('flask').redirect(
-        f"https://humandocu.com/memorial-form.html?pending_id={test_pending_id}&test=1"
-    )
-
-
-@app.route("/test/native-result/<pending_id>", methods=["GET"])
-def test_native_result(pending_id):
-    """테스트용 — pending_id로 파이프라인 결과 조회"""
-    try:
-        doc = _get_db().collection("advanced_pending").document(pending_id).get()
-        if not doc.exists:
-            return jsonify({"error": "문서 없음"}), 404
-        data = doc.to_dict()
-        return jsonify({
-            "status":       data.get("status"),
-            "deceased":     data.get("deceased_name"),
-            "pages_url":    data.get("pages_url"),
-            "one_liner_a":  data.get("one_liner_a"),
-            "one_liner_b":  data.get("one_liner_b"),
-            "tribute_a":    data.get("tribute_para_a","")[:200] + "...",
-            "email":        data.get("contact_email"),
-            "fields_keys":  list(data.get("fields",{}).keys()),
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/webhook/advanced-native", methods=["POST"])
@@ -2001,7 +1819,7 @@ def webhook_advanced():
         # URL 쿼리 파라미터로 pending_id가 오면 기존 문서에 필드 업데이트
         url_pending_id = request.args.get("pending_id", "")
         print("[ADVANCED] 웹훅 수신", f"pending_id={url_pending_id}" if url_pending_id else "")
-        fields, fields_by_key = parse_tally_advanced(payload)
+        fields, fields_by_key = {}, {}
         # Tally hidden field로 넘어온 pending_id도 확인 (URL 파라미터 우선)
         if not url_pending_id:
             url_pending_id = fields.get("pending_id", "").strip()
@@ -2055,7 +1873,7 @@ def webhook_premium_edit():
     """수정 Tally 웹훅 — 기존 AI 추모글 재사용, 사진은 new or stored 머지, HTML 덮어쓰기"""
     try:
         payload = request.get_json(force=True)
-        new_fields, new_fields_by_key = parse_tally_advanced(payload)
+        new_fields, new_fields_by_key = {}, {}
         pending_id = new_fields.get("pending_id", "").strip()
         print(f"[EDIT] 수정 웹훅 수신: pending_id={pending_id}")
 
@@ -2250,7 +2068,7 @@ def webhook_sixshot():
     try:
         payload = request.get_json(force=True)
         print("[SIXSHOT] 웹훅 수신")
-        fields = parse_tally(payload)
+        fields = {}
         print("[SIXSHOT] 파싱:", json.dumps(fields, ensure_ascii=False))
 
         name     = fields.get("이름", "").strip()
@@ -2378,7 +2196,7 @@ def webhook_today():
     try:
         payload = request.get_json(force=True)
         print("[TODAY] 웹훅 수신")
-        fields = parse_tally(payload)
+        fields = {}
         print("[TODAY] 파싱:", json.dumps(fields, ensure_ascii=False)[:300])
 
         name = (fields.get("이름", "") or fields.get("Name", "")).strip()
@@ -2564,16 +2382,7 @@ def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images
 [SHOT6감성]
 (시)
 [SHOT6유머]
-(시)
-
-[이모지]
-(이모지 5개, 한 줄)
-
-[해시태그]
-hashtags: #태그1 #태그2 #태그3
-
-[팔레트]
-palette: #hex1 #hex2 #hex3"""
+(시)"""
 
     if lang == 'ko':
         last_msg_text = f"\n누군가에게 한 마디: {last_msg}" if last_msg else ""
@@ -2640,22 +2449,6 @@ palette: #hex1 #hex2 #hex3"""
    [SHOT1유머] — 같은 장면을 유머·자조로. 날것으로. 피식 웃게.
    [SHOT2감성] ~ [SHOT6유머] 도 동일하게. 단, 제출되지 않은 SHOT은 건너뛰어라.
 
-6. [이모지] - 오늘 하루 전체를 가장 잘 대표하는 이모지 5개.
-   규칙:
-   - ☀️😊🌙✨ 같은 뻔한 것 금지
-   - 이 사람만의 오늘이 느껴지게
-   - 닉네임, 사진, 속마음, 오늘 한줄 전부 종합해서
-   - 이모지만 5개, 설명 없이, 한 줄로
-   - 2015년 이전에 출시된 범용 이모지만 사용할 것 (Unicode 8.0 이하). 🪷🫶🪸 같은 2019년 이후 신규 이모지는 사용 금지.
-   예: 😤💼🍱🚇😬
-
-7. [해시태그] - 오늘 사진과 한줄 설명을 보고 오늘을 표현하는 해시태그 3개를 한국어로 생성.
-   예: #출근길 #빨간차 #왕의기운
-   형식: hashtags: #태그1 #태그2 #태그3 (반드시 이 형식 지킬 것)
-
-8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
-   형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
-
 출력 형식 (정확히 이 형식으로):
 {OUTPUT_FORMAT}"""
 
@@ -2717,22 +2510,6 @@ Please write the following:
    [SHOT1유머] — Same scene, with humor and self-deprecation. Raw. Actually funny.
    Same for [SHOT2감성] ~ [SHOT6유머]. Skip shots that were not submitted.
 
-6. [이모지] - 5 emojis that best capture this person's day.
-   Rules:
-   - No generic ones (☀️😊🌙✨)
-   - Must feel specific to THIS person's today
-   - Consider nickname, photos, feelings, and summary together
-   - Just 5 emojis, no explanation, one line
-   - Only use universally supported emoji released before 2015 (Unicode 8.0 or lower). No newer emoji like 🪷🫶🪸 (introduced after 2019).
-   Example: 😤💼🍱🚇😬
-
-7. [해시태그] - 3 hashtags in English that capture today based on the photos and one-sentence summary.
-   Example: #morningcommute #redcar #royalvibes
-   Format: hashtags: #tag1 #tag2 #tag3 (strictly follow this format)
-
-8. [팔레트] - 3 colors in hex that represent the mood of today's photos.
-   Format: palette: #hex1 #hex2 #hex3 (strictly follow this format)
-
 Output format (exactly this format):
 {OUTPUT_FORMAT}"""
 
@@ -2786,13 +2563,6 @@ Output format (exactly this format):
    [SHOT1유머] — 同じ場面をユーモア・自嘲で突く詩。剥き出しで。笑えるように。
    [SHOT2감성]〜[SHOT6유머]も同様に。提出されていないSHOTはスキップ。
 
-6. [해시태그] - 今日の写真と一言説明を見て、今日を表すハッシュタグを日本語で3つ生成。
-   例: #通勤の朝 #赤い車 #王の気配
-   形式: hashtags: #タグ1 #タグ2 #タグ3（必ずこの形式で）
-
-7. [팔레트] - 今日の写真の雰囲気を代表する色を3色、hexコードで返す。
-   形式: palette: #hex1 #hex2 #hex3（必ずこの形式で）
-
 出力形式（正確にこの形式で）:
 {OUTPUT_FORMAT}"""
 
@@ -2845,13 +2615,6 @@ Output format (exactly this format):
    [SHOT1감성] — 直刺SHOT 1场景核心情感的诗。用反转、坦诚或普世真理之一。
    [SHOT1유머] — 用幽默自嘲直刺同一场景。赤裸地。要好笑。
    [SHOT2감성]〜[SHOT6유머]同上。未提交的SHOT跳过。
-
-6. [해시태그] - 根据今天的照片和一句话，用中文生成3个代表今天的话题标签。
-   例: #早晨通勤 #红色汽车 #王者气息
-   格式: hashtags: #标签1 #标签2 #标签3（必须严格按此格式）
-
-7. [팔레트] - 返回3个代表今天照片氛围的颜色hex代码。
-   格式: palette: #hex1 #hex2 #hex3（必须严格按此格式）
 
 输出格式（严格按照此格式）:
 {OUTPUT_FORMAT}"""
@@ -3831,17 +3594,6 @@ def webhook_advanced_edit_form():
         return "오류가 발생했습니다.", 500
 
 
-@app.route("/test/portone")
-def test_portone():
-    secret = os.environ.get("PORTONE_SECRET")
-    portone_keys = [k for k in os.environ if "portone" in k.lower()]
-    return jsonify({
-        "PORTONE_SECRET_exists": secret is not None,
-        "PORTONE_SECRET_length": len(secret) if secret else 0,
-        "PORTONE_SECRET_preview": secret[:10] if secret else None,
-        "portone_related_keys": portone_keys,
-    })
-
 
 @app.route("/payment/success", methods=["GET"])
 def payment_success():
@@ -3903,7 +3655,6 @@ def payment_success():
 def damnyejang_auth():
     """어드밴스드 고객만 접근 - 6자리 비밀번호로 검증 후 답례장 Tally 폼으로 이동"""
     deceased_name = request.args.get("name", "").strip()
-    tally_form_id = "68QAvO"
 
     if request.method == "POST":
         pw_input = request.form.get("password", "").strip()
@@ -3928,10 +3679,10 @@ def damnyejang_auth():
             error = "비밀번호가 일치하지 않습니다. 완성 이메일의 6자리 번호를 입력해주세요."
             return _damnyejang_auth_html(name_input, error), 401
 
-        # 검증 성공 빈칸 답례장 Tally 폼으로 이동
-        tally_url = f"https://tally.so/r/{tally_form_id}?name={urllib.parse.quote(name_input)}"
+        # 검증 성공 — 자체 답례장 폼으로 이동
+        form_url = f"https://humandocu.com/damnyejang-form.html?name={urllib.parse.quote(name_input)}&pending_id={adv.get('pending_id','')}"
         from flask import redirect
-        return redirect(tally_url)
+        return redirect(form_url)
 
     return _damnyejang_auth_html(deceased_name, None), 200
 
@@ -4743,25 +4494,6 @@ def sixshot_page(doc_id):
     except:
         pass
 
-    today_emojis = poem_dict.get("이모지", "").strip()
-
-    # Parse hashtags and palette for today hero
-    today_hashtags_str = data.get("hashtags", "") if page_type == "today" else ""
-    if not today_hashtags_str and page_type == "today":
-        _ht_raw = poem_dict.get("해시태그", "")
-        if _ht_raw:
-            _ht_m2 = _re.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', _ht_raw)
-            if _ht_m2:
-                today_hashtags_str = _ht_m2.group(1).strip()
-
-    today_palette_list = data.get("palette", []) if page_type == "today" else []
-    if not today_palette_list and page_type == "today":
-        _pl_raw = poem_dict.get("팔레트", "")
-        if _pl_raw:
-            _pl_m2 = _re.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', _pl_raw, _re.IGNORECASE)
-            if _pl_m2:
-                today_palette_list = _pl_m2.group(1).strip().split()
-
     if is_en:
         og_title = f"{nickname or name}'s Today Filmography · Humandocu"
         og_desc  = "AI captured today in 6 photos and a poem."
@@ -4994,24 +4726,7 @@ def sixshot_page(doc_id):
             + '</div>'
         )
 
-    # Build hashtag/palette HTML for today hero (combined single row)
     today_hero_extra_html = ""
-    if False:
-        _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
-        _pl_part = ""
-        if today_palette_list:
-            _dots = "".join(
-                f'<span style="width:14px;height:14px;border-radius:50%;background:{c};display:inline-block"></span>'
-                for c in today_palette_list[:3]
-            )
-            _pl_part = f'<span style="display:inline-flex;gap:6px;align-items:center;margin-left:10px">{_dots}</span>'
-        today_hero_extra_html = (
-            f'<div style="margin-top:20px">'
-            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:6px">{ai_today_label}</p>'
-            f'<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">{_ht_part}{_pl_part}</div>'
-            f'</div>'
-        )
-
 
     html = f"""<!DOCTYPE html>
 <html lang="{lang}">
@@ -5408,22 +5123,6 @@ def today_v2_page(doc_id, data):
             if content:
                 poem_dict[key] = content
 
-    today_emojis      = poem_dict.get("이모지", "").strip()
-    today_hashtags_str = data.get("hashtags", "")
-    if not today_hashtags_str:
-        _ht_raw = poem_dict.get("해시태그", "")
-        if _ht_raw:
-            _m = _re.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', _ht_raw)
-            if _m:
-                today_hashtags_str = _m.group(1).strip()
-    today_palette_list = data.get("palette", [])
-    if not today_palette_list:
-        _pl_raw = poem_dict.get("팔레트", "")
-        if _pl_raw:
-            _m = _re.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', _pl_raw, _re.IGNORECASE)
-            if _m:
-                today_palette_list = _m.group(1).strip().split()
-
     # 톤 배지 색상
     TONE_COLORS = {
         "감동명작":   ("#7B4F1E", "#FFF3E0"),
@@ -5661,23 +5360,7 @@ def today_v2_page(doc_id, data):
     page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
     page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}&type=today"
 
-    # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
-    if False:
-        _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
-        _pl_part = ""
-        if today_palette_list:
-            _dots = "".join(
-                f'<span style="width:14px;height:14px;border-radius:50%;background:{c};display:inline-block"></span>'
-                for c in today_palette_list[:3]
-            )
-            _pl_part = f'<span style="display:inline-flex;gap:6px;align-items:center;margin-left:10px">{_dots}</span>'
-        today_hero_extra_html = (
-            f'<div style="margin-top:20px">'
-            f'<p style="font-size:11px;color:#C8870A;letter-spacing:2px;text-align:center;margin-bottom:6px">{ai_today_label}</p>'
-            f'<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">{_ht_part}{_pl_part}</div>'
-            f'</div>'
-        )
 
     def poem_lines_html(text, font_size="17px", color="#f9f6f0"):
         lines = [l for l in text.strip().split("\n") if l.strip()]
@@ -6762,60 +6445,6 @@ def health():
 def health_check():
     return jsonify({"status": "ok"}), 200
 
-@app.route("/test", methods=["GET"])
-def test_basic():
-    """브라우저에서 바로 테스트: /test?religion=기독교&name=테스트고인"""
-    from flask import request as freq
-    religion = freq.args.get("religion", "무교")
-    name     = freq.args.get("name", "테스트고인")
-    tier     = freq.args.get("tier", "basic")  # basic or advanced
-
-    # 공통 테스트 필드
-    fields = {
-        "고인 성함": name,
-        "성별": "남",
-        "생년월일": "1950-03-15",
-        "별세일": "2026-04-18",
-        "종교": religion,
-        "장례식장 이름": "휴먼다큐 테스트장례식장",
-        "장례식장 주소": "경기도 수원시 영통구 광교로 107",
-        "장례식장 전화번호": "031-539-9709",
-        "입실일시": "2026-04-18 오전 10시 00분",
-        "입관일시": "2026-04-19 오후 2시 00분",
-        "발인일시": "2026-04-20 오전 7시 00분",
-        "장지이름 또는 주소": "경기도 용인시 수지구 풍덕천동",
-        "유가족 명단": "아들. 휴먼다큐\n딸. 테스트딸",
-        "조의금 계좌": "신한은행 110-123-456789 테스트",
-        "공지사항": "화환은 정중히 사양합니다.",
-        "고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?": "항상 새벽에 일어나 마당을 쓸던 모습",
-        "고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?": "늘 '괜찮아, 다 잘 될 거야'라고 말씀하셨어요",
-        "고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?": "자녀들 졸업식 때 눈물을 참으시던 모습",
-        "끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요.": "아버지, 정말 감사했습니다. 사랑합니다.",
-        "신청자 이메일": "mongmong4i@gmail.com",
-    }
-
-    try:
-        one_liner, tribute_para = generate_tribute(
-            fields["고인 성함"], fields["성별"],
-            fields["고인 하면 가장 먼저 떠오르는 모습이나 장면을 떠올려보세요. 어떤 장면인가요?"],
-            fields["고인만의 특별한 말버릇, 습관, 또는 늘 하시던 행동이 있었나요?"],
-            fields["고인이 살면서 가장 빛나 보이셨던 순간은 언제였나요? 혹은 가장 수고하셨다 싶은 때는요?"],
-            fields["끝내 전하지 못한 말, 또는 고인이 들으셨으면 하는 말을 적어주세요."]
-        )
-        html = build_html(fields, one_liner, tribute_para)
-        filename = safe_filename(name)
-        pages_url = upload_to_github(filename, html)
-        send_email(fields["신청자 이메일"], name, pages_url)
-        return jsonify({
-            "status": "success",
-            "religion": religion,
-            "name": name,
-            "url": pages_url,
-            "message": f"이메일({mask_email(fields['신청자 이메일'])})로 발송 완료!"
-        }), 200
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
 
 
 
@@ -8884,16 +8513,7 @@ def today_submit():
 [SHOT6감성]
 (시)
 [SHOT6유머]
-(시)
-
-[이모지]
-(이모지 5개, 한 줄)
-
-[해시태그]
-hashtags: #태그1 #태그2 #태그3
-
-[팔레트]
-palette: #hex1 #hex2 #hex3"""
+(시)"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -8978,13 +8598,7 @@ palette: #hex1 #hex2 #hex3"""
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        import re as _re_ht
-        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
-        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
-
-        # 3. poems = raw string, sixshot_page의 regex 파서가 처리
+        # poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
         identity = ""
         overall  = ""
@@ -9005,8 +8619,6 @@ palette: #hex1 #hex2 #hex3"""
             "identity": identity,
             "overall": overall,
             "lang": lang,
-            "hashtags": _hashtags_parsed,
-            "palette": _palette_parsed,
             "created_at": now,
         })
 
@@ -9138,16 +8750,7 @@ def today_submit_url():
 [SHOT6감성]
 (시)
 [SHOT6유머]
-(시)
-
-[이모지]
-(이모지 5개, 한 줄)
-
-[해시태그]
-hashtags: #태그1 #태그2 #태그3
-
-[팔레트]
-palette: #hex1 #hex2 #hex3"""
+(시)"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -9234,13 +8837,7 @@ palette: #hex1 #hex2 #hex3"""
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        import re as _re_ht
-        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
-        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
-
-        # 2. poems = raw string, sixshot_page의 regex 파서가 처리
+        # poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
         identity = today_sentence
         overall  = ""
@@ -9264,8 +8861,6 @@ palette: #hex1 #hex2 #hex3"""
             "last_to":         last_to,
             "last_msg":        last_msg,
             "lang":            lang,
-            "hashtags":        _hashtags_parsed,
-            "palette":         _palette_parsed,
             "created_at":      now,
         })
 
@@ -9478,16 +9073,7 @@ def today_submit_b64():
 [SHOT6감성]
 (시)
 [SHOT6유머]
-(시)
-
-[이모지]
-(이모지 5개, 한 줄)
-
-[해시태그]
-hashtags: #태그1 #태그2 #태그3
-
-[팔레트]
-palette: #hex1 #hex2 #hex3"""
+(시)"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -9574,12 +9160,6 @@ palette: #hex1 #hex2 #hex3"""
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        import re as _re_ht
-        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
-        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
-
         # poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
         identity = today_sentence
@@ -9603,8 +9183,6 @@ palette: #hex1 #hex2 #hex3"""
             "last_to":         last_to,
             "last_msg":        last_msg,
             "lang":            lang,
-            "hashtags":        _hashtags_parsed,
-            "palette":         _palette_parsed,
             "created_at":      now,
         })
 
@@ -9780,12 +9358,6 @@ palette: #hex1 #hex2 #hex3"""
         )
         ai_text = resp.content[0].text if resp.content else ""
 
-        import re as _re_ht
-        _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
-        _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
-
         now = dt.datetime.utcnow().isoformat()
         _get_db().collection("today").document(doc_id).set({
             "doc_id":         doc_id,
@@ -9802,8 +9374,6 @@ palette: #hex1 #hex2 #hex3"""
             "last_to":        last_to,
             "last_msg":       last_msg,
             "lang":           lang,
-            "hashtags":       _hashtags_parsed,
-            "palette":        _palette_parsed,
             "genre":          genre,
             "created_at":     now,
         })
