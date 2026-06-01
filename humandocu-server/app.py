@@ -4996,7 +4996,7 @@ def sixshot_page(doc_id):
 
     # Build hashtag/palette HTML for today hero (combined single row)
     today_hero_extra_html = ""
-    if (today_hashtags_str or today_palette_list) and page_type == "today":
+    if False:
         _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
         _pl_part = ""
         if today_palette_list:
@@ -5496,7 +5496,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
         page_title_str      = f"Today Filmography · {nickname}"
         og_title            = f"{nickname}'s Today Filmography · Humandocu"
-        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}AI captured today in 6 photos and a poem."
+        og_desc             = "AI captured today in 6 photos and a poem."
     elif is_ja:
         poem_section_title  = "✦ AIが完成させた詩"
         scene_section_title = "今日のフィルモグラフィー"
@@ -5540,7 +5540,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
         page_title_str      = f"Today Film · {nickname}の今日"
         og_title            = f"{nickname}のToday Film · Humandocu"
-        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}6枚の写真と詩で今日を記録しました。"
+        og_desc             = "6枚の写真と詩で今日を記録しました。"
     elif is_zh:
         poem_section_title  = "✦ AI完成的诗"
         scene_section_title = "今日的人生影志"
@@ -5584,7 +5584,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
         page_title_str      = f"Today Film · {nickname}的今天"
         og_title            = f"{nickname}的Today Film · Humandocu"
-        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}用6张照片和诗记录了今天。"
+        og_desc             = "用6张照片和诗记录了今天。"
     else:
         poem_section_title  = "✦ 오늘을 담은 시"
         scene_section_title = "오늘의 식스샷(Six Shot)"
@@ -5628,7 +5628,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
         page_title_str      = f"투*필 · {nickname}님의 오늘"
         og_title            = f"{nickname}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
-        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — humandocu.com"
+        og_desc             = "사진 6장으로 담은 오늘 — humandocu.com"
 
     # 오대 카드 다운로드 버튼 레이블
     card_btn_label = (
@@ -5663,7 +5663,7 @@ def today_v2_page(doc_id, data):
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
-    if today_hashtags_str or today_palette_list:
+    if False:
         _ht_part = f'<span style="font-size:12px;color:#C8973A;letter-spacing:2px">{today_hashtags_str}</span>' if today_hashtags_str else ""
         _pl_part = ""
         if today_palette_list:
