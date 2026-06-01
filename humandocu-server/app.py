@@ -5653,7 +5653,7 @@ def today_v2_page(doc_id, data):
         og_image = "https://humandocu.com/today_og.png"
 
     page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
-    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}"
+    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}&type=today"
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
