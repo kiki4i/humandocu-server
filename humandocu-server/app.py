@@ -2427,6 +2427,9 @@ def webhook_today():
 
         today_one = (fields.get("오늘 하루를 한 문장으로", "") or
                      fields.get("Today in one sentence", ""))
+        extra = (fields.get("더 남기고 싶은 이야기", "") or
+                 fields.get("더 하고 싶은 말", "") or
+                 fields.get("More to say", "") or "").strip()
         last_to   = (
             fields.get("대상", "") or
             fields.get("누군가에게 한 마디", "") or
@@ -2450,7 +2453,7 @@ def webhook_today():
                 doc_id = "td" + uuid.uuid4().hex[:10]
                 detect_source = (today_one or '') + ' '.join(str(v) for v in shots.values() if v)
                 lang = _detect_lang(detect_source)
-                poems = generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images)
+                poems = generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images, extra=extra)
                 logger.warning(f"[TODAY] 시 생성 완료 lang={lang}")
 
                 import datetime
@@ -2500,7 +2503,7 @@ def _detect_lang(text):
     return 'zh' if has_cjk_unified else 'en'
 
 
-def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None):
+def generate_today_haiku(name, nickname, shots, today_one, last_msg, shot_images=None, extra=""):
     """투데이 필모그래피 — 오늘 하루 기반 시 생성"""
     shots_text = "\n".join([
         f"SHOT {i} : {shots.get(i, '(없음)')}"
@@ -2587,17 +2590,20 @@ palette: #hex1 #hex2 #hex3"""
 - "가족은 요양이 된다" → ✅ "가족한테는 / 아무 말 안 해도 됐다" (진실)
 - 구체적인 사물, 색깔, 소리, 온도로 시를 써라
 - "삶이란", "존재란", "오늘도 살아가는" 같은 뻔한 표현 금지
-- 시는 2~3줄. 형식 없음. 음절 맞추지 말 것.
-- 목표: 읽는 사람이 "헉, 맞아" 하고 멈추게. 예측 가능한 결말 금지.
+- 시는 3~4줄. 반드시 3줄 이상. 형식 없음. 음절 맞추지 말 것.
+- 마지막 줄은 반드시 예상 밖으로 틀어라. 묘사로 끝내지 마라.
+- 이 시는 이 사람 얘기지만, 읽는 사람 누구나 자기 얘기처럼 느껴야 한다. 구체적인 사물로 시작해서 보편적인 진실로 끝내라.
+- 목표: 읽는 사람이 "어, 나도 그래" 하고 멈추게. 감탄이 나와야 한다. 예측 가능한 결말 금지.
 
 각 사진 설명은 그 순간의 솔직한 속마음이야. 꾸미지 않은 감정 그대로를 담아줘.
 아래는 오늘 하루를 담은 사진 3~6장과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
 이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘)
-오늘 하루를 한 문장으로: {today_one}{last_msg_text}
+오늘 하루를 한 문장으로: {today_one}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -2741,7 +2747,7 @@ Output format (exactly this format):
 - 「人生とは」「存在とは」のような抽象語は禁止
 - 具体的な物、色、音、温度で詩を書く
 - 読んだ人が「そう、今日そうだったな」と膝を打つように
-- 詩は2〜3行。形式の縛りなし。音節を合わせなくていい。読んだ人が「はっ」と止まることが目標。
+- 詩は3〜4行。必ず3行以上。形式の縛りなし。最後の行は予想外の方向へ転換すること。読んだ人が「あ、わかる」と止まることが目標。
 
 以下は今日一日を記録した3〜6枚の写真と短い説明です。（提出された写真のみ）
 
@@ -2801,7 +2807,7 @@ Output format (exactly this format):
 - 禁止"人生是""存在是"之类的抽象词
 - 用具体的物件、颜色、声音、温度写诗
 - 让读者觉得"对，今天就是这样"
-- 诗是2~3行。无格式限制。不需要数音节。让读者「啊」地停住，这是目标。
+- 诗是3~4行。至少3行。无格式限制。最后一行必须出人意料，不能以描述结尾。让读者「啊，我也是」地停住，这是目标。
 
 以下是今天的3至6张照片和简短描述。（仅包含已提交的照片）
 
@@ -9162,10 +9168,11 @@ palette: #hex1 #hex2 #hex3"""
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -9501,10 +9508,11 @@ palette: #hex1 #hex2 #hex3"""
 - 불확실한 텍스트는 시에 포함하지 말고, 사진의 색감·빛·분위기·감정만으로 시를 완성하라.
 아래는 오늘 하루를 담은 사진과 짧은 설명들입니다. (제출된 사진만 있습니다)
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
-{shots_text}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
+{shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}{(' (추가로 남긴 이야기: ' + extra + ')') if extra else ''}
 
 {lang_instruction}
 
@@ -9633,6 +9641,7 @@ def today_submit_v2():
         today_sentence = data.get("today_sentence", "")
         last_to        = data.get("last_to", "")
         last_msg       = data.get("last_msg", "")
+        extra          = (data.get("extra") or "").strip()
         lang           = (data.get("lang") or "ko").strip().lower()
         lang_instruction = {
             "en": "IMPORTANT: You MUST write ALL poems and text outputs in English only. No Korean allowed.",
@@ -9697,7 +9706,7 @@ def today_submit_v2():
             shot_fmt += f"\n[SHOT{idx}시]\n(시 내용 2~3줄)\n\n[SHOT{idx}톤]\n감동명작\n"
 
         OUTPUT_FORMAT = f"""[오늘의시]
-(시 내용 2~3줄)
+(시 내용 3~4줄)
 {shot_fmt}
 [이모지]
 (이모지 5개, 한 줄)
@@ -9726,17 +9735,20 @@ palette: #hex1 #hex2 #hex3"""
 규칙:
 - 거창한 철학이나 교훈 금지. "삶이란", "존재란" 같은 추상어 금지.
 - 구체적인 사물, 색깔, 소리, 온도로 시를 써라.
-- 시는 2~3줄. 형식 규칙 없음. 음절 맞추지 말 것.
-- 목표: 읽는 사람이 '헉' 하고 멈추게 만드는 것.
+- 시는 3~4줄. 반드시 3줄 이상. 형식 규칙 없음. 음절 맞추지 말 것.
+- 마지막 줄은 반드시 예상 밖으로 틀어라. 묘사로 끝내지 마라.
+- 이 시는 이 사람 얘기지만, 읽는 사람 누구나 자기 얘기처럼 느껴야 한다. 구체적인 사물로 시작해서 보편적인 진실로 끝내라.
+- 목표: 읽는 사람이 '어, 나도 그래' 하고 멈추게 만드는 것. 감탄이 나와야 한다.
 
 오늘 하루의 장르: {genre}
 장르 지시: {genre_instruction}
 모든 시를 이 장르의 분위기로 써라. 오늘의 시도, 각 장면의 시도 전부.
 
-이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}{last_msg_text}
+이름: {name} / 오늘의 닉네임: {nickname} (이 닉네임의 감성과 뉘앙스를 시에 녹여줘){today_line}
 
 오늘의 장면들:
 {shots_text}
+{"" + chr(10) + "★ 이 사람이 특별히 남긴 말 — 시의 핵심 감정이 여기 있다. 반드시 시에 녹여라:" + chr(10) + "누군가에게: " + last_msg if last_msg else ""}{"" + chr(10) + "★ 더 하고 싶었던 이야기 — 이 감정을 시의 마지막 반전에 담아라:" + chr(10) + extra if extra else ""}
 
 {lang_instruction}
 
