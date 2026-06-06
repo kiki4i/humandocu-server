@@ -5948,7 +5948,7 @@ def today_v2_page(doc_id, data):
     </button>
     <div style="font-size:12px;color:#9e8250;margin-top:10px;line-height:1.7">{card_guide}</div>
     <div id="ios-card-hint" style="display:none;font-size:11px;color:#b8860b;margin-top:8px;line-height:1.7">
-      📱 iOS에서는 열린 이미지를 길게 눌러 &ldquo;사진 앱에 저장&rdquo;을 선택하세요
+      f'📱 {"Long-press the image and tap Save to Photos" if is_en else "画像を長押しして写真アプリに保存" if is_ja else "长按图片选择保存到照片" if is_zh else "iOS에서는 열린 이미지를 길게 눌러 사진 앱에 저장을 선택하세요"}'
     </div>
     <script>
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {{
@@ -5974,7 +5974,7 @@ def today_v2_page(doc_id, data):
     <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">{cta_tag}</div>
     <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">{cta_title}</div>
     <div style="font-size:13px;color:rgba(255,248,237,.75);margin-bottom:20px;line-height:1.7">{cta_sub}</div>
-    <a href="https://humandocu.com/today-form-v2.html"
+    <a href="https://humandocu.com/today-form.html"
        style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
       {cta_btn}
     </a>
