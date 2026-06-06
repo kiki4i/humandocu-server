@@ -5952,7 +5952,7 @@ def today_v2_page(doc_id, data):
     <div style="font-size:12px;color:rgba(255,248,237,.7);letter-spacing:.15em;margin-bottom:10px">{cta_tag}</div>
     <div style="font-size:20px;color:#FFF8ED;font-weight:600;margin-bottom:6px;line-height:1.5">{cta_title}</div>
     <div style="font-size:13px;color:rgba(255,248,237,.75);margin-bottom:20px;line-height:1.7">{cta_sub}</div>
-    <a href="https://humandocu.com/today.html"
+    <a href="https://humandocu.com/today-form-v2.html"
        style="display:inline-block;padding:14px 36px;background:#FFF8ED;border-radius:4px;font-size:14px;font-weight:700;color:#C8870A;text-decoration:none;letter-spacing:.06em">
       {cta_btn}
     </a>
