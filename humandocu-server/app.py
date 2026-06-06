@@ -4643,7 +4643,7 @@ def sixshot_page(doc_id):
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
     else:
         poem_section_title  = "✦ 오늘을 담은 시" if page_type == "today" else "✦ 인생을 담은 시"
-        scene_section_title = "오늘의 식스샷(Six Shot)" if page_type == "today" else "인생 6장면"
+        scene_section_title = "오늘의 사진들" if page_type == "today" else "인생 6장면"
         haiku_intro_label   = "짧지만 강렬하게, 오늘을 찌르는 시" if page_type == "today" else "짧지만 강렬하게, 인생을 찌르는 시"
         haiku_single_label  = "— 짧지만 강렬하게 —"
         haiku_s_label       = "🌸 시 · 감성"
@@ -5587,8 +5587,8 @@ def today_v2_page(doc_id, data):
         og_desc             = "用6张照片和诗记录了今天。"
     else:
         poem_section_title  = "✦ 오늘을 담은 시"
-        scene_section_title = "오늘의 식스샷(Six Shot)"
-        hero_sub_label      = "HUMANDOCU · 필모그래피"
+        scene_section_title = "오늘의 사진들"
+        hero_sub_label      = "투*필 · TODAY FILMOGRAPHY"
         hero_tagline        = f"{nickname}님의 필모그래피"
         share_tagline       = "매일을 담아보세요.<br>모으면 그것이 당신이에요."
         cta_tag             = "HUMANDOCU · 투*필"
@@ -5853,10 +5853,9 @@ def today_v2_page(doc_id, data):
   <div class="hero">
     <div class="hero-sub">{hero_sub_label}</div>
     <div class="hero-name">{nickname}</div>
-    <div style="font-size:14px;color:rgba(200,169,110,.7);margin-bottom:10px">{hero_tagline}</div>
     <div class="hero-identity">{identity}</div>
     {today_hero_extra_html}
-    {"<div style='margin-top:12px;font-size:11px;color:rgba(200,169,110,.4)'>" + created + "</div>" if created else ""}
+    {"<div style='margin-top:8px;font-size:12px;color:rgba(200,169,110,.55);letter-spacing:.04em'>" + created + "</div>" if created else ""}
   </div>
 
   {poem_section_html}
