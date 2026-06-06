@@ -5441,15 +5441,37 @@ def today_v2_page(doc_id, data):
         "cheerful comedy":      ("#B5451A", "#FFF0E8"),
         "quiet everyday":       ("#4A5568", "#F7F8FA"),
         "passionate documentary": ("#8B1A1A", "#FFF0F0"),
+        "touching":      ("#7B4F1E", "#FFF3E0"),
+        "hero action":   ("#7A0000", "#FFEAEA"),
+        "quiet doc":     ("#1A2A5E", "#EAF0FF"),
+        "melo romance":  ("#7A1040", "#FFF0F5"),
+        "weird comedy":  ("#7A3A00", "#FFF5E8"),
+        "twist thriller": ("#3A0060", "#F5EAFF"),
     }
+    GENRE_LABELS = {
+        "감동명작":    {"ko":"감동명작",   "en":"Touching",         "ja":"感動名作",              "zh":"感人名作"},
+        "히어로 액션": {"ko":"히어로 액션","en":"Hero Action",       "ja":"ヒーローアクション",       "zh":"英雄动作"},
+        "잔잔한 다큐": {"ko":"잔잔한 다큐","en":"Quiet Doc",         "ja":"静かなドキュメンタリー",    "zh":"平静纪录片"},
+        "멜로 로맨스": {"ko":"멜로 로맨스","en":"Melo Romance",      "ja":"メロロマンス",            "zh":"爱情浪漫"},
+        "병맛 코미디": {"ko":"병맛 코미디","en":"Weird Comedy",      "ja":"バカコメディ",            "zh":"无厘头喜剧"},
+        "반전 스릴러": {"ko":"반전 스릴러","en":"Twist Thriller",    "ja":"どんでん返しスリラー",     "zh":"反转悬疑"},
+    }
+    def translate_genre(tone_raw, lang_code):
+        t = tone_raw.strip()
+        for ko_id, labels in GENRE_LABELS.items():
+            if t == ko_id or t in labels.values():
+                return labels.get(lang_code, t)
+        return t
     def tone_badge_html(tone_raw):
         tone = tone_raw.strip()
         tone_key = tone.lower()
+        lang_code = lang[:2] if lang else "ko"
+        display_tone = translate_genre(tone, lang_code)
         fg, bg = TONE_COLORS.get(tone, TONE_COLORS.get(tone_key, ("#7B4F1E", "#FFF3E0")))
         return (
             f'<span style="display:inline-block;padding:3px 10px;border-radius:20px;'
             f'background:{bg};color:{fg};font-size:11px;letter-spacing:.08em;font-weight:600">'
-            f'{tone}</span>'
+            f'{display_tone}</span>'
         )
 
     # 언어별 UI 레이블
