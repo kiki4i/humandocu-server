@@ -5952,7 +5952,7 @@ def today_v2_page(doc_id, data):
     </button>
     <div style="font-size:12px;color:#9e8250;margin-top:10px;line-height:1.7">{card_guide}</div>
     <div id="ios-card-hint" style="display:none;font-size:11px;color:#b8860b;margin-top:8px;line-height:1.7">
-      ios_hint_text,
+      f'      {ios_hint_text}'
     </div>
     <script>
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {{
