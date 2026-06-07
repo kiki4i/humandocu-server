@@ -9816,7 +9816,7 @@ palette: #hex1 #hex2 #hex3"""
 ━━━ 오늘의 기록 ━━━
 이름: {name} / 닉네임: {nickname}
 닉네임의 감성·뉘앙스를 반드시 시에 녹여줘.
-오늘 한 줄: {today_one}
+오늘 한 줄: {today_sentence}
 
 오늘의 장면들:
 {shots_text}
