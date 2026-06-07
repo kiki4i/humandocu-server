@@ -4558,6 +4558,7 @@ def sixshot_page(doc_id):
         nav_sixshot_lbl     = "🎞️ ライフシックスショットを見る"
         nav_home_lbl        = "🏠 HumanDocuを見る"
         footer_text         = "Humandocuで作りました · humandocu.com"
+        ios_hint_text       = "📱 画像を長押しして写真アプリに保存を選択してください"
         delete_label        = "🗑 削除する"
         delete_sending      = "認証メール送信中..."
         delete_cancel_btn   = "キャンセル"
@@ -5424,6 +5425,7 @@ def today_v2_page(doc_id, data):
             if _m:
                 today_palette_list = _m.group(1).strip().split()
 
+    ios_hint_text = "📱 iOS에서는 열린 이미지를 길게 눌러 사진 앱에 저장을 선택하세요"
     # 톤 배지 색상
     TONE_COLORS = {
         "감동명작":   ("#7B4F1E", "#FFF3E0"),
@@ -5519,6 +5521,7 @@ def today_v2_page(doc_id, data):
         page_title_str      = f"Today Filmography · {nickname}"
         og_title            = f"{nickname}'s Today Filmography · Humandocu"
         og_desc             = "AI captured today in 6 photos and a poem."
+        ios_hint_text       = "📱 Long-press the image and tap Save to Photos"
     elif is_ja:
         poem_section_title  = "✦ AIが完成させた詩"
         scene_section_title = "今日のフィルモグラフィー"
@@ -5544,6 +5547,7 @@ def today_v2_page(doc_id, data):
         nav_sixshot_lbl     = "🎞️ ライフシックスショットを見る"
         nav_home_lbl        = "🏠 HumanDocuを見る"
         footer_text         = "Humandocuで作りました · humandocu.com"
+        ios_hint_text       = "📱 画像を長押しして写真アプリに保存を選択してください"
         delete_label        = "🗑 削除する"
         delete_confirm_msg  = "このToday Filmを削除しますか？元に戻すことはできません。"
         delete_sending      = "認証メール送信中..."
