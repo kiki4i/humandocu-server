@@ -5952,7 +5952,7 @@ def today_v2_page(doc_id, data):
     </button>
     <div style="font-size:12px;color:#9e8250;margin-top:10px;line-height:1.7">{card_guide}</div>
     <div id="ios-card-hint" style="display:none;font-size:11px;color:#b8860b;margin-top:8px;line-height:1.7">
-      f'📱 {"Long-press the image and tap Save to Photos" if is_en else "画像を長押しして写真アプリに保存" if is_ja else "长按图片选择保存到照片" if is_zh else "iOS에서는 열린 이미지를 길게 눌러 사진 앱에 저장을 선택하세요"}'
+      ios_hint_text,
     </div>
     <script>
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {{
