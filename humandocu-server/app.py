@@ -9730,12 +9730,6 @@ def today_submit_v2():
         OUTPUT_FORMAT = f"""[오늘의시]
 (시 내용 3~4줄)
 {shot_fmt}
-[이모지]
-(이모지 5개, 한 줄)
-
-[해시태그]
-hashtags: #태그1 #태그2 #태그3
-
 [팔레트]
 palette: #hex1 #hex2 #hex3"""
 
@@ -9743,8 +9737,7 @@ palette: #hex1 #hex2 #hex3"""
         system_prompt = (
             "You are a poet. "
             "Output structural tags EXACTLY as shown — [오늘의시], "
-            "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], "
-            "[이모지], [해시태그], [팔레트]. "
+            "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트]. "
             "Do NOT rename, abbreviate, or omit any tag. "
             "Each tag on its own line, content on the lines that follow."
         )
@@ -9758,7 +9751,9 @@ palette: #hex1 #hex2 #hex3"""
         if _h == 0: _h = 12
         submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
 
-        content_parts.append({"type": "text", "text": f"""제출 시각: {submit_time_ko}
+        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+
+제출 시각: {submit_time_ko}
 
 당신은 한국의 시인입니다.
 나태주("자세히 보아야 예쁘다")의 눈과
