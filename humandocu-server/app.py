@@ -9749,6 +9749,15 @@ palette: #hex1 #hex2 #hex3"""
             "Each tag on its own line, content on the lines that follow."
         )
 
+        from datetime import timezone, timedelta
+        _KST = timezone(timedelta(hours=9))
+        _now = __import__('datetime').datetime.now(_KST)
+        _wd = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"]
+        _ap = "오전" if _now.hour < 12 else "오후"
+        _h = _now.hour if _now.hour <= 12 else _now.hour - 12
+        if _h == 0: _h = 12
+        submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
+
         content_parts.append({"type": "text", "text": f"""제출 시각: {submit_time_ko}
 
 당신은 한국의 시인입니다.
