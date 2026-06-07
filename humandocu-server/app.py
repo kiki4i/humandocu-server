@@ -9734,8 +9734,14 @@ def today_submit_v2():
 palette: #hex1 #hex2 #hex3"""
 
         # 출력 태그 이름 잠금용 system prompt
+        lang_sys = {
+            "en": "You are a poet. Write ALL poems and text in ENGLISH ONLY. No Korean whatsoever.",
+            "ja": "あなたは詩人です。すべての詩とテキストを日本語のみで書いてください。",
+            "zh": "你是一位诗人。所有诗歌和文字必须只用中文写。",
+            "ko": "당신은 시인입니다. 모든 시와 텍스트는 반드시 한국어로만 작성하세요.",
+        }
         system_prompt = (
-            "You are a poet. "
+            lang_sys.get(lang, lang_sys["ko"]) + " "
             "Output structural tags EXACTLY as shown — [오늘의시], "
             "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트]. "
             "Do NOT rename, abbreviate, or omit any tag. "
@@ -9751,7 +9757,7 @@ palette: #hex1 #hex2 #hex3"""
         if _h == 0: _h = 12
         submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
 
-        content_parts.append({"type": "text", "text": f"""{lang_instruction}
+        content_parts.append({"type": "text", "text": f"""⚠️ LANGUAGE RULE: {lang_instruction}
 
 제출 시각: {submit_time_ko}
 
@@ -9844,6 +9850,8 @@ palette: #hex1 #hex2 #hex3"""
 
 4. [팔레트]
    palette: #hex1 #hex2 #hex3
+
+⚠️ LANGUAGE REMINDER: {lang_instruction}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
 [오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트]
