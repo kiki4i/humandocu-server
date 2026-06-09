@@ -1246,12 +1246,10 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
             f"  var timer=setTimeout(function(){{window.open(webUrl,'_blank');}},1200);"
             f"  window.addEventListener('blur',function(){{clearTimeout(timer);}},{{once:true}});"
             f"}}"
-            f"window.addEventListener('load',function(){{"
-            f"  if(document.getElementById('staticMap')){{  "
-            f"    var el=document.getElementById('staticMap');"
-            f"    new kakao.maps.StaticMap(el,{{center:new kakao.maps.LatLng({lat},{lng}),level:4}});"
-            f"  }}"
-            f"}});"
+            "kakao.maps.load(function(){{\n"
+            f"  var el=document.getElementById('staticMap');"
+            f"  if(el){{new kakao.maps.StaticMap(el,{{center:new kakao.maps.LatLng({lat},{lng}),level:4}});}}"
+            "});"
         )
     else:
         kakao_navi_js = ""
@@ -1298,7 +1296,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '<meta property="og:image" content="https://humandocu.com/chrysanthemum.jpg">'
         '<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
         '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
-        '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
+        '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557&autoload=false"></script>'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
         '<style>'
@@ -1641,12 +1639,10 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
             f"  var timer=setTimeout(function(){{window.open(webUrl,'_blank');}},1200);"
             f"  window.addEventListener('blur',function(){{clearTimeout(timer);}},{{once:true}});"
             f"}}"
-            f"window.addEventListener('load',function(){{"
-            f"  if(document.getElementById('staticMap')){{"
-            f"    var el=document.getElementById('staticMap');"
-            f"    new kakao.maps.StaticMap(el,{{center:new kakao.maps.LatLng({lat},{lng}),level:4}});"
-            f"  }}"
-            f"}});"
+            "kakao.maps.load(function(){{\n"
+            f"  var el=document.getElementById('staticMap');"
+            f"  if(el){{new kakao.maps.StaticMap(el,{{center:new kakao.maps.LatLng({lat},{lng}),level:4}});}}"
+            "});"
         )
     else:
         kakao_navi_js = ""
@@ -1694,7 +1690,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '<meta property="og:image" content="' + og_image + '">'
         '<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>'
         '<script>Kakao.init("74b5968f881ac8fe3e8488e194d3b6ef");</script>'
-        '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557"></script>'
+        '<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5b7821698a09c74f1d72c0b52165d557&autoload=false"></script>'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">'
         '<style>'
