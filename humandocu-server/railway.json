@@ -1,7 +1,8 @@
 {
   "$schema": "https://railway.app/railway-schema.json",
   "deploy": {
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 300
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "watchPatterns": ["humandocu-server/**"]
   }
 }
