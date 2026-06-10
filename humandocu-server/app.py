@@ -6905,6 +6905,42 @@ def sixshot_feed():
 def health():
     return jsonify({"status": "ok", "service": "휴먼다큐 베이직"}), 200
 
+@app.route("/api/memorial/tribute", methods=["GET"])
+def get_tributes():
+    try:
+        deceased = request.args.get("deceased", "").strip()
+        if not deceased:
+            return jsonify({"ok": False, "error": "고인 성함 필요"}), 400
+        db = _get_db()
+        docs = db.collection("memorial_tributes").document(deceased)                  .collection("messages")                  .order_by("created_at", direction="DESCENDING").limit(50).stream()
+        messages = [{"name": doc.to_dict().get("name","익명"),
+                     "message": doc.to_dict().get("message",""),
+                     "created_at": doc.to_dict().get("created_at","")} for doc in docs]
+        return jsonify({"ok": True, "messages": messages}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/memorial/tribute", methods=["POST"])
+def add_tribute():
+    try:
+        data = request.get_json()
+        deceased = (data.get("deceased") or "").strip()
+        name = (data.get("name") or "익명").strip() or "익명"
+        message = (data.get("message") or "").strip()
+        if not deceased or not message:
+            return jsonify({"ok": False, "error": "필수값 누락"}), 400
+        if len(message) > 100:
+            return jsonify({"ok": False, "error": "100자 이내로 입력해주세요"}), 400
+        db = _get_db()
+        db.collection("memorial_tributes").document(deceased)          .collection("messages").add({
+            "name": name,
+            "message": message,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.route("/health", methods=["GET"])
 def health_check():
     return jsonify({"status": "ok"}), 200
