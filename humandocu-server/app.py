@@ -1276,6 +1276,27 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         "var url=window.location.href;"
         "var body=encodeURIComponent('부고 안내입니다.\\n'+url);"
         "window.location.href='sms:?body='+body;}"
+        "function loadTributes(deceased){"
+        "fetch('https://humandocu-server-production.up.railway.app/api/memorial/tribute?deceased='+encodeURIComponent(deceased))"
+        ".then(function(r){return r.json();})"
+        ".then(function(data){"
+        "var el=document.getElementById('tribute-list');if(!el)return;"
+        "if(!data.ok||!data.messages||!data.messages.length){el.innerHTML='<div class=\"tribute-empty\">아직 남겨진 메시지가 없습니다</div>';return;}"
+        "el.innerHTML=data.messages.map(function(m){return '<div class=\"tribute-item\"><div class=\"tribute-name\">'+m.name+'</div><div class=\"tribute-msg\">'+m.message+'</div></div>';}).join('');"
+        "}).catch(function(){});}"
+        "function submitTribute(deceased){"
+        "var name=document.getElementById('tribute-name').value.trim();"
+        "var msg=document.getElementById('tribute-msg').value.trim();"
+        "if(!msg){alert('메시지를 입력해주세요');return;}"
+        "var btn=document.querySelector('.tribute-submit');btn.disabled=true;btn.textContent='전송 중...';"
+        "fetch('https://humandocu-server-production.up.railway.app/api/memorial/tribute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deceased:deceased,name:name||'익명',message:msg})})"
+        ".then(function(r){return r.json();})"
+        ".then(function(data){"
+        "if(data.ok){document.getElementById('tribute-name').value='';document.getElementById('tribute-msg').value='';showToast('마음이 전달되었습니다');loadTributes(deceased);}"
+        "else{alert(data.error||'오류가 발생했습니다');}"
+        "btn.disabled=false;btn.textContent='마음 전하기';"
+        "}).catch(function(){btn.disabled=false;btn.textContent='마음 전하기';})}"
+            "window.addEventListener('load',function(){loadTributes('" + deceased_name + "');});"
         "function copyAddr(addr){"
         "if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){showToast('주소가 복사되었습니다');});}"
         "else{var el=document.createElement('textarea');el.value=addr;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('주소가 복사되었습니다');}}"
@@ -1356,6 +1377,18 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         '.nav-modal-cancel{padding:14px;border-radius:8px;font-size:14px;color:#8b7355;background:#f5f0e8;border:none;cursor:pointer;font-family:\'Noto Serif KR\',serif}'
         '.notice-section{background:#f9f5ef;border-left:3px solid #c8b89a;padding:14px 20px;margin-top:1px;font-size:13px;color:#6a6a6a;line-height:1.9}'
         '.share-section{background:#fff;padding:20px;margin-top:1px}'
+        '.tribute-section{padding:24px 16px 8px;}'
+        '.tribute-title{font-family:serif;font-size:18px;font-weight:300;color:#0f0d09;margin-bottom:16px;}'
+        '.tribute-form{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}'
+        '.tribute-input,.tribute-textarea{padding:10px 14px;border:1px solid #d4c9b0;border-radius:4px;font-size:14px;font-family:inherit;outline:none;background:#fff;}'
+        '.tribute-textarea{resize:none;height:72px;}'
+        '.tribute-input:focus,.tribute-textarea:focus{border-color:#c8a96e;}'
+        '.tribute-submit{padding:12px;background:#0f0d09;color:#f9f6f0;border:none;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:.06em;}'
+        '.tribute-list{display:flex;flex-direction:column;gap:10px;margin-top:4px;}'
+        '.tribute-item{background:#f9f6f0;border:1px solid #e8e0d0;border-radius:4px;padding:12px 14px;}'
+        '.tribute-name{font-size:11px;font-weight:500;color:#6b5a3e;margin-bottom:4px;}'
+        '.tribute-msg{font-size:13px;color:#0f0d09;line-height:1.7;}'
+        '.tribute-empty{font-size:13px;color:#9b8a6e;text-align:center;padding:16px 0;}'
         '.other-ver-btn{background:#f5f0e8;color:#8b7355;font-size:13px;font-weight:500;padding:12px 0;border-radius:6px;border:1px solid #d4c9b5;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}''.other-ver-btn:active{background:#e8e0d0}''.kakao-btn-share{background:#FEE500;color:#3A1D1D;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
         '.condolence-section{background:#f9f5ef;border:0.5px solid #d4c9b5;padding:14px 20px;margin-top:1px;text-align:center;display:flex;align-items:center;justify-content:space-between;gap:12px}'
         '.condolence-left{text-align:left;flex:1}'
@@ -1393,7 +1426,16 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         + map_section
         + donation_section
         + notice_section +
-                '<div class="share-section" style="display:flex;flex-direction:column;gap:8px">'
+                f'<div class="tribute-section">'
+        '<h3 class="tribute-title">함께 기억합니다</h3>'
+        '<div class="tribute-form">'
+        '<input class="tribute-input" id="tribute-name" placeholder="이름 (선택)" maxlength="20">'
+        '<textarea class="tribute-textarea" id="tribute-msg" placeholder="고인에 대한 따뜻한 한 마디를 남겨주세요 (100자 이내)" maxlength="100"></textarea>'
+        f'<button class="tribute-submit" onclick="submitTribute(\'{deceased_name}\')">마음 전하기</button>'
+        '</div>'
+        '<div class="tribute-list" id="tribute-list"><div class="tribute-empty">아직 남겨진 메시지가 없습니다</div></div>'
+        '</div>'
+        '<div class="share-section" style="display:flex;flex-direction:column;gap:8px">'
         f'<button class="other-ver-btn" onclick="goOtherVer()">✏️ 다른 버전의 추모글 보기</button>'
         '<button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>'
         '<button class="kakao-btn-share" style="background:#2db400;margin-top:8px;" onclick="shareSMS()">📱 문자로 부고 전달하기</button>'
@@ -1684,6 +1726,27 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         "var url=window.location.href;"
         "var body=encodeURIComponent('부고 안내입니다.\\n'+url);"
         "window.location.href='sms:?body='+body;}"
+        "function loadTributes(deceased){"
+        "fetch('https://humandocu-server-production.up.railway.app/api/memorial/tribute?deceased='+encodeURIComponent(deceased))"
+        ".then(function(r){return r.json();})"
+        ".then(function(data){"
+        "var el=document.getElementById('tribute-list');if(!el)return;"
+        "if(!data.ok||!data.messages||!data.messages.length){el.innerHTML='<div class=\"tribute-empty\">아직 남겨진 메시지가 없습니다</div>';return;}"
+        "el.innerHTML=data.messages.map(function(m){return '<div class=\"tribute-item\"><div class=\"tribute-name\">'+m.name+'</div><div class=\"tribute-msg\">'+m.message+'</div></div>';}).join('');"
+        "}).catch(function(){});}"
+        "function submitTribute(deceased){"
+        "var name=document.getElementById('tribute-name').value.trim();"
+        "var msg=document.getElementById('tribute-msg').value.trim();"
+        "if(!msg){alert('메시지를 입력해주세요');return;}"
+        "var btn=document.querySelector('.tribute-submit');btn.disabled=true;btn.textContent='전송 중...';"
+        "fetch('https://humandocu-server-production.up.railway.app/api/memorial/tribute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deceased:deceased,name:name||'익명',message:msg})})"
+        ".then(function(r){return r.json();})"
+        ".then(function(data){"
+        "if(data.ok){document.getElementById('tribute-name').value='';document.getElementById('tribute-msg').value='';showToast('마음이 전달되었습니다');loadTributes(deceased);}"
+        "else{alert(data.error||'오류가 발생했습니다');}"
+        "btn.disabled=false;btn.textContent='마음 전하기';"
+        "}).catch(function(){btn.disabled=false;btn.textContent='마음 전하기';})}"
+            "window.addEventListener('load',function(){loadTributes('" + deceased_name + "');});"
         "function copyAddr(addr){"
         "if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){showToast('주소가 복사되었습니다');});}"
         "else{var el=document.createElement('textarea');el.value=addr;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('주소가 복사되었습니다');}}"
@@ -1766,6 +1829,18 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '.nav-modal-cancel{padding:14px;border-radius:8px;font-size:14px;color:#8b7355;background:#f5f0e8;border:none;cursor:pointer;font-family:\'Noto Serif KR\',serif}'
         '.notice-section{background:#f9f5ef;border-left:3px solid #c8b89a;padding:14px 20px;margin-top:1px;font-size:13px;color:#6a6a6a;line-height:1.9}'
         '.share-section{background:#fff;padding:20px;margin-top:1px}'
+        '.tribute-section{padding:24px 16px 8px;}'
+        '.tribute-title{font-family:serif;font-size:18px;font-weight:300;color:#0f0d09;margin-bottom:16px;}'
+        '.tribute-form{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}'
+        '.tribute-input,.tribute-textarea{padding:10px 14px;border:1px solid #d4c9b0;border-radius:4px;font-size:14px;font-family:inherit;outline:none;background:#fff;}'
+        '.tribute-textarea{resize:none;height:72px;}'
+        '.tribute-input:focus,.tribute-textarea:focus{border-color:#c8a96e;}'
+        '.tribute-submit{padding:12px;background:#0f0d09;color:#f9f6f0;border:none;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:.06em;}'
+        '.tribute-list{display:flex;flex-direction:column;gap:10px;margin-top:4px;}'
+        '.tribute-item{background:#f9f6f0;border:1px solid #e8e0d0;border-radius:4px;padding:12px 14px;}'
+        '.tribute-name{font-size:11px;font-weight:500;color:#6b5a3e;margin-bottom:4px;}'
+        '.tribute-msg{font-size:13px;color:#0f0d09;line-height:1.7;}'
+        '.tribute-empty{font-size:13px;color:#9b8a6e;text-align:center;padding:16px 0;}'
         '.kakao-btn-share{background:#FEE500;color:#3A1D1D;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
         '.other-ver-btn{background:#1a1a2e;color:#c8a96e;font-size:15px;font-weight:700;padding:15px 0;border-radius:6px;border:none;width:100%;cursor:pointer;letter-spacing:1px;font-family:\'Noto Serif KR\',serif}'
         '.footer{background:#1a1a2e;color:#5a5a7a;text-align:center;padding:16px;font-size:11px;letter-spacing:1px}'
@@ -1795,6 +1870,15 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         + donation_section
         + notice_section
         + memorial_section +
+        f'<div class="tribute-section">'
+        '<h3 class="tribute-title">함께 기억합니다</h3>'
+        '<div class="tribute-form">'
+        '<input class="tribute-input" id="tribute-name" placeholder="이름 (선택)" maxlength="20">'
+        '<textarea class="tribute-textarea" id="tribute-msg" placeholder="고인에 대한 따뜻한 한 마디를 남겨주세요 (100자 이내)" maxlength="100"></textarea>'
+        f'<button class="tribute-submit" onclick="submitTribute(\'{deceased_name}\')">마음 전하기</button>'
+        '</div>'
+        '<div class="tribute-list" id="tribute-list"><div class="tribute-empty">아직 남겨진 메시지가 없습니다</div></div>'
+        '</div>'
         '<div class="share-section" style="display:flex;flex-direction:column;gap:8px">'
         f'<button class="other-ver-btn" onclick="goOtherVer()">✏️ 다른 버전의 추모글 보기</button>'
         '<button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>'
