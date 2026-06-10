@@ -1267,7 +1267,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         "fail:function(err){"
         "if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');}); }"
         "else{var _f=document.createElement('textarea');_f.value=url;document.body.appendChild(_f);_f.select();document.execCommand('copy');document.body.removeChild(_f);showToast('부고 링크가 복사되었습니다.');}}"
-        "});",
+        "});"
         "}catch(e){"
         "if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var _e=document.createElement('textarea');_e.value=url;document.body.appendChild(_e);_e.select();document.execCommand('copy');document.body.removeChild(_e);showToast('부고 링크가 복사되었습니다.');}"
@@ -1660,7 +1660,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         "fail:function(err){"
         "if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');}); }"
         "else{var _f=document.createElement('textarea');_f.value=url;document.body.appendChild(_f);_f.select();document.execCommand('copy');document.body.removeChild(_f);showToast('부고 링크가 복사되었습니다.');}}"
-        "});",
+        "});"
         "}catch(e){"
         "if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var _e=document.createElement('textarea');_e.value=url;document.body.appendChild(_e);_e.select();document.execCommand('copy');document.body.removeChild(_e);showToast('부고 링크가 복사되었습니다.');}"
