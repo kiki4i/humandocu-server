@@ -1272,6 +1272,10 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
         "}}"
         "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('부고 링크가 복사되었습니다.');}}"
+        "function shareSMS(){"
+        "var url=window.location.href;"
+        "var body=encodeURIComponent('부고 안내입니다.\\n'+url);"
+        "window.location.href='sms:?body='+body;}"
         "function copyAddr(addr){"
         "if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){showToast('주소가 복사되었습니다');});}"
         "else{var el=document.createElement('textarea');el.value=addr;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('주소가 복사되었습니다');}}"
@@ -1392,6 +1396,7 @@ def build_html(fields, one_liner, tribute_para, alt_url=None):
                 '<div class="share-section" style="display:flex;flex-direction:column;gap:8px">'
         f'<button class="other-ver-btn" onclick="goOtherVer()">✏️ 다른 버전의 추모글 보기</button>'
         '<button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>'
+        '<button class="kakao-btn-share" style="background:#2db400;margin-top:8px;" onclick="shareSMS()">📱 문자로 부고 전달하기</button>'
         '</div>'
         '<div class="adv-banner">'
         '<div class="adv-eyebrow">HUMANDOCU</div>'
@@ -1663,6 +1668,10 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         "}}"
         "else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('부고 링크가 복사되었습니다. 카카오톡에 붙여넣기 해주세요.');});}"
         "else{var el=document.createElement('textarea');el.value=url;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('부고 링크가 복사되었습니다.');}}"
+        "function shareSMS(){"
+        "var url=window.location.href;"
+        "var body=encodeURIComponent('부고 안내입니다.\\n'+url);"
+        "window.location.href='sms:?body='+body;}"
         "function copyAddr(addr){"
         "if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){showToast('주소가 복사되었습니다');});}"
         "else{var el=document.createElement('textarea');el.value=addr;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('주소가 복사되었습니다');}}"
@@ -1777,6 +1786,7 @@ def build_html_advanced(fields, one_liner, tribute_para, photo_url, title, intro
         '<div class="share-section" style="display:flex;flex-direction:column;gap:8px">'
         f'<button class="other-ver-btn" onclick="goOtherVer()">✏️ 다른 버전의 추모글 보기</button>'
         '<button class="kakao-btn-share" onclick="shareKakao()">💬 카카오톡으로 부고 전달하기</button>'
+        '<button class="kakao-btn-share" style="background:#2db400;margin-top:8px;" onclick="shareSMS()">📱 문자로 부고 전달하기</button>'
         '</div>'
         '<div class="footer"><a href="https://humandocu.com">휴먼다큐닷컴이 함께 합니다</a> &nbsp;·&nbsp; ' + today + ' 발행</div>'
         '</div>'
