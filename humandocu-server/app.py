@@ -6038,7 +6038,7 @@ def today_v2_page(doc_id, data):
   <div class="hero">
     <div class="hero-sub">{hero_sub_label}</div>
     <div class="hero-name">{nickname}</div>
-    <div class="hero-identity">{identity}</div>
+    <div class="hero-identity" data-translate="identity">{identity}</div>
     {today_hero_extra_html}
     {"<div style='margin-top:8px;font-size:12px;color:rgba(200,169,110,.55);letter-spacing:.04em'>" + created + "</div>" if created else ""}
   </div>
