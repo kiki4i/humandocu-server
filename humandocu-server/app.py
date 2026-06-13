@@ -751,7 +751,35 @@ def build_edit_form_html(pending_id, stored):
             + cap_html + '</div>'
         )
 
-    css = """
+    css = 
+/* ── 번역 언어 버튼 ── */
+.lang-bar-today{
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  display:flex;justify-content:flex-end;align-items:center;
+  padding:8px 12px;gap:6px;
+  background:transparent;pointer-events:none;
+}
+.lang-btn-today{
+  pointer-events:all;
+  display:flex;align-items:center;gap:3px;
+  padding:5px 9px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(0,0,0,.4);
+  font-size:10px;color:rgba(255,255,255,.8);
+  cursor:pointer;font-family:inherit;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:all .2s;
+}
+.lang-btn-today.active{border-color:#c8a96e;color:#c8a96e;}
+.lang-btn-today:hover{background:rgba(0,0,0,.6);}
+.translate-loading{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.75);color:#fff;
+  padding:14px 24px;border-radius:10px;
+  font-size:13px;z-index:1000;display:none;
+  backdrop-filter:blur(8px);
+}
+"""
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .wrap{max-width:640px;margin:0 auto;padding:48px 24px 96px}
@@ -4172,6 +4200,15 @@ async function sendLink() {{
   }} catch(e) {{ btn.textContent = '확인 링크 받기'; btn.disabled = false; }}
 }}
 document.getElementById('email').addEventListener('keydown', e => {{ if(e.key==='Enter') sendLink(); }});
+
+<div class="lang-bar-today" id="lang-bar-today">
+  <button class="lang-btn-today active" onclick="translatePage('ko')">🇰🇷 KO</button>
+  <button class="lang-btn-today" onclick="translatePage('en')">🇺🇸 EN</button>
+  <button class="lang-btn-today" onclick="translatePage('jp')">🇯🇵 JP</button>
+  <button class="lang-btn-today" onclick="translatePage('zh')">🇨🇳 ZH</button>
+</div>
+<div class="translate-loading" id="translate-loading">번역 중...</div>
+
 </script>
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
@@ -5874,7 +5911,7 @@ def today_v2_page(doc_id, data):
                 f'<div style="border-top:1px solid #e5dece;padding-top:20px">'
                 f'<div style="background:#FFF8ED;border-radius:4px;padding:16px 18px;font-size:13px">'
                 + (f'<div style="margin-bottom:8px">{badge}</div>' if badge else "")
-                + f'<div style="color:#5a4a30;line-height:1.8">{haiku_lines(shot_poem)}</div>'
+                + f'<div style="color:#5a4a30;line-height:1.8" data-translate="poem{i}">{haiku_lines(shot_poem)}</div>'
                 f'</div></div>'
             )
         scene_cards += (
@@ -6940,6 +6977,56 @@ def add_tribute():
         return jsonify({"ok": True}), 200
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/translate", methods=["POST", "OPTIONS"])
+def translate_today():
+    if request.method == "OPTIONS":
+        r = jsonify({})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return r, 200
+    try:
+        data = request.get_json()
+        target_lang = data.get("lang", "en")
+        texts = data.get("texts", {})
+        lang_names = {"en": "English", "jp": "Japanese", "zh": "Simplified Chinese"}
+        lang_name = lang_names.get(target_lang, "English")
+        text_list = []
+        keys = []
+        for k, v in texts.items():
+            if v and str(v).strip():
+                keys.append(k)
+                text_list.append(f"[{k}]\n{v}")
+        if not text_list:
+            r = jsonify({"ok": True, "translations": {}})
+            r.headers["Access-Control-Allow-Origin"] = "*"
+            return r, 200
+        combined = "\n\n".join(text_list)
+        prompt = f"""Translate the following Korean texts to {lang_name}.
+These are personal diary entries and AI-generated poems from a Korean photo-poem app.
+Rules: preserve poetic tone, keep line breaks exactly, return ONLY translations in same [key] format.
+
+{combined}"""
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result_text = msg.content[0].text
+        import re as _re
+        translations = {}
+        for m in _re.finditer(r'\[([^\]]+)\]\n(.*?)(?=\n\[|$)', result_text, _re.DOTALL):
+            translations[m.group(1).strip()] = m.group(2).strip()
+        r = jsonify({"ok": True, "translations": translations})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        return r, 200
+    except Exception as e:
+        r = jsonify({"ok": False, "error": str(e)})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        return r, 500
 
 @app.route("/health", methods=["GET"])
 def health_check():
