@@ -5884,7 +5884,7 @@ def today_v2_page(doc_id, data):
             f'<div class="section">'
             f'<div class="section-label">{poem_section_title}</div>'
             + (f'<div style="text-align:center;margin-bottom:14px">{tone_badge_str}</div>' if tone_badge_str else "")
-            + f'<div class="rep-poem">{poem_lines_html(today_poem)}</div>'
+            + f'<div class="rep-poem" data-translate="main_poem">{poem_lines_html(today_poem)}</div>'
             f'</div>'
         )
 
