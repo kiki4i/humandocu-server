@@ -6272,17 +6272,23 @@ function confirmDelete(){{
 <script>
 (function(){{
   var _tc={{}};
+  function applyBr(s){{ return s ? s.split('\n').join('<br>') : s; }}
   function doTranslate(lang){{
     ['ko','en','jp','zh'].forEach(function(l){{
       var b=document.getElementById('lbtn-'+l);
       if(b){{ b.style.color=l===lang?'#c8a96e':'rgba(255,255,255,.8)'; b.style.borderColor=l===lang?'#c8a96e':'rgba(255,255,255,.3)'; }}
     }});
     if(lang==='ko'){{
-      document.querySelectorAll('[data-translate]').forEach(function(el){{ var o=el.getAttribute('data-original'); if(o) el.innerHTML=o; }});
+      document.querySelectorAll('[data-translate]').forEach(function(el){{
+        var o=el.getAttribute('data-original'); if(o) el.innerHTML=o;
+      }});
       return;
     }}
     if(_tc[lang]){{
-      document.querySelectorAll('[data-translate]').forEach(function(el){{ var k=el.getAttribute('data-translate'); if(_tc[lang][k]) el.innerHTML=_tc[lang][k].replace(/\n/g,'<br>'); }});
+      document.querySelectorAll('[data-translate]').forEach(function(el){{
+        var k=el.getAttribute('data-translate');
+        if(_tc[lang][k]) el.innerHTML=applyBr(_tc[lang][k]);
+      }});
       return;
     }}
     var d=document.getElementById('tlding');
@@ -6303,7 +6309,7 @@ function confirmDelete(){{
         _tc[lang]=data.translations;
         document.querySelectorAll('[data-translate]').forEach(function(el){{
           var k=el.getAttribute('data-translate');
-          if(data.translations[k]) el.innerHTML=data.translations[k].replace(/\n/g,'<br>');
+          if(data.translations[k]) el.innerHTML=applyBr(data.translations[k]);
         }});
       }}
     }}).catch(function(){{d.style.display='none';}});
