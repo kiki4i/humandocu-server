@@ -6308,7 +6308,6 @@ function translatePage(lang){{
   }}).catch(function(){{d.style.display='none';}});
 }}
 </script>
-</script>
 </body></html>"""
 def today_card(doc_id):
     """오대 카드 이미지 생성 — 1080×1350px PNG (4:5)"""
