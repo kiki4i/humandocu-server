@@ -5223,12 +5223,12 @@ def sixshot_page(doc_id):
   </div>
 
   <div class="section">
-    <div class="section-label">{poem_section_title}</div>
+    <div class="section-label" data-translate="poem_section_title">{poem_section_title}</div>
     {haiku_block_html}
   </div>
 
   <div class="section" style="padding-top:0">
-    <div class="section-label">{scene_section_title}</div>
+    <div class="section-label" data-translate="scene_section_title">{scene_section_title}</div>
     {scene_cards}
   </div>
 
@@ -5882,7 +5882,7 @@ def today_v2_page(doc_id, data):
     if today_poem:
         poem_section_html = (
             f'<div class="section">'
-            f'<div class="section-label">{poem_section_title}</div>'
+            f'<div class="section-label" data-translate="poem_section_title">{poem_section_title}</div>'
             + (f'<div style="text-align:center;margin-bottom:14px">{tone_badge_str}</div>' if tone_badge_str else "")
             + f'<div class="rep-poem" data-translate="main_poem">{poem_lines_html(today_poem)}</div>'
             f'</div>'
@@ -6045,7 +6045,7 @@ def today_v2_page(doc_id, data):
   {poem_section_html}
 
   <div class="section" style="padding-top:0">
-    <div class="section-label">{scene_section_title}</div>
+    <div class="section-label" data-translate="scene_section_title">{scene_section_title}</div>
     {scene_cards}
   </div>
 
