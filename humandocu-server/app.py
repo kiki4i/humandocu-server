@@ -5629,7 +5629,7 @@ def today_v2_page(doc_id, data):
         display_tone = translate_genre(tone, lang_code)
         fg, bg = TONE_COLORS.get(tone, TONE_COLORS.get(tone_key, ("#7B4F1E", "#FFF3E0")))
         return (
-            f'<span style="display:inline-block;padding:3px 10px;border-radius:20px;'
+            f'<span data-translate="tone_badge" style="display:inline-block;padding:3px 10px;border-radius:20px;'
             f'background:{bg};color:{fg};font-size:11px;letter-spacing:.08em;font-weight:600">'
             f'{display_tone}</span>'
         )
