@@ -6262,13 +6262,6 @@ function confirmDelete(){{
   .catch(function(){{ var err = document.getElementById('del-err'); err.textContent = {json.dumps(delete_error_msg, ensure_ascii=False)}; err.style.display = 'block'; }});
 }}
 </script>
-<div id="lang-bar-today" style="position:fixed;top:0;right:0;z-index:9999;display:flex;gap:5px;padding:8px 10px;pointer-events:none;">
-  <button onclick="translatePage('ko')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-ko">&#127472;&#127479; KO</button>
-  <button onclick="translatePage('en')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-en">&#127482;&#127480; EN</button>
-  <button onclick="translatePage('jp')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-jp">&#127471;&#127477; JP</button>
-  <button onclick="translatePage('zh')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-zh">&#127464;&#127475; ZH</button>
-</div>
-<div id="tlding" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:14px 24px;border-radius:10px;font-size:13px;z-index:10000;">번역 중...</div>
 <script>
 var _tc={{}};
 function translatePage(lang){{
@@ -6308,6 +6301,13 @@ function translatePage(lang){{
   }}).catch(function(){{d.style.display='none';}});
 }}
 </script>
+<div id="lang-bar-today" style="position:fixed;top:0;right:0;z-index:9999;display:flex;gap:5px;padding:8px 10px;pointer-events:none;">
+  <button onclick="translatePage('ko')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-ko">&#127472;&#127479; KO</button>
+  <button onclick="translatePage('en')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-en">&#127482;&#127480; EN</button>
+  <button onclick="translatePage('jp')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-jp">&#127471;&#127477; JP</button>
+  <button onclick="translatePage('zh')" style="pointer-events:all;padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.8);font-size:10px;cursor:pointer;" id="lbtn-zh">&#127464;&#127475; ZH</button>
+</div>
+<div id="tlding" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:14px 24px;border-radius:10px;font-size:13px;z-index:10000;">번역 중...</div>
 </body></html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
