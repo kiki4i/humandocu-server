@@ -751,8 +751,8 @@ def build_edit_form_html(pending_id, stored):
             + cap_html + '</div>'
         )
 
-    css = 
-/* ── 번역 언어 버튼 ── */
+    css = """
+/* -- 번역 언어 버튼 -- */
 .lang-bar-today{
   position:fixed;top:0;left:0;right:0;z-index:999;
   display:flex;justify-content:flex-end;align-items:center;
@@ -779,7 +779,6 @@ def build_edit_form_html(pending_id, stored):
   font-size:13px;z-index:1000;display:none;
   backdrop-filter:blur(8px);
 }
-"""
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#fff;color:#0d0d0d;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .wrap{max-width:640px;margin:0 auto;padding:48px 24px 96px}
