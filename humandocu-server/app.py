@@ -6272,7 +6272,7 @@ function confirmDelete(){{
 <script>
 (function(){{
   var _tc={{}};
-  function applyBr(s){{ return s ? s.split('\n').join('<br>') : s; }}
+  function applyBr(s){{ return s || ''; }}
   function doTranslate(lang){{
     ['ko','en','jp','zh'].forEach(function(l){{
       var b=document.getElementById('lbtn-'+l);
