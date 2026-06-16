@@ -9953,7 +9953,7 @@ palette: #hex1 #hex2 #hex3"""
 def today_submit_v2():
     """투*필 v2 — SHOT별 시 1편(톤 자동판단) + 오늘의 시 1편"""
     try:
-        import uuid, datetime as dt
+        import uuid, datetime as dt, random
         data           = request.get_json() or {}
         name           = (data.get("name") or "").strip()
         nickname       = (data.get("nickname") or name).strip()
@@ -9982,6 +9982,15 @@ def today_submit_v2():
             "반전 스릴러": "오늘 하루를 긴장감 있게 써라. 평범하게 시작해서 마지막 줄에서 완전히 뒤집어라. 반전이 핵심.",
         }
         genre_instruction = genre_prompts.get(genre, "")
+
+        TECHNIQUE_DESC = {
+            "반전": "마지막 줄에서 예상을 완전히 뒤집어라. 처음 두 줄은 평범하게, 마지막에서 전혀 다른 방향으로.",
+            "날것": "꾸밈 없이 있는 그대로 써라. 정제하지 말고, 거칠고 솔직하게. 과장도 미화도 없이.",
+            "보편": "이 사람의 이야기지만 누구나 자기 얘기라고 느끼게 써라. 구체적인 사물로 시작해서 보편적 감정으로 끝내라.",
+        }
+        exclude_technique = data.get("exclude_technique", "").strip()
+        technique = random.choice([t for t in TECHNIQUE_DESC if t != exclude_technique] or list(TECHNIQUE_DESC))
+        technique_block = f"━━━ 기법 (이번엔 반드시 '{technique}' 기법으로만 작성하라) ━━━\n{TECHNIQUE_DESC[technique]}"
 
         if not name or not email:
             return jsonify({"ok": False, "error": "이름과 이메일을 입력해주세요"}), 400
@@ -10102,13 +10111,7 @@ palette: #hex1 #hex2 #hex3"""
 ⑩ 확인 안 된 사실(성경 구절 번호, 장소명 등) 추측 금지.
    틀린 사실은 감동보다 반감을 준다.
 
-━━━ 기법 (하나만 골라라) ━━━
-① 반전: 평범하게 시작 → 마지막 줄에서 완전히 뒤집어라
-   ✅ "일주일을 버텼다 / 금요일 밤이 되어서야 / 비로소 나였다"
-② 날것: 누구나 느끼지만 아무도 말 안 하는 걸 그대로
-   ✅ "작년 것은 어디 갔지 / 그게 왜 이렇게 / 슬프지"
-③ 보편: 이 사람 얘기인데 읽는 사람 모두 "나도 그래"
-   ✅ "차린 건 없는데 / 다 먹었다"
+{technique_block}
 
 ━━━ 오늘의 장르: {genre} ━━━
 {genre_instruction}
@@ -10192,6 +10195,7 @@ palette: #hex1 #hex2 #hex3"""
             "hashtags":       _hashtags_parsed,
             "palette":        _palette_parsed,
             "genre":          genre,
+            "technique":      technique,
             "created_at":     now,
         })
 
@@ -10202,11 +10206,12 @@ palette: #hex1 #hex2 #hex3"""
             import traceback; traceback.print_exc()
 
         return jsonify({
-            "ok":       True,
-            "doc_id":   doc_id,
-            "page_url": page_url,
-            "poems":    ai_text,
-            "identity": today_sentence,
+            "ok":        True,
+            "doc_id":    doc_id,
+            "page_url":  page_url,
+            "poems":     ai_text,
+            "identity":  today_sentence,
+            "technique": technique,
         })
 
     except Exception as e:
