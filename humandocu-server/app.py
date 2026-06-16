@@ -7858,7 +7858,7 @@ def generate_damnyejang_messages(deceased_name, chief_name, chief_words, adv_dat
         resp = requests.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": "claude-sonnet-4-20250514", "max_tokens": 400, "messages": [{"role": "user", "content": prompt}]},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 400, "messages": [{"role": "user", "content": prompt}]},
             timeout=60
         )
         resp.raise_for_status()
@@ -9310,7 +9310,7 @@ palette: #hex1 #hex2 #hex3"""
 {OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
@@ -9565,7 +9565,7 @@ palette: #hex1 #hex2 #hex3"""
 {OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
@@ -9904,7 +9904,7 @@ palette: #hex1 #hex2 #hex3"""
 {OUTPUT_FORMAT}"""})
 
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=4000,
             messages=[{"role": "user", "content": content_parts}]
         )
@@ -10177,7 +10177,7 @@ palette: #hex1 #hex2 #hex3"""
 """})
 
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=3000,
             system=system_prompt,
             messages=[{"role": "user", "content": content_parts}]
