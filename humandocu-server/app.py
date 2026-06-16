@@ -6897,13 +6897,14 @@ def next_today(current_doc_id):
 @app.route("/api/today/feed", methods=["GET"])
 def today_feed():
     """공개 투*필 목록 반환 — 썸네일 그리드용.
-    ?limit=12&offset=0
+    ?limit=12&offset=0&genre=감동명작
     - is_public==True 전체 가져와서 Python에서 created_at 내림차순 정렬 후 offset/limit 슬라이싱
     - 응답: { status, items, has_more, next_offset, total }
     """
     try:
         limit = min(int(request.args.get("limit", 12)), 30)
         offset = max(int(request.args.get("offset", 0)), 0)
+        genre_filter = (request.args.get("genre") or "").strip()
         db = _get_db()
         from google.cloud.firestore_v1.base_query import FieldFilter
         docs = db.collection("today")\
@@ -6912,9 +6913,20 @@ def today_feed():
         all_items = []
         for doc in docs:
             d = doc.to_dict() or {}
+            genre = d.get("genre", "")
+            if genre_filter and genre != genre_filter:
+                continue
             imgs = d.get("shot_images", {})
             photo1 = imgs.get("1", "") or imgs.get(1, "")
             photo2 = imgs.get("2", "") or imgs.get(2, "")
+            poems = d.get("poems", "")
+            poem_line = ""
+            if poems:
+                for line in poems.split("\n"):
+                    line = line.strip()
+                    if line and not line.startswith("["):
+                        poem_line = line
+                        break
             all_items.append({
                 "doc_id": doc.id,
                 "name": d.get("name", ""),
@@ -6922,6 +6934,8 @@ def today_feed():
                 "identity": d.get("identity", ""),
                 "photo1": photo1,
                 "photo2": photo2,
+                "genre": genre,
+                "poem_line": poem_line,
                 "created_at": d.get("created_at", ""),
             })
         all_items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
