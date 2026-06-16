@@ -10231,4 +10231,36 @@ palette: #hex1 #hex2 #hex3"""
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+@app.route("/api/today/my-records", methods=["GET"])
+def today_my_records():
+    import re as _re
+    email = request.args.get("email", "").strip()
+    if not email:
+        return jsonify({"ok": False, "items": []})
+    try:
+        db = _get_db()
+        docs = db.collection("today").where("email", "==", email).order_by("created_at", direction="DESCENDING").limit(100).get()
+        items = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            imgs = d.get("shot_images", {})
+            poems_raw = d.get("poems", "") or d.get("ai_text", "") or ""
+            poem_first = ""
+            m = _re.search(r'\[오늘의시\]\s*(.+?)(?:\[|$)', poems_raw, _re.S)
+            if m:
+                lines = [l.strip() for l in m.group(1).strip().splitlines() if l.strip()]
+                poem_first = "\n".join(lines[:3])
+            items.append({
+                "doc_id": doc.id,
+                "nickname": d.get("nickname", "") or d.get("name", ""),
+                "genre": d.get("genre", ""),
+                "created_at": d.get("created_at", ""),
+                "poem_first": poem_first,
+                "photo1": imgs.get("1", "") or imgs.get(1, ""),
+            })
+        return jsonify({"ok": True, "items": items})
+    except Exception as e:
+        logger.error(f"[TODAY-MY-RECORDS] error: {e}")
+        return jsonify({"ok": False, "items": []})
+
 # deploy trigger 2026-06-09 07:28:08
