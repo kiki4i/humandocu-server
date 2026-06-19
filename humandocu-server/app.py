@@ -5542,8 +5542,7 @@ def today_page(doc_id):
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
     if data.get("type") == "today_v2":
-        from flask import redirect as _redirect
-        return _redirect(f"https://mestory.art/today-result.html?id={doc_id}", 302)
+        return today_v2_page(doc_id, data)
     _g._doc_data_override = data
     _g._is_owner = True   # today 페이지는 본인만 직접 접근
     return sixshot_page(doc_id)
@@ -5852,6 +5851,7 @@ def today_v2_page(doc_id, data):
         og_image = "https://mestory.art/today-icon-512.png"
 
     page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
+    page_url_result = f"https://mestory.art/today-result.html?id={doc_id}"
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
@@ -6233,10 +6233,10 @@ function kakaoShare() {{
       title: {json.dumps(og_title)},
       description: {json.dumps(og_desc)},
       imageUrl: '{og_image}' ? '{og_image}' : 'https://mestory.art/today-icon-512.png',
-      link: {{ mobileWebUrl: '{page_url_self}', webUrl: '{page_url_self}' }},
+      link: {{ mobileWebUrl: '{page_url_result}', webUrl: '{page_url_result}' }},
     }},
     buttons: [
-      {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_self}', webUrl: '{page_url_self}' }} }},
+      {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_result}', webUrl: '{page_url_result}' }} }},
       {{ title: {json.dumps(kakao_create_btn)}, link: {{ mobileWebUrl: 'https://mestory.art', webUrl: 'https://mestory.art' }} }},
     ],
   }});
