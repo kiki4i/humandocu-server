@@ -54,6 +54,14 @@ def today_preflight():
 def today_card_preflight(doc_id=None):
     return "", 204
 
+@app.route("/api/today/feed", methods=["OPTIONS"])
+def today_feed_preflight():
+    return "", 204
+
+@app.route("/api/today/my-records", methods=["OPTIONS"])
+def today_my_records_preflight():
+    return "", 204
+
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO    = "kiki4i/humandocu"
