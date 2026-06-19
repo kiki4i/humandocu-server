@@ -5542,7 +5542,8 @@ def today_page(doc_id):
     if data is None:
         return "<h2 style='font-family:sans-serif;text-align:center;margin-top:80px'>페이지를 찾을 수 없습니다.</h2>", 404
     if data.get("type") == "today_v2":
-        return today_v2_page(doc_id, data)
+        from flask import redirect as _redirect
+        return _redirect(f"https://mestory.art/today-result.html?id={doc_id}", 302)
     _g._doc_data_override = data
     _g._is_owner = True   # today 페이지는 본인만 직접 접근
     return sixshot_page(doc_id)
@@ -6556,6 +6557,55 @@ def today_card(doc_id):
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/today/data/<doc_id>", methods=["GET", "OPTIONS"])
+def today_data_api(doc_id):
+    """today_v2 문서 데이터를 JSON으로 반환 — today-result.html 에서 사용"""
+    if request.method == "OPTIONS":
+        return "", 204
+    data = firebase_get_today(doc_id)
+    if data is None:
+        return jsonify({"error": "not found"}), 404
+    import re as _re
+    poems_raw = data.get("poems", "")
+    poem_dict = {}
+    if poems_raw:
+        for m in _re.finditer(r'\[([^\]]+)\](.*?)(?=\[[^\]]+\]|$)', poems_raw, _re.DOTALL):
+            key = m.group(1).strip()
+            content = m.group(2).strip()
+            if content:
+                poem_dict[key] = content
+    shots_raw = data.get("shots", {})
+    shot_images = data.get("shot_images", {})
+    shots_list = []
+    for i in range(1, 7):
+        key = str(i)
+        text = shots_raw.get(key, shots_raw.get(i, ""))
+        img = shot_images.get(key, "")
+        if text or img:
+            shots_list.append({
+                "index": i,
+                "text": text,
+                "image": img,
+                "poem": poem_dict.get(f"SHOT{i}시", "") or poem_dict.get(f"SHOT{i}", ""),
+                "tone": poem_dict.get(f"SHOT{i}톤", "").strip(),
+            })
+    result = {
+        "doc_id": doc_id,
+        "nickname": data.get("nickname", "") or data.get("name", ""),
+        "name": data.get("name", ""),
+        "identity": data.get("identity", ""),
+        "last_to": data.get("last_to", ""),
+        "last_msg": data.get("last_msg", ""),
+        "genre": (data.get("genre") or poem_dict.get("오늘의시톤", "")).strip(),
+        "today_poem": poem_dict.get("오늘의시", ""),
+        "shots": shots_list,
+        "created_at": data.get("created_at", "")[:10] if data.get("created_at") else "",
+        "lang": data.get("lang", "ko"),
+        "hashtags": data.get("hashtags", ""),
+    }
+    return jsonify(result)
 
 
 @app.route("/api/check-today", methods=["GET"])
