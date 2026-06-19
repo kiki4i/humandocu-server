@@ -5851,7 +5851,6 @@ def today_v2_page(doc_id, data):
         og_image = "https://mestory.art/today-icon-512.png"
 
     page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
-    page_url_kakao = "https://mestory.art"
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
@@ -6233,10 +6232,10 @@ function kakaoShare() {{
       title: {json.dumps(og_title)},
       description: {json.dumps(og_desc)},
       imageUrl: '{og_image}' ? '{og_image}' : 'https://mestory.art/today-icon-512.png',
-      link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }},
+      link: {{ mobileWebUrl: '{page_url_self}', webUrl: '{page_url_self}' }},
     }},
     buttons: [
-      {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }} }},
+      {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_self}', webUrl: '{page_url_self}' }} }},
       {{ title: {json.dumps(kakao_create_btn)}, link: {{ mobileWebUrl: 'https://mestory.art', webUrl: 'https://mestory.art' }} }},
     ],
   }});
