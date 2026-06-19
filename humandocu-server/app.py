@@ -5435,7 +5435,7 @@ function kakaoShare() {{
     content: {{
       title: {json.dumps(og_title)},
       description: {json.dumps(og_desc)},
-      imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
+      imageUrl: '{og_image}' ? '{og_image}' : 'https://mestory.art/today-icon-512.png',
       link: {{
         mobileWebUrl: '{page_url_kakao}',
         webUrl: '{page_url_kakao}',
@@ -5681,12 +5681,12 @@ def today_v2_page(doc_id, data):
         delete_success_msg  = "Deleted."
         delete_done_sub     = "Redirecting to humandocu.com..."
         delete_error_msg    = "Code is invalid or expired."
-        kakao_view_btn      = "View Filmography"
-        kakao_create_btn    = "Create Mine"
+        kakao_view_btn      = "View Mestory"
+        kakao_create_btn    = "Start Recording"
         copy_alert          = "Link copied!\\nShare it on KakaoTalk, Instagram, or your profile."
-        page_title_str      = f"Today Filmography · {nickname}"
-        og_title            = f"{nickname}'s Today Filmography · Humandocu"
-        og_desc             = "AI captured today in 6 photos and a poem."
+        page_title_str      = f"Mestory · {nickname}"
+        og_title            = "Mestory — My Today, My Story"
+        og_desc             = "A photo and a short note. AI turns your day into a story."
         ios_hint_text       = "📱 Long-press the image and tap Save to Photos"
     elif is_ja:
         poem_section_title  = "✦ AIが完成させた詩"
@@ -5727,8 +5727,8 @@ def today_v2_page(doc_id, data):
         delete_success_msg  = "削除しました。"
         delete_done_sub     = "humandocu.comへ移動します..."
         delete_error_msg    = "コードが正しくないか、期限切れです。"
-        kakao_view_btn      = "フィルモグラフィーを見る"
-        kakao_create_btn    = "私も作る"
+        kakao_view_btn      = "ミストーリを見る"
+        kakao_create_btn    = "記録してみる"
         copy_alert          = "リンクがコピーされました！\\nカカオトーク・Instagram・名刺に貼り付けてください"
         page_title_str      = f"Today Film · {nickname}の今日"
         og_title            = f"{nickname}のToday Film · Humandocu"
@@ -5771,8 +5771,8 @@ def today_v2_page(doc_id, data):
         delete_success_msg  = "已删除。"
         delete_done_sub     = "正在前往humandocu.com..."
         delete_error_msg    = "验证码不正确或已过期。"
-        kakao_view_btn      = "查看人生影志"
-        kakao_create_btn    = "我也来创建"
+        kakao_view_btn      = "查看米斯托里"
+        kakao_create_btn    = "开始记录"
         copy_alert          = "链接已复制！\\n粘贴到KakaoTalk、Instagram或名片中吧"
         page_title_str      = f"Today Film · {nickname}的今天"
         og_title            = f"{nickname}的Today Film · Humandocu"
@@ -5780,7 +5780,7 @@ def today_v2_page(doc_id, data):
     else:
         poem_section_title  = "✦ 오늘을 담은 시"
         scene_section_title = "오늘의 사진들"
-        hero_sub_label      = "투*필 · TODAY FILMOGRAPHY"
+        hero_sub_label      = "미스토리 · MESTORY"
         hero_tagline        = f"{nickname}님의 필모그래피"
         share_tagline       = "매일을 담아보세요.<br>모으면 그것이 당신이에요."
         cta_tag             = "HUMANDOCU · 투*필"
@@ -5815,12 +5815,12 @@ def today_v2_page(doc_id, data):
         delete_success_msg  = "삭제되었습니다."
         delete_done_sub     = "humandocu.com으로 이동합니다..."
         delete_error_msg    = "코드가 올바르지 않거나 만료되었습니다."
-        kakao_view_btn      = "필모그래피 보기"
-        kakao_create_btn    = "나도 만들기"
+        kakao_view_btn      = "미스토리 보기"
+        kakao_create_btn    = "나도 기록하기"
         copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
-        page_title_str      = f"투*필 · {nickname}님의 오늘"
-        og_title            = f"{nickname}님의 오늘 · 투*필 TODAY FILMOGRAPHY"
-        og_desc             = "사진 6장으로 담은 오늘 — humandocu.com"
+        page_title_str      = f"미스토리 · {nickname}님의 오늘"
+        og_title            = "미스토리 — 나의 오늘, 나의 이야기"
+        og_desc             = "사진과 짧은 글 한 줄. AI가 오늘을 기억할 글로 담아드립니다."
 
     # 오대 카드 다운로드 버튼 레이블
     card_btn_label = (
@@ -5848,10 +5848,10 @@ def today_v2_page(doc_id, data):
             og_image = shot_images[k]
             break
     if not og_image:
-        og_image = "https://humandocu.com/today_og.png"
+        og_image = "https://mestory.art/today-icon-512.png"
 
     page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
-    page_url_kakao = f"https://humandocu.com/view.html?id={doc_id}&type=today"
+    page_url_kakao = "https://mestory.art"
 
     # 해시태그·팔레트 히어로 바
     today_hero_extra_html = ""
@@ -6232,12 +6232,12 @@ function kakaoShare() {{
     content: {{
       title: {json.dumps(og_title)},
       description: {json.dumps(og_desc)},
-      imageUrl: '{og_image}' ? '{og_image}' : 'https://humandocu.com/og_main.png',
+      imageUrl: '{og_image}' ? '{og_image}' : 'https://mestory.art/today-icon-512.png',
       link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }},
     }},
     buttons: [
       {{ title: {json.dumps(kakao_view_btn)}, link: {{ mobileWebUrl: '{page_url_kakao}', webUrl: '{page_url_kakao}' }} }},
-      {{ title: {json.dumps(kakao_create_btn)}, link: {{ mobileWebUrl: 'https://humandocu.com/today.html', webUrl: 'https://humandocu.com/today.html' }} }},
+      {{ title: {json.dumps(kakao_create_btn)}, link: {{ mobileWebUrl: 'https://mestory.art', webUrl: 'https://mestory.art' }} }},
     ],
   }});
 }}
