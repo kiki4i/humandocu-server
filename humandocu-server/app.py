@@ -5850,7 +5850,7 @@ def today_v2_page(doc_id, data):
     if not og_image:
         og_image = "https://mestory.art/today-icon-512.png"
 
-    page_url_self  = f"https://mestory.art/today/{doc_id}"
+    page_url_self  = f"https://share.mestory.art/today/{doc_id}"
     page_url_result = f"https://mestory.art/today-result.html?id={doc_id}"
 
     # 해시태그·팔레트 히어로 바
