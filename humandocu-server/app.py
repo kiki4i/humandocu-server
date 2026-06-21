@@ -5820,7 +5820,7 @@ def today_v2_page(doc_id, data):
         copy_alert          = "링크가 복사됐어요!\\n카톡·인스타·명함에 붙여 담으세요"
         page_title_str      = f"미스토리 · {nickname}님의 오늘"
         og_title            = "미스토리 — 나의 오늘, 나의 이야기"
-        og_desc             = "사진과 짧은 글 한 줄. AI가 오늘을 기억할 글로 담아드립니다."
+        og_desc             = f"{today_emojis + ' ' if today_emojis else ''}사진 6장으로 담은 오늘 — mestory.art"
 
     # 오대 카드 다운로드 버튼 레이블
     card_btn_label = (
@@ -5850,7 +5850,7 @@ def today_v2_page(doc_id, data):
     if not og_image:
         og_image = "https://mestory.art/today-icon-512.png"
 
-    page_url_self  = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
+    page_url_self  = f"https://mestory.art/today/{doc_id}"
     page_url_result = f"https://mestory.art/today-result.html?id={doc_id}"
 
     # 해시태그·팔레트 히어로 바
