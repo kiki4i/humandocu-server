@@ -5548,6 +5548,56 @@ function confirmDelete(){{
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
+@app.route("/today/delete", methods=["GET"])
+def today_delete_link():
+    """이메일 '바로 삭제하기' 링크 처리 — code+doc_id 검증 후 삭제 → mestory.art 이동"""
+    from flask import redirect
+    doc_id = (request.args.get("doc_id") or "").strip()
+    code   = (request.args.get("code")   or "").strip()
+    if not doc_id or not code:
+        return "<p style='font-family:sans-serif;text-align:center;margin-top:60px'>잘못된 링크입니다.</p>", 400
+
+    entry = _delete_codes.get(doc_id)
+    if not entry:
+        return ("<p style='font-family:sans-serif;text-align:center;margin-top:60px'>"
+                "이미 삭제됐거나 만료된 링크입니다.</p>"), 400
+    if time.time() > entry["expires"]:
+        _delete_codes.pop(doc_id, None)
+        return ("<p style='font-family:sans-serif;text-align:center;margin-top:60px'>"
+                "링크가 만료됐어요. 다시 삭제를 요청해주세요.</p>"), 400
+    if entry["code"] != code:
+        return ("<p style='font-family:sans-serif;text-align:center;margin-top:60px'>"
+                "올바르지 않은 링크입니다.</p>"), 400
+
+    _delete_codes.pop(doc_id, None)
+    try:
+        db      = _get_db()
+        doc_ref = db.collection("today").document(doc_id)
+        data    = (doc_ref.get().to_dict() or {})
+        shot_images = data.get("shot_images", {})
+        if shot_images:
+            try:
+                from firebase_admin import storage as _fb_storage
+                for url in shot_images.values():
+                    if not url or "firebasestorage.googleapis.com" not in url:
+                        continue
+                    try:
+                        bucket_name = url.split("/b/")[1].split("/o/")[0]
+                        path = urllib.parse.unquote(url.split("/o/")[1].split("?")[0])
+                        _fb_storage.bucket(bucket_name).blob(path).delete()
+                    except Exception as e:
+                        logger.warning(f"[DELETE-LINK] Storage 개별 삭제 실패: {e}")
+            except Exception as e:
+                logger.warning(f"[DELETE-LINK] Storage 블록 오류: {e}")
+        doc_ref.delete()
+        logger.info(f"[DELETE-LINK] today doc 삭제 완료: {doc_id}")
+    except Exception as e:
+        logger.error(f"[DELETE-LINK] error: {e}")
+        return f"<p style='font-family:sans-serif;text-align:center;margin-top:60px'>삭제 중 오류가 발생했어요: {e}</p>", 500
+
+    return redirect("https://mestory.art", 302)
+
+
 @app.route("/today/<doc_id>", methods=["GET"])
 def today_page(doc_id):
     """today 컬렉션 조회 — today_v2는 전용 렌더러, today는 sixshot_page 재사용"""
@@ -6704,11 +6754,17 @@ def today_delete_request():
             '<div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:28px">'
             + (f'{nickname}님의 ' if nickname else '') +
             '미스토리 기록 삭제를 요청하셨어요.<br>아래 6자리 코드를 입력해주세요.</div>'
-            '<div style="background:#f5f2eb;border-radius:8px;padding:24px;text-align:center;margin-bottom:24px">'
+            '<div style="background:#f5f2eb;border-radius:8px;padding:24px;text-align:center;margin-bottom:20px">'
             f'<div style="font-size:40px;font-weight:700;letter-spacing:.4em;color:#27500A">{code}</div>'
             '</div>'
+            f'<div style="text-align:center;margin-bottom:24px">'
+            f'<a href="https://share.mestory.art/today/delete?doc_id={doc_id}&code={code}"'
+            ' style="display:inline-block;padding:13px 28px;background:#e53e3e;color:#fff;'
+            'border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;'
+            'font-family:\'Noto Sans KR\',Arial,sans-serif">바로 삭제하기</a>'
+            '</div>'
             '<div style="font-size:12px;color:#9e8250;line-height:1.9">'
-            '• 10분 이내에 입력해주세요.<br>'
+            '• 링크 또는 코드 입력 방법 모두 10분 이내에 사용해주세요.<br>'
             '• 본인이 요청하지 않았다면 무시하셔도 됩니다.</div>'
             '<div style="margin-top:32px;padding-top:20px;border-top:1px solid #e5dece;'
             'font-size:11px;color:#c8a96e;text-align:center">'
