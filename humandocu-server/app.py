@@ -62,6 +62,10 @@ def today_feed_preflight():
 def today_my_records_preflight():
     return "", 204
 
+@app.route("/api/today/delete", methods=["OPTIONS"])
+def today_delete_preflight():
+    return "", 204
+
 @app.route("/api/tts", methods=["OPTIONS"])
 def tts_preflight():
     return "", 204
@@ -6659,6 +6663,52 @@ def tts_api():
         return jsonify({"audio": audio_b64})
     except Exception as e:
         logger.error(f"[TTS] error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/today/delete", methods=["POST"])
+def today_delete():
+    """today 문서 삭제 — 이메일 본인 확인 후 Firestore doc + Storage 사진 삭제"""
+    try:
+        body = request.get_json(force=True) or {}
+        doc_id = (body.get("doc_id") or "").strip()
+        email  = (body.get("email")  or "").strip().lower()
+        if not doc_id or not email:
+            return jsonify({"error": "doc_id and email required"}), 400
+
+        db = _get_db()
+        doc_ref = db.collection("today").document(doc_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"error": "not found"}), 404
+
+        data = doc.to_dict()
+        if data.get("email", "").strip().lower() != email:
+            return jsonify({"error": "unauthorized"}), 403
+
+        # Storage 사진 삭제
+        shot_images = data.get("shot_images", {})
+        if shot_images:
+            try:
+                from firebase_admin import storage as _fb_storage
+                import urllib.parse as _up
+                for url in shot_images.values():
+                    if not url or "firebasestorage.googleapis.com" not in url:
+                        continue
+                    try:
+                        bucket_name = url.split("/b/")[1].split("/o/")[0]
+                        path = _up.unquote(url.split("/o/")[1].split("?")[0])
+                        _fb_storage.bucket(bucket_name).blob(path).delete()
+                    except Exception as e:
+                        logger.warning(f"[DELETE] Storage 개별 삭제 실패: {e}")
+            except Exception as e:
+                logger.warning(f"[DELETE] Storage 삭제 블록 오류: {e}")
+
+        doc_ref.delete()
+        logger.info(f"[DELETE] today doc 삭제 완료: {doc_id} by {email}")
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[DELETE] error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
