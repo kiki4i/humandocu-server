@@ -62,6 +62,10 @@ def today_feed_preflight():
 def today_my_records_preflight():
     return "", 204
 
+@app.route("/api/tts", methods=["OPTIONS"])
+def tts_preflight():
+    return "", 204
+
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO    = "kiki4i/humandocu"
@@ -6600,12 +6604,52 @@ def today_data_api(doc_id):
         "last_msg": data.get("last_msg", ""),
         "genre": (data.get("genre") or poem_dict.get("오늘의시톤", "")).strip(),
         "today_poem": poem_dict.get("오늘의시", ""),
+        "today_poem_en": poem_dict.get("오늘의시EN", "") or poem_dict.get("오늘의시en", ""),
+        "today_poem_ja": poem_dict.get("오늘의시JA", "") or poem_dict.get("오늘의시ja", ""),
+        "today_poem_zh": poem_dict.get("오늘의시ZH", "") or poem_dict.get("오늘의시zh", ""),
         "shots": shots_list,
         "created_at": data.get("created_at", "")[:10] if data.get("created_at") else "",
         "lang": data.get("lang", "ko"),
         "hashtags": data.get("hashtags", ""),
     }
     return jsonify(result)
+
+
+@app.route("/api/tts", methods=["POST"])
+def tts_api():
+    try:
+        body = request.get_json(force=True) or {}
+        text = (body.get("text") or "").strip()
+        lang = (body.get("lang") or "ko").lower()
+        if not text:
+            return jsonify({"error": "text required"}), 400
+        voice_map = {
+            "ko": ("ko-KR", "ko-KR-Standard-A"),
+            "en": ("en-US", "en-US-Standard-C"),
+            "ja": ("ja-JP", "ja-JP-Standard-A"),
+            "zh": ("cmn-CN", "cmn-CN-Standard-A"),
+        }
+        lang_code, voice_name = voice_map.get(lang, voice_map["ko"])
+        api_key = os.environ.get("GOOGLE_TTS_API_KEY")
+        if not api_key:
+            return jsonify({"error": "TTS not configured"}), 503
+        resp = requests.post(
+            f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}",
+            json={
+                "input": {"text": text},
+                "voice": {"languageCode": lang_code, "name": voice_name},
+                "audioConfig": {"audioEncoding": "MP3"},
+            },
+            timeout=15,
+        )
+        if not resp.ok:
+            logger.error(f"[TTS] Google API error {resp.status_code}: {resp.text[:200]}")
+            return jsonify({"error": f"TTS API error: {resp.status_code}"}), 502
+        audio_b64 = resp.json().get("audioContent", "")
+        return jsonify({"audio": audio_b64})
+    except Exception as e:
+        logger.error(f"[TTS] error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/check-today", methods=["GET"])
