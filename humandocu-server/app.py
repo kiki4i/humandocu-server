@@ -6624,10 +6624,10 @@ def tts_api():
         if not text:
             return jsonify({"error": "text required"}), 400
         voice_map = {
-            "ko": ("ko-KR", "ko-KR-Standard-A"),
-            "en": ("en-US", "en-US-Standard-C"),
-            "ja": ("ja-JP", "ja-JP-Standard-A"),
-            "zh": ("cmn-CN", "cmn-CN-Standard-A"),
+            "ko": ("ko-KR", "ko-KR-Neural2-A"),
+            "en": ("en-US", "en-US-Neural2-C"),
+            "ja": ("ja-JP", "ja-JP-Neural2-B"),
+            "zh": ("cmn-CN", "cmn-CN-Wavenet-A"),
         }
         lang_code, voice_name = voice_map.get(lang, voice_map["ko"])
         api_key = os.environ.get("GOOGLE_TTS_API_KEY")
