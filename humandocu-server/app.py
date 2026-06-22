@@ -6638,7 +6638,7 @@ def tts_api():
             json={
                 "input": {"text": text},
                 "voice": {"languageCode": lang_code, "name": voice_name},
-                "audioConfig": {"audioEncoding": "MP3"},
+                "audioConfig": {"audioEncoding": "MP3", "speakingRate": 0.85, "pitch": -2.0},
             },
             timeout=15,
         )
