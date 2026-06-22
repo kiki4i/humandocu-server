@@ -7,6 +7,7 @@ import re
 import urllib.parse
 import bcrypt
 import secrets
+import time
 import logging
 import anthropic
 import firebase_admin
@@ -15,6 +16,9 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger(__name__)
+
+# 삭제 인증 코드 임시 저장 (메모리) — {doc_id: {code, email, expires}}
+_delete_codes: dict = {}
 
 app = Flask(__name__)
 
@@ -63,6 +67,8 @@ def today_my_records_preflight():
     return "", 204
 
 @app.route("/api/today/delete", methods=["OPTIONS"])
+@app.route("/api/today/delete-request", methods=["OPTIONS"])
+@app.route("/api/today/delete-confirm", methods=["OPTIONS"])
 def today_delete_preflight():
     return "", 204
 
@@ -6663,6 +6669,116 @@ def tts_api():
         return jsonify({"audio": audio_b64})
     except Exception as e:
         logger.error(f"[TTS] error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/today/delete-request", methods=["POST"])
+def today_delete_request():
+    """삭제 1단계 — 이메일 확인 후 6자리 코드 발송"""
+    try:
+        body   = request.get_json(force=True) or {}
+        doc_id = (body.get("doc_id") or "").strip()
+        email  = (body.get("email")  or "").strip().lower()
+        if not doc_id or not email:
+            return jsonify({"error": "doc_id and email required"}), 400
+
+        db  = _get_db()
+        doc = db.collection("today").document(doc_id).get()
+        if not doc.exists:
+            return jsonify({"error": "not found"}), 404
+
+        data = doc.to_dict()
+        if data.get("email", "").strip().lower() != email:
+            return jsonify({"error": "email_mismatch"}), 403
+
+        code = f"{secrets.randbelow(1000000):06d}"
+        _delete_codes[doc_id] = {"code": code, "email": email,
+                                  "expires": time.time() + 600}
+
+        nickname = (data.get("nickname") or data.get("name") or "").strip()
+        html_body = (
+            '<div style="font-family:\'Noto Sans KR\',Arial,sans-serif;max-width:480px;'
+            'margin:0 auto;background:#fff;padding:36px 28px">'
+            '<div style="font-size:11px;letter-spacing:.2em;color:#c8a96e;margin-bottom:24px">MESTORY</div>'
+            '<div style="font-size:20px;font-weight:600;color:#2d2a22;margin-bottom:12px">기록 삭제 인증 코드</div>'
+            '<div style="font-size:14px;color:#6b6050;line-height:1.8;margin-bottom:28px">'
+            + (f'{nickname}님의 ' if nickname else '') +
+            '미스토리 기록 삭제를 요청하셨어요.<br>아래 6자리 코드를 입력해주세요.</div>'
+            '<div style="background:#f5f2eb;border-radius:8px;padding:24px;text-align:center;margin-bottom:24px">'
+            f'<div style="font-size:40px;font-weight:700;letter-spacing:.4em;color:#27500A">{code}</div>'
+            '</div>'
+            '<div style="font-size:12px;color:#9e8250;line-height:1.9">'
+            '• 10분 이내에 입력해주세요.<br>'
+            '• 본인이 요청하지 않았다면 무시하셔도 됩니다.</div>'
+            '<div style="margin-top:32px;padding-top:20px;border-top:1px solid #e5dece;'
+            'font-size:11px;color:#c8a96e;text-align:center">'
+            '<a href="https://mestory.art" style="color:#9e8250;text-decoration:none">mestory.art</a></div>'
+            '</div>'
+        )
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+                     "Content-Type": "application/json"},
+            json={"from": "미스토리 <noreply@humandocu.com>",
+                  "to": [email],
+                  "subject": "[미스토리] 기록 삭제 인증 코드",
+                  "html": html_body},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[DELETE-REQUEST] error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/today/delete-confirm", methods=["POST"])
+def today_delete_confirm():
+    """삭제 2단계 — 코드 검증 후 Firestore doc + Storage 사진 삭제"""
+    try:
+        body   = request.get_json(force=True) or {}
+        doc_id = (body.get("doc_id") or "").strip()
+        code   = (body.get("code")   or "").strip()
+        if not doc_id or not code:
+            return jsonify({"error": "doc_id and code required"}), 400
+
+        entry = _delete_codes.get(doc_id)
+        if not entry:
+            return jsonify({"error": "no_code"}), 400
+        if time.time() > entry["expires"]:
+            _delete_codes.pop(doc_id, None)
+            return jsonify({"error": "expired"}), 400
+        if entry["code"] != code:
+            return jsonify({"error": "wrong_code"}), 400
+
+        _delete_codes.pop(doc_id, None)
+
+        db      = _get_db()
+        doc_ref = db.collection("today").document(doc_id)
+        data    = (doc_ref.get().to_dict() or {})
+
+        # Storage 사진 삭제
+        shot_images = data.get("shot_images", {})
+        if shot_images:
+            try:
+                from firebase_admin import storage as _fb_storage
+                for url in shot_images.values():
+                    if not url or "firebasestorage.googleapis.com" not in url:
+                        continue
+                    try:
+                        bucket_name = url.split("/b/")[1].split("/o/")[0]
+                        path = urllib.parse.unquote(url.split("/o/")[1].split("?")[0])
+                        _fb_storage.bucket(bucket_name).blob(path).delete()
+                    except Exception as e:
+                        logger.warning(f"[DELETE-CONFIRM] Storage 개별 삭제 실패: {e}")
+            except Exception as e:
+                logger.warning(f"[DELETE-CONFIRM] Storage 블록 오류: {e}")
+
+        doc_ref.delete()
+        logger.info(f"[DELETE-CONFIRM] today doc 삭제 완료: {doc_id}")
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[DELETE-CONFIRM] error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
