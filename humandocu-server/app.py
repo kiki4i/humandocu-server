@@ -5554,6 +5554,16 @@ def today_page(doc_id):
 
 def today_v2_page(doc_id, data):
     """투*필 v2 전용 렌더러 — 톤 자동판단, SHOT별 시 1편"""
+    # 봇/크롤러가 아니면 mestory.art 결과 페이지로 리다이렉트
+    ua = request.headers.get("User-Agent", "").lower()
+    _bot_keywords = ("kakaotalk", "facebookexternalhit", "twitterbot",
+                     "bot", "crawler", "spider")
+    if not any(kw in ua for kw in _bot_keywords):
+        from flask import redirect
+        return redirect(
+            f"https://mestory.art/today-result.html?id={doc_id}", 301
+        )
+
     name        = data.get("name", "")
     nickname    = data.get("nickname", "") or name
     email       = data.get("email", "")
