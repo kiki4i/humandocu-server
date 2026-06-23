@@ -6683,7 +6683,9 @@ def today_data_api(doc_id):
         "hashtags": data.get("hashtags", ""),
         "reflection": data.get("reflection", ""),
         "tomorrow_question": data.get("tomorrow_question", ""),
-        "today_word": data.get("today_word", ""),
+        "today_word_hanja": data.get("today_word_hanja", ""),
+        "today_word_korean": data.get("today_word_korean", ""),
+        "today_word_reason": data.get("today_word_reason", ""),
     }
     return jsonify(result)
 
@@ -10420,7 +10422,7 @@ palette: #hex1 #hex2 #hex3
 (내일로 연결되는 질문 한 가지)
 
 [오늘의단어]
-(사자성어 또는 속담)
+漢字表現 (한글발음)
 (왜 오늘과 어울리는지 한 줄)"""
 
         # 출력 태그 이름 잠금용 system prompt
@@ -10568,11 +10570,20 @@ palette: #hex1 #hex2 #hex3
         _rf_m = re.search(r'\[반영\]\s*\n?\s*(.+)', ai_text)
         _tq_m = re.search(r'\[내일질문\]\s*\n?\s*(.+)', ai_text)
         _tw_m = re.search(r'\[오늘의단어\]\s*\n\s*(.+)\n\s*(.+)', ai_text)
-        _hashtags_parsed   = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed    = _pl_m.group(1).strip().split() if _pl_m else []
-        _reflection_parsed = _rf_m.group(1).strip() if _rf_m else ""
-        _tomorrow_q_parsed = _tq_m.group(1).strip() if _tq_m else ""
-        _today_word_parsed = f"{_tw_m.group(1).strip()} — {_tw_m.group(2).strip()}" if _tw_m else ""
+        _hashtags_parsed      = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
+        _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
+        _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
+        if _tw_m:
+            _tw_line1 = _tw_m.group(1).strip()
+            _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
+            _today_word_hanja   = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
+            _today_word_korean  = _ko_m.group(1).strip() if _ko_m else ""
+            _today_word_reason  = _tw_m.group(2).strip()
+        else:
+            _today_word_hanja  = ""
+            _today_word_korean = ""
+            _today_word_reason = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
@@ -10593,10 +10604,12 @@ palette: #hex1 #hex2 #hex3
             "lang":             lang,
             "hashtags":         _hashtags_parsed,
             "palette":          _palette_parsed,
-            "reflection":       _reflection_parsed,
+            "reflection":        _reflection_parsed,
             "tomorrow_question": _tomorrow_q_parsed,
-            "today_word":       _today_word_parsed,
-            "genre":            genre,
+            "today_word_hanja":  _today_word_hanja,
+            "today_word_korean": _today_word_korean,
+            "today_word_reason": _today_word_reason,
+            "genre":             genre,
             "technique":        technique,
             "created_at":       now,
         })
