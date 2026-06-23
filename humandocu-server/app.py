@@ -9452,6 +9452,7 @@ def _upload_form_photo(file_obj, uid):
 def today_submit():
     """투*필 자체 폼 제출 — 사진 업로드 + AI 시 생성 + 저장"""
     try:
+        print("[TODAY] submit 호출됨")
         data = request.get_json() or {}
         name     = (data.get("name") or "").strip()
         nickname = (data.get("nickname") or name).strip()
