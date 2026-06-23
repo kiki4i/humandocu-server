@@ -6686,6 +6686,8 @@ def today_data_api(doc_id):
         "today_word_hanja": data.get("today_word_hanja", ""),
         "today_word_korean": data.get("today_word_korean", ""),
         "today_word_reason": data.get("today_word_reason", ""),
+        "time_capsule": data.get("time_capsule", ""),
+        "capsule_open_date": data.get("capsule_open_date", ""),
     }
     return jsonify(result)
 
@@ -10345,6 +10347,7 @@ def today_submit_v2():
             "zh": "重要: 所有诗歌和文字必须只用中文写。",
         }.get(lang, "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.")
 
+        time_capsule = (data.get("time_capsule") or "").strip()
         genre = (data.get("genre") or "").strip()
         genre_prompts = {
             "감동명작":    "오늘 하루를 감동적인 영화 한 장면처럼 써라. 진하고 뭉클하게. 평범한 순간에서 깊은 감동을 꺼내라.",
@@ -10587,6 +10590,7 @@ palette: #hex1 #hex2 #hex3
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
+        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=30)).strftime("%Y-%m-%d")
         _get_db().collection("today").document(doc_id).set({
             "doc_id":           doc_id,
             "name":             name,
@@ -10611,6 +10615,8 @@ palette: #hex1 #hex2 #hex3
             "today_word_reason": _today_word_reason,
             "genre":             genre,
             "technique":        technique,
+            "time_capsule":     time_capsule,
+            "capsule_open_date": capsule_open_date,
             "created_at":       now,
         })
         print("[TODAY-V2] reflection 저장:", _reflection_parsed, "/ tomorrow:", _tomorrow_q_parsed)
