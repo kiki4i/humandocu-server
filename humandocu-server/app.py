@@ -10554,8 +10554,8 @@ palette: #hex1 #hex2 #hex3
         import re as _re_ht
         _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _rf_m = _re_ht.search(r'\[반영\]\s*(.+)', ai_text)
-        _tq_m = _re_ht.search(r'\[내일질문\]\s*(.+)', ai_text)
+        _rf_m = re.search(r'\[반영\]\s*\n?\s*(.+)', ai_text)
+        _tq_m = re.search(r'\[내일질문\]\s*\n?\s*(.+)', ai_text)
         _hashtags_parsed   = _ht_m.group(1).strip() if _ht_m else ""
         _palette_parsed    = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed = _rf_m.group(1).strip() if _rf_m else ""
