@@ -10659,6 +10659,86 @@ def today_capsule_update():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/today/capsule-notify", methods=["POST"])
+def today_capsule_notify():
+    try:
+        import datetime as dt
+        today_str = dt.datetime.utcnow().strftime("%Y-%m-%d")
+        db = _get_db()
+        docs = (db.collection("today")
+                  .where("capsule_open_date", "==", today_str)
+                  .get())
+        sent, skipped = 0, 0
+        for doc in docs:
+            d = doc.to_dict() or {}
+            if not d.get("time_capsule") or d.get("capsule_notified"):
+                skipped += 1
+                continue
+            email    = d.get("email", "")
+            nickname = d.get("nickname") or d.get("name") or "당신"
+            capsule  = d.get("time_capsule", "")
+            doc_id   = doc.id
+            page_url = f"https://mestory.art/today-result.html?id={doc_id}"
+            html_body = f"""<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f2eb;font-family:'Noto Sans KR',sans-serif">
+<div style="max-width:560px;margin:0 auto;background:#fff">
+  <div style="background:#0f0d09;padding:32px 40px 28px">
+    <div style="font-size:11px;color:#c8a96e;letter-spacing:.15em;margin-bottom:12px">MESTORY · 타임캡슐</div>
+    <div style="font-size:24px;color:#fff;font-weight:700;line-height:1.4">1년 전 오늘,<br>당신이 남긴 말이<br>도착했어요 ✦</div>
+  </div>
+  <div style="padding:40px 40px 32px">
+    <p style="font-size:15px;color:#2d2a22;line-height:1.9;margin:0 0 32px">
+      {nickname}님, 딱 1년 전 오늘 당신이 미래의 자신에게 남긴 말입니다.
+    </p>
+    <div style="margin:0 0 32px;padding:24px 28px;border-left:3px solid #c8a96e;background:#faf7f2">
+      <div style="font-size:11px;color:#9e8250;letter-spacing:.1em;margin-bottom:12px">1년 전 나에게</div>
+      <div style="font-size:16px;color:#2d2a22;font-style:italic;line-height:1.9;white-space:pre-wrap">{capsule}</div>
+    </div>
+    <div style="text-align:center;margin:0 0 20px">
+      <a href="{page_url}"
+         style="display:inline-block;padding:16px 40px;background:#c8a96e;color:#0f0d09;
+                text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.08em;border-radius:3px">
+        그날의 기록 다시 보기
+      </a>
+    </div>
+    <div style="text-align:center;margin-bottom:8px">
+      <a href="{page_url}" style="font-size:11px;color:#9e8250;word-break:break-all">{page_url}</a>
+    </div>
+  </div>
+  <div style="background:#f5f0e8;padding:20px;text-align:center;font-size:11px;color:#8a8a8a">
+    <a href="https://mestory.art" style="color:#8b7355;text-decoration:none">mestory.art</a>
+  </div>
+</div>
+</body></html>"""
+            try:
+                resp = requests.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "from": "미스토리 <noreply@mestory.art>",
+                        "to": [email],
+                        "subject": "1년 전 오늘, 당신이 남긴 말이 도착했어요",
+                        "html": html_body,
+                    },
+                    timeout=30,
+                )
+                if resp.status_code < 300:
+                    db.collection("today").document(doc_id).update({"capsule_notified": True})
+                    sent += 1
+                else:
+                    print(f"[CAPSULE-NOTIFY] Resend error {resp.status_code}: {resp.text}")
+                    skipped += 1
+            except Exception as e:
+                print(f"[CAPSULE-NOTIFY] 발송 실패 {doc_id}: {e}")
+                skipped += 1
+        return jsonify({"ok": True, "sent": sent, "skipped": skipped})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/today/my-records", methods=["GET"])
 def today_my_records():
     import re as _re
