@@ -10320,6 +10320,7 @@ palette: #hex1 #hex2 #hex3"""
 def today_submit_v2():
     """투*필 v2 — SHOT별 시 1편(톤 자동판단) + 오늘의 시 1편"""
     try:
+        print("[TODAY-V2] submit 호출됨")
         import uuid, datetime as dt, random
         data           = request.get_json() or {}
         name           = (data.get("name") or "").strip()
@@ -10407,7 +10408,13 @@ def today_submit_v2():
 (시 내용 3~4줄)
 {shot_fmt}
 [팔레트]
-palette: #hex1 #hex2 #hex3"""
+palette: #hex1 #hex2 #hex3
+
+[반영]
+(오늘 하루를 한 문장으로)
+
+[내일질문]
+(내일로 연결되는 질문 한 가지)"""
 
         # 출력 태그 이름 잠금용 system prompt
         lang_sys = {
@@ -10521,6 +10528,13 @@ palette: #hex1 #hex2 #hex3"""
 4. [팔레트]
    palette: #hex1 #hex2 #hex3
 
+5. [반영] - 오늘 하루를 한 문장으로 정의. 판단하거나 평가하지 않고, 있는 그대로 담담하게.
+   예: "준비하는 날이었네요." / "버텨낸 하루였어요." / "작은 것에 눈이 간 날이었군요."
+   한 줄만. 설명 없이.
+
+6. [내일질문] - 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
+   부담 없이, 짧게. 한 줄만.
+
 ⚠️ LANGUAGE REMINDER: {lang_instruction}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
@@ -10540,30 +10554,36 @@ palette: #hex1 #hex2 #hex3"""
         import re as _re_ht
         _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
+        _rf_m = _re_ht.search(r'\[반영\]\s*(.+)', ai_text)
+        _tq_m = _re_ht.search(r'\[내일질문\]\s*(.+)', ai_text)
+        _hashtags_parsed   = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed    = _pl_m.group(1).strip().split() if _pl_m else []
+        _reflection_parsed = _rf_m.group(1).strip() if _rf_m else ""
+        _tomorrow_q_parsed = _tq_m.group(1).strip() if _tq_m else ""
 
         now = dt.datetime.utcnow().isoformat()
         _get_db().collection("today").document(doc_id).set({
-            "doc_id":         doc_id,
-            "name":           name,
-            "nickname":       nickname,
-            "email":          email,
-            "type":           "today_v2",
-            "is_public":      is_public,
-            "shot_images":    shot_images,
-            "shots":          shot_captions,
-            "poems":          ai_text,
-            "identity":       today_sentence,
-            "today_sentence": today_sentence,
-            "last_to":        last_to,
-            "last_msg":       last_msg,
-            "lang":           lang,
-            "hashtags":       _hashtags_parsed,
-            "palette":        _palette_parsed,
-            "genre":          genre,
-            "technique":      technique,
-            "created_at":     now,
+            "doc_id":           doc_id,
+            "name":             name,
+            "nickname":         nickname,
+            "email":            email,
+            "type":             "today_v2",
+            "is_public":        is_public,
+            "shot_images":      shot_images,
+            "shots":            shot_captions,
+            "poems":            ai_text,
+            "identity":         today_sentence,
+            "today_sentence":   today_sentence,
+            "last_to":          last_to,
+            "last_msg":         last_msg,
+            "lang":             lang,
+            "hashtags":         _hashtags_parsed,
+            "palette":          _palette_parsed,
+            "reflection":       _reflection_parsed,
+            "tomorrow_question": _tomorrow_q_parsed,
+            "genre":            genre,
+            "technique":        technique,
+            "created_at":       now,
         })
 
         page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
