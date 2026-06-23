@@ -10590,7 +10590,7 @@ palette: #hex1 #hex2 #hex3
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
-        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=30)).strftime("%Y-%m-%d")
+        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=365)).strftime("%Y-%m-%d")
         _get_db().collection("today").document(doc_id).set({
             "doc_id":           doc_id,
             "name":             name,
@@ -10648,7 +10648,7 @@ def today_capsule_update():
         time_capsule = (body.get("time_capsule") or "").strip()
         if not doc_id:
             return jsonify({"ok": False, "error": "doc_id 필요"}), 400
-        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=30)).strftime("%Y-%m-%d")
+        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=365)).strftime("%Y-%m-%d")
         _get_db().collection("today").document(doc_id).update({
             "time_capsule": time_capsule,
             "capsule_open_date": capsule_open_date,
