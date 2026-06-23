@@ -9565,7 +9565,13 @@ def today_submit():
 hashtags: #태그1 #태그2 #태그3
 
 [팔레트]
-palette: #hex1 #hex2 #hex3"""
+palette: #hex1 #hex2 #hex3
+
+[반영]
+(오늘 하루를 한 문장으로)
+
+[내일질문]
+(내일로 연결되는 질문 한 가지)"""
         content_parts.append({"type": "text", "text": f"""{lang_instruction}
 당신은 40년간 일상의 찰나를 시로 포착해온 한국의 시인입니다.
 나태주의 시선("자세히 보아야 예쁘다")과 마쓰오 바쇼의 하이쿠 정신(순간의 본질을 꿰뚫는 눈)이 몸에 배어 있습니다.
@@ -9637,6 +9643,13 @@ palette: #hex1 #hex2 #hex3"""
 8. [팔레트] - 오늘 사진들의 분위기를 대표하는 색상 3개를 hex 코드로 반환.
    형식: palette: #hex1 #hex2 #hex3 (반드시 이 형식 지킬 것)
 
+9. [반영] - 오늘 하루를 한 문장으로 정의. 판단하거나 평가하지 않고, 있는 그대로 담담하게.
+   예: "준비하는 날이었네요." / "버텨낸 하루였어요." / "작은 것에 눈이 간 날이었군요."
+   한 줄만. 설명 없이.
+
+10. [내일질문] - 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
+    부담 없이, 짧게. 한 줄만.
+
 {lang_instruction}
 
 출력 형식 (정확히 이 형식으로):
@@ -9652,8 +9665,12 @@ palette: #hex1 #hex2 #hex3"""
         import re as _re_ht
         _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
-        _hashtags_parsed = _ht_m.group(1).strip() if _ht_m else ""
-        _palette_parsed  = _pl_m.group(1).strip().split() if _pl_m else []
+        _rf_m = _re_ht.search(r'\[반영\]\s*(.+)', ai_text)
+        _tq_m = _re_ht.search(r'\[내일질문\]\s*(.+)', ai_text)
+        _hashtags_parsed    = _ht_m.group(1).strip() if _ht_m else ""
+        _palette_parsed     = _pl_m.group(1).strip().split() if _pl_m else []
+        _reflection_parsed  = _rf_m.group(1).strip() if _rf_m else ""
+        _tomorrow_q_parsed  = _tq_m.group(1).strip() if _tq_m else ""
 
         # 3. poems = raw string, sixshot_page의 regex 파서가 처리
         poems    = ai_text
@@ -9678,6 +9695,8 @@ palette: #hex1 #hex2 #hex3"""
             "lang": lang,
             "hashtags": _hashtags_parsed,
             "palette": _palette_parsed,
+            "reflection": _reflection_parsed,
+            "tomorrow_question": _tomorrow_q_parsed,
             "created_at": now,
         })
 
