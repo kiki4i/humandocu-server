@@ -10561,6 +10561,7 @@ palette: #hex1 #hex2 #hex3
         _reflection_parsed = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed = _tq_m.group(1).strip() if _tq_m else ""
 
+        print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
         _get_db().collection("today").document(doc_id).set({
             "doc_id":           doc_id,
