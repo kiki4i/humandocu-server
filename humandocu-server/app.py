@@ -6683,6 +6683,7 @@ def today_data_api(doc_id):
         "hashtags": data.get("hashtags", ""),
         "reflection": data.get("reflection", ""),
         "tomorrow_question": data.get("tomorrow_question", ""),
+        "today_word": data.get("today_word", ""),
     }
     return jsonify(result)
 
@@ -10416,7 +10417,11 @@ palette: #hex1 #hex2 #hex3
 (오늘 하루를 한 문장으로)
 
 [내일질문]
-(내일로 연결되는 질문 한 가지)"""
+(내일로 연결되는 질문 한 가지)
+
+[오늘의단어]
+(사자성어 또는 속담)
+(왜 오늘과 어울리는지 한 줄)"""
 
         # 출력 태그 이름 잠금용 system prompt
         lang_sys = {
@@ -10537,6 +10542,10 @@ palette: #hex1 #hex2 #hex3
 6. [내일질문] - 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
    부담 없이, 짧게. 한 줄만.
 
+7. [오늘의단어] - 오늘 하루와 딱 맞는 사자성어 또는 속담 하나.
+   첫 줄: 사자성어 또는 속담.
+   둘째 줄: 왜 오늘과 어울리는지 한 줄 연결. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게.
+
 ⚠️ LANGUAGE REMINDER: {lang_instruction}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
@@ -10558,10 +10567,12 @@ palette: #hex1 #hex2 #hex3
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
         _rf_m = re.search(r'\[반영\]\s*\n?\s*(.+)', ai_text)
         _tq_m = re.search(r'\[내일질문\]\s*\n?\s*(.+)', ai_text)
+        _tw_m = re.search(r'\[오늘의단어\]\s*\n\s*(.+)\n\s*(.+)', ai_text)
         _hashtags_parsed   = _ht_m.group(1).strip() if _ht_m else ""
         _palette_parsed    = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed = _tq_m.group(1).strip() if _tq_m else ""
+        _today_word_parsed = f"{_tw_m.group(1).strip()} — {_tw_m.group(2).strip()}" if _tw_m else ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
@@ -10584,6 +10595,7 @@ palette: #hex1 #hex2 #hex3
             "palette":          _palette_parsed,
             "reflection":       _reflection_parsed,
             "tomorrow_question": _tomorrow_q_parsed,
+            "today_word":       _today_word_parsed,
             "genre":            genre,
             "technique":        technique,
             "created_at":       now,
