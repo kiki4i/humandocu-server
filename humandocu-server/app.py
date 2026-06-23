@@ -10639,6 +10639,26 @@ palette: #hex1 #hex2 #hex3
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+@app.route("/api/today/capsule", methods=["POST"])
+def today_capsule_update():
+    try:
+        import datetime as dt
+        body = request.get_json() or {}
+        doc_id = (body.get("doc_id") or "").strip()
+        time_capsule = (body.get("time_capsule") or "").strip()
+        if not doc_id:
+            return jsonify({"ok": False, "error": "doc_id 필요"}), 400
+        capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=30)).strftime("%Y-%m-%d")
+        _get_db().collection("today").document(doc_id).update({
+            "time_capsule": time_capsule,
+            "capsule_open_date": capsule_open_date,
+        })
+        return jsonify({"ok": True})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/today/my-records", methods=["GET"])
 def today_my_records():
     import re as _re
