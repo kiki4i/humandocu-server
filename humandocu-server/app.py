@@ -6681,6 +6681,8 @@ def today_data_api(doc_id):
         "created_at": data.get("created_at", "")[:10] if data.get("created_at") else "",
         "lang": data.get("lang", "ko"),
         "hashtags": data.get("hashtags", ""),
+        "reflection": data.get("reflection", ""),
+        "tomorrow_question": data.get("tomorrow_question", ""),
     }
     return jsonify(result)
 
