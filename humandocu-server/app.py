@@ -10586,6 +10586,7 @@ palette: #hex1 #hex2 #hex3
             "technique":        technique,
             "created_at":       now,
         })
+        print("[TODAY-V2] reflection 저장:", _reflection_parsed, "/ tomorrow:", _tomorrow_q_parsed)
 
         page_url = f"https://humandocu-server-production.up.railway.app/today/{doc_id}"
         try:
