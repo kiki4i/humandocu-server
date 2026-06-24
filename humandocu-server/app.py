@@ -10592,13 +10592,13 @@ palette: #hex1 #hex2 #hex3
         _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
-        def _fetch_word():
+        def _fetch_word(genre, reflection):
             _wr = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=100,
                 messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + (data.get('genre', '') or '') + "\n"
-                    "오늘 하루 요약: " + (_reflection_parsed or '') + "\n\n"
+                    "오늘 하루 장르: " + genre + "\n"
+                    "오늘 하루 요약: " + reflection + "\n\n"
                     "위 내용을 읽고 오늘 이 사람에게 딱 맞는 사자성어 또는 속담 하나를 골라줘.\n"
                     "반드시 아래 형식만 출력해. 다른 말 금지:\n"
                     "첫째줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음. 예: 愚公移山(우공이산)\n"
@@ -10607,13 +10607,13 @@ palette: #hex1 #hex2 #hex3
             )
             return _wr.content[0].text.strip()
 
-        def _fetch_verse():
+        def _fetch_verse(genre, reflection):
             _vr = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=300,
                 messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + (data.get('genre', '') or '') + "\n"
-                    "오늘 하루 요약: " + (_reflection_parsed or '') + "\n\n"
+                    "오늘 하루 장르: " + genre + "\n"
+                    "오늘 하루 요약: " + reflection + "\n\n"
                     "위 내용을 읽고 오늘 이 사람에게 어울리는 동서양 시 구절 하나를 골라줘.\n"
                     "치유, 토닥임, 응원 방향으로.\n"
                     "반드시 아래 형식만 출력해. 다른 말 금지:\n"
@@ -10624,9 +10624,11 @@ palette: #hex1 #hex2 #hex3
             )
             return _vr.content[0].text.strip()
 
+        _genre_arg      = data.get('genre', '') or ''
+        _reflection_arg = _reflection_parsed or ''
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as _pool:
-            _word_fut  = _pool.submit(_fetch_word)
-            _verse_fut = _pool.submit(_fetch_verse)
+            _word_fut  = _pool.submit(_fetch_word,  _genre_arg, _reflection_arg)
+            _verse_fut = _pool.submit(_fetch_verse, _genre_arg, _reflection_arg)
 
             try:
                 _word_raw = _word_fut.result()
