@@ -10551,10 +10551,16 @@ palette: #hex1 #hex2 #hex3
    첫 줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음을 써줘. 예: 愚公移山(우공이산)
    둘째 줄: 왜 오늘과 어울리는지 한 줄 연결. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게.
 
+8. [오늘의시한줄] - 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
+   치유, 토닥임, 응원의 방향으로. 오늘 상황 설명이 아니라 읽는 사람 마음에 닿는 구절.
+   첫 줄: 시 구절 (원문 그대로, 번역 시 자연스러운 한국어로)
+   둘째 줄: — 시인 이름, 《작품명》
+   셋째 줄: 오늘 하루에게. 한 줄. 담백하게. "힘내세요" 같은 진부한 말 금지.
+
 ⚠️ LANGUAGE REMINDER: {lang_instruction}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
-[오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트]
+[오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트] / [오늘의시한줄]
 태그는 반드시 대괄호 포함, 각 줄에 단독으로, 정확히 위 이름 그대로 출력하세요.
 이모지, 해시태그는 출력하지 마세요.
 """})
@@ -10587,6 +10593,15 @@ palette: #hex1 #hex2 #hex3
             _today_word_hanja  = ""
             _today_word_korean = ""
             _today_word_reason = ""
+        _tv_m = re.search(r'\[오늘의시한줄\]\s*\n\s*(.+)\n\s*(.+)\n\s*(.+)', ai_text)
+        if _tv_m:
+            _today_verse        = _tv_m.group(1).strip()
+            _today_verse_credit = _tv_m.group(2).strip()
+            _today_verse_note   = _tv_m.group(3).strip()
+        else:
+            _today_verse        = ""
+            _today_verse_credit = ""
+            _today_verse_note   = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
@@ -10613,6 +10628,9 @@ palette: #hex1 #hex2 #hex3
             "today_word_hanja":  _today_word_hanja,
             "today_word_korean": _today_word_korean,
             "today_word_reason": _today_word_reason,
+            "today_verse":        _today_verse,
+            "today_verse_credit": _today_verse_credit,
+            "today_verse_note":   _today_verse_note,
             "genre":             genre,
             "technique":        technique,
             "time_capsule":     time_capsule,
