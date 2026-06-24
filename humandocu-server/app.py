@@ -10599,11 +10599,11 @@ palette: #hex1 #hex2 #hex3
             _today_word_hanja  = ""
             _today_word_korean = ""
             _today_word_reason = ""
-        _tv_m = re.search(r'\[오늘의시한줄\]\s*\n\s*(.+)\n\s*(.+)\n\s*(.+)', ai_text)
+        _tv_m = re.search(r'\[오늘의시한줄\]\s*\n\s*(.+)\n\s*(.+?)(?:\n\s*(.+))?', ai_text, re.DOTALL)
         if _tv_m:
             _today_verse        = _tv_m.group(1).strip()
             _today_verse_credit = _tv_m.group(2).strip()
-            _today_verse_note   = _tv_m.group(3).strip()
+            _today_verse_note   = _tv_m.group(3).strip() if _tv_m.group(3) else ""
         else:
             _today_verse        = ""
             _today_verse_credit = ""
