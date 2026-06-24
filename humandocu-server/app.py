@@ -10587,18 +10587,33 @@ palette: #hex1 #hex2 #hex3
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
         _rf_m = re.search(r'\[반영\]\s*\n?\s*(.+)', ai_text)
         _tq_m = re.search(r'\[내일질문\]\s*\n?\s*(.+)', ai_text)
-        _tw_m = re.search(r'\[오늘의단어\]\s*\n\s*(.+)\n\s*(.+)', ai_text)
         _hashtags_parsed      = _ht_m.group(1).strip() if _ht_m else ""
         _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
-        if _tw_m:
-            _tw_line1 = _tw_m.group(1).strip()
+        try:
+            _word_resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=100,
+                messages=[{"role": "user", "content": (
+                    "오늘 하루 장르: " + (data.get('genre', '') or '') + "\n"
+                    "오늘 하루 요약: " + (_reflection_parsed or '') + "\n\n"
+                    "위 내용을 읽고 오늘 이 사람에게 딱 맞는 사자성어 또는 속담 하나를 골라줘.\n"
+                    "반드시 아래 형식만 출력해. 다른 말 금지:\n"
+                    "첫째줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음. 예: 愚公移山(우공이산)\n"
+                    "둘째줄: 왜 오늘과 어울리는지 한 줄. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게."
+                )}]
+            )
+            _word_raw = _word_resp.content[0].text.strip()
+            _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
+            _tw_line1 = _word_lines[0] if _word_lines else ""
             _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
-            _today_word_hanja   = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
-            _today_word_korean  = _ko_m.group(1).strip() if _ko_m else ""
-            _today_word_reason  = _tw_m.group(2).strip()
-        else:
+            _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
+            _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
+            _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
+            print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
+        except Exception as _we:
+            print("[TODAY-V2] word 오류:", _we)
             _today_word_hanja  = ""
             _today_word_korean = ""
             _today_word_reason = ""
