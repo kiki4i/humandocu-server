@@ -6688,6 +6688,9 @@ def today_data_api(doc_id):
         "today_word_reason": data.get("today_word_reason", ""),
         "time_capsule": data.get("time_capsule", ""),
         "capsule_open_date": data.get("capsule_open_date", ""),
+        "today_verse": data.get("today_verse", ""),
+        "today_verse_credit": data.get("today_verse_credit", ""),
+        "today_verse_note": data.get("today_verse_note", ""),
     }
     return jsonify(result)
 
