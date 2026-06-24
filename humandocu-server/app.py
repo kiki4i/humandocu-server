@@ -10599,15 +10599,34 @@ palette: #hex1 #hex2 #hex3
             _today_word_hanja  = ""
             _today_word_korean = ""
             _today_word_reason = ""
-        _tv_m = re.search(r'\[오늘의시한줄\]\s*\n\s*(.+)\n\s*(.+?)(?:\n\s*(.+))?', ai_text, re.DOTALL)
-        if _tv_m:
-            _today_verse        = _tv_m.group(1).strip()
-            _today_verse_credit = _tv_m.group(2).strip()
-            _today_verse_note   = _tv_m.group(3).strip() if _tv_m.group(3) else ""
-        else:
-            _today_verse        = ""
+        try:
+            _genre_for_verse = data.get('genre', '') or ''
+            _reflection_for_verse = _reflection_parsed or ''
+            _verse_resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=300,
+                messages=[{"role": "user", "content": (
+                    "오늘 하루 장르: " + _genre_for_verse + "\n"
+                    "오늘 하루 요약: " + _reflection_for_verse + "\n\n"
+                    "위 내용을 읽고 오늘 이 사람에게 어울리는 동서양 시 구절 하나를 골라줘.\n"
+                    "치유, 토닥임, 응원 방향으로.\n"
+                    "반드시 아래 형식만 출력해. 다른 말 금지:\n"
+                    "첫째줄: 시 구절\n"
+                    "둘째줄: - 시인 이름, 작품명\n"
+                    "셋째줄: 오늘 하루에게 한 줄. 담백하게."
+                )}]
+            )
+            _verse_raw = _verse_resp.content[0].text.strip()
+            _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
+            _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
+            _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
+            _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
+            print("[TODAY-V2] verse:", _today_verse)
+        except Exception as _ve:
+            print("[TODAY-V2] verse 오류:", _ve)
+            _today_verse = ""
             _today_verse_credit = ""
-            _today_verse_note   = ""
+            _today_verse_note = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
