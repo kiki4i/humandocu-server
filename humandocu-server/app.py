@@ -10426,7 +10426,12 @@ palette: #hex1 #hex2 #hex3
 
 [오늘의단어]
 漢字表現 (한글발음)
-(왜 오늘과 어울리는지 한 줄)"""
+(왜 오늘과 어울리는지 한 줄)
+
+[오늘의시한줄]
+(시 구절 한 줄)
+(— 시인 이름, 《작품명》)
+(오늘 하루에게 한 줄. 담백하게.)"""
 
         # 출력 태그 이름 잠금용 system prompt
         lang_sys = {
@@ -10438,7 +10443,8 @@ palette: #hex1 #hex2 #hex3
         system_prompt = (
             lang_sys.get(lang, lang_sys["ko"]) + " "
             "Output structural tags EXACTLY as shown — [오늘의시], "
-            "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트]. "
+            "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트], "
+            "[오늘의단어], [오늘의시한줄]. "
             "Do NOT rename, abbreviate, or omit any tag. "
             "Each tag on its own line, content on the lines that follow."
         )
