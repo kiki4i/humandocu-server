@@ -7420,6 +7420,7 @@ def translate_today():
         prompt = f"""Translate the following Korean texts to {lang_name}.
 These are personal diary entries and AI-generated poems from a Korean photo-poem app.
 Rules: preserve poetic tone, keep line breaks exactly, return ONLY translations in same [key] format.
+Do NOT translate proper nouns (personal names, titles of works, place names) — keep them in their original language as-is.
 
 {combined}"""
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
