@@ -9690,7 +9690,7 @@ palette: #hex1 #hex2 #hex3
         overall  = ""
 
         # 4. Firestore 저장
-        now = datetime.datetime.utcnow().isoformat()
+        now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
         db = _get_db()
         db.collection("today").document(doc_id).set({
             "doc_id": doc_id,
@@ -9948,7 +9948,7 @@ palette: #hex1 #hex2 #hex3"""
 
         # 3. Firestore 저장
         doc_id = uuid.uuid4().hex[:12]
-        now    = dt.datetime.utcnow().isoformat()
+        now    = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
         _get_db().collection("today").document(doc_id).set({
             "doc_id":          doc_id,
             "name":            name,
@@ -10041,7 +10041,7 @@ def sixshot_submit_b64():
 
         shots_str  = {str(k): v for k, v in shots.items()}
         images_str = {str(k): v for k, v in shot_images.items()}
-        now = dt.datetime.utcnow().isoformat()
+        now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
         firebase_save_sixshot(doc_id, {
             "name":       name,
             "nickname":   nickname,
@@ -10286,7 +10286,7 @@ palette: #hex1 #hex2 #hex3"""
         overall  = ""
 
         # Firestore 저장
-        now    = dt.datetime.utcnow().isoformat()
+        now    = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
         _get_db().collection("today").document(doc_id).set({
             "doc_id":          doc_id,
             "name":            name,
@@ -10658,7 +10658,7 @@ palette: #hex1 #hex2 #hex3
             _today_verse_note = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
-        now = dt.datetime.utcnow().isoformat()
+        now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
         capsule_open_date = (dt.datetime.utcnow() + dt.timedelta(days=365)).strftime("%Y-%m-%d")
         _get_db().collection("today").document(doc_id).set({
             "doc_id":           doc_id,
