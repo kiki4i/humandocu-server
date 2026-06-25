@@ -10630,6 +10630,7 @@ palette: #hex1 #hex2 #hex3
             _word_fut  = _pool.submit(_fetch_word,  _genre_arg, _reflection_arg)
             _verse_fut = _pool.submit(_fetch_verse, _genre_arg, _reflection_arg)
 
+            print("[TODAY-V2] word 호출 시작")
             try:
                 _word_raw = _word_fut.result(timeout=30)
                 _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
@@ -10641,6 +10642,7 @@ palette: #hex1 #hex2 #hex3
                 print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
             except Exception as _we:
                 print("[TODAY-V2] word 오류:", _we)
+                import traceback; traceback.print_exc()
                 _today_word_hanja  = ""
                 _today_word_korean = ""
                 _today_word_reason = ""
