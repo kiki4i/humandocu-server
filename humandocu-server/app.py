@@ -10631,7 +10631,7 @@ palette: #hex1 #hex2 #hex3
             _verse_fut = _pool.submit(_fetch_verse, _genre_arg, _reflection_arg)
 
             try:
-                _word_raw = _word_fut.result()
+                _word_raw = _word_fut.result(timeout=30)
                 _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
                 _tw_line1 = _word_lines[0] if _word_lines else ""
                 _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
@@ -10646,7 +10646,7 @@ palette: #hex1 #hex2 #hex3
                 _today_word_reason = ""
 
             try:
-                _verse_raw = _verse_fut.result()
+                _verse_raw = _verse_fut.result(timeout=30)
                 _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
                 _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
                 _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
