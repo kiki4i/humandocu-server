@@ -10,6 +10,7 @@ import secrets
 import time
 import logging
 import anthropic
+import concurrent.futures
 import firebase_admin
 from firebase_admin import credentials, firestore as fb_firestore
 from flask import Flask, request, jsonify
@@ -10591,41 +10592,28 @@ palette: #hex1 #hex2 #hex3
         _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
-        try:
-            _word_resp = client.messages.create(
+        def _fetch_word(genre, reflection):
+            _wr = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=100,
                 messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + (data.get('genre', '') or '') + "\n"
-                    "오늘 하루 요약: " + (_reflection_parsed or '') + "\n\n"
+                    "오늘 하루 장르: " + genre + "\n"
+                    "오늘 하루 요약: " + reflection + "\n\n"
                     "위 내용을 읽고 오늘 이 사람에게 딱 맞는 사자성어 또는 속담 하나를 골라줘.\n"
                     "반드시 아래 형식만 출력해. 다른 말 금지:\n"
                     "첫째줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음. 예: 愚公移山(우공이산)\n"
                     "둘째줄: 왜 오늘과 어울리는지 한 줄. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게."
                 )}]
             )
-            _word_raw = _word_resp.content[0].text.strip()
-            _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
-            _tw_line1 = _word_lines[0] if _word_lines else ""
-            _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
-            _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
-            _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
-            _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
-            print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
-        except Exception as _we:
-            print("[TODAY-V2] word 오류:", _we)
-            _today_word_hanja  = ""
-            _today_word_korean = ""
-            _today_word_reason = ""
-        try:
-            _genre_for_verse = data.get('genre', '') or ''
-            _reflection_for_verse = _reflection_parsed or ''
-            _verse_resp = client.messages.create(
+            return _wr.content[0].text.strip()
+
+        def _fetch_verse(genre, reflection):
+            _vr = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=300,
                 messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + _genre_for_verse + "\n"
-                    "오늘 하루 요약: " + _reflection_for_verse + "\n\n"
+                    "오늘 하루 장르: " + genre + "\n"
+                    "오늘 하루 요약: " + reflection + "\n\n"
                     "위 내용을 읽고 오늘 이 사람에게 어울리는 동서양 시 구절 하나를 골라줘.\n"
                     "치유, 토닥임, 응원 방향으로.\n"
                     "반드시 아래 형식만 출력해. 다른 말 금지:\n"
@@ -10634,17 +10622,41 @@ palette: #hex1 #hex2 #hex3
                     "셋째줄: 오늘 하루에게 한 줄. 담백하게."
                 )}]
             )
-            _verse_raw = _verse_resp.content[0].text.strip()
-            _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
-            _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
-            _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
-            _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
-            print("[TODAY-V2] verse:", _today_verse)
-        except Exception as _ve:
-            print("[TODAY-V2] verse 오류:", _ve)
-            _today_verse = ""
-            _today_verse_credit = ""
-            _today_verse_note = ""
+            return _vr.content[0].text.strip()
+
+        _genre_arg      = data.get('genre', '') or ''
+        _reflection_arg = _reflection_parsed or ''
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as _pool:
+            _word_fut  = _pool.submit(_fetch_word,  _genre_arg, _reflection_arg)
+            _verse_fut = _pool.submit(_fetch_verse, _genre_arg, _reflection_arg)
+
+            try:
+                _word_raw = _word_fut.result()
+                _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
+                _tw_line1 = _word_lines[0] if _word_lines else ""
+                _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
+                _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
+                _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
+                _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
+                print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
+            except Exception as _we:
+                print("[TODAY-V2] word 오류:", _we)
+                _today_word_hanja  = ""
+                _today_word_korean = ""
+                _today_word_reason = ""
+
+            try:
+                _verse_raw = _verse_fut.result()
+                _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
+                _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
+                _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
+                _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
+                print("[TODAY-V2] verse:", _today_verse)
+            except Exception as _ve:
+                print("[TODAY-V2] verse 오류:", _ve)
+                _today_verse = ""
+                _today_verse_credit = ""
+                _today_verse_note = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
