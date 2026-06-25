@@ -7420,7 +7420,7 @@ def translate_today():
         prompt = f"""Translate the following Korean texts to {lang_name}.
 These are personal diary entries and AI-generated poems from a Korean photo-poem app.
 Rules: preserve poetic tone, keep line breaks exactly, return ONLY translations in same [key] format.
-Proper nouns (personal names, place names) should be transliterated to the target language's conventional spelling, not translated literally. Titles of works should use the officially known title in the target language if one exists, otherwise transliterate. Always include ALL keys in the response — never skip any key.
+Do NOT translate proper nouns (personal names, titles of works, place names) — keep them in their original language as-is.
 
 {combined}"""
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
@@ -10617,11 +10617,10 @@ palette: #hex1 #hex2 #hex3
                     "오늘 하루 요약: " + reflection + "\n\n"
                     "위 내용을 읽고 오늘 이 사람에게 어울리는 동서양 시 구절 하나를 골라줘.\n"
                     "치유, 토닥임, 응원 방향으로.\n"
-                    "반드시 아래 형식만 출력해. 태그 포함. 다른 말 금지:\n"
-                    "[오늘의시한줄]\n"
-                    "시 구절\n"
-                    "- 시인 이름, 작품명 중에서\n"
-                    "오늘 하루에게 한 줄. 담백하게."
+                    "반드시 아래 형식만 출력해. 다른 말 금지:\n"
+                    "첫째줄: 시 구절\n"
+                    "둘째줄: — 시인 이름, 《작품명》 중에서\n"
+                    "셋째줄: 오늘 하루에게 한 줄. 담백하게."
                 )}]
             )
             return _vr.content[0].text.strip()
@@ -10642,22 +10641,20 @@ palette: #hex1 #hex2 #hex3
                 _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
                 print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
             except Exception as _we:
-                print("[TODAY-V2] word 오류 상세:", str(_we))
+                print("[TODAY-V2] word 오류:", _we)
                 _today_word_hanja  = ""
                 _today_word_korean = ""
                 _today_word_reason = ""
 
             try:
                 _verse_raw = _verse_fut.result()
-                _verse_tag_idx = _verse_raw.find("[오늘의시한줄]")
-                _verse_body = _verse_raw[_verse_tag_idx + len("[오늘의시한줄]"):].strip() if _verse_tag_idx != -1 else _verse_raw
-                _verse_lines = [l.strip() for l in _verse_body.split('\n') if l.strip()]
+                _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
                 _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
                 _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
                 _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
                 print("[TODAY-V2] verse:", _today_verse)
             except Exception as _ve:
-                print("[TODAY-V2] verse 오류 상세:", str(_ve))
+                print("[TODAY-V2] verse 오류:", _ve)
                 _today_verse = ""
                 _today_verse_credit = ""
                 _today_verse_note = ""
