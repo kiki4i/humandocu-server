@@ -10557,21 +10557,22 @@ palette: #hex1 #hex2 #hex3
 6. [내일질문] - 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
    부담 없이, 짧게. 한 줄만.
 
-7. [오늘의단어] - 오늘 하루와 딱 맞는 사자성어 또는 속담 하나.
-   첫 줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음을 써줘. 예: 愚公移山(우공이산)
-   둘째 줄: 왜 오늘과 어울리는지 한 줄 연결. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게.
+7. [WORD]...[/WORD] - 오늘 하루와 딱 맞는 사자성어 또는 속담 하나.
+   반드시 아래 형식으로 한 줄만 출력:
+   [WORD]한자성어(한자)|한국어독음|왜 오늘과 어울리는지 한 줄. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게.[/WORD]
 
-8. [오늘의시한줄] - 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
-   치유, 토닥임, 응원의 방향으로. 오늘 상황 설명이 아니라 읽는 사람 마음에 닿는 구절.
-   첫 줄: 시 구절 (원문 그대로, 번역 시 자연스러운 한국어로)
-   둘째 줄: — 시인 이름, 《작품명》
-   셋째 줄: 오늘 하루에게. 한 줄. 담백하게. "힘내세요" 같은 진부한 말 금지.
+8. [VERSE]/[CREDIT]/[NOTE] - 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
+   치유, 토닥임, 응원의 방향으로. 읽는 사람 마음에 닿는 구절.
+   [VERSE]시 구절 (원문 그대로, 번역 시 자연스러운 한국어로)[/VERSE]
+   [CREDIT]- 시인 이름, 《작품명》[/CREDIT]
+   [NOTE]오늘 하루에게. 한 줄. 담백하게. "힘내세요" 같은 진부한 말 금지.[/NOTE]
 
 ⚠️ LANGUAGE REMINDER: {lang_instruction}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
-[오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트] / [오늘의시한줄]
-태그는 반드시 대괄호 포함, 각 줄에 단독으로, 정확히 위 이름 그대로 출력하세요.
+[오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트]
+[WORD]...[/WORD] / [VERSE]...[/VERSE] / [CREDIT]...[/CREDIT] / [NOTE]...[/NOTE]
+태그는 정확히 위 이름 그대로 출력하세요.
 이모지, 해시태그는 출력하지 마세요.
 """})
 
@@ -10592,70 +10593,22 @@ palette: #hex1 #hex2 #hex3
         _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
         _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
         _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
-        def _fetch_word(genre, reflection):
-            _wr = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=100,
-                messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + genre + "\n"
-                    "오늘 하루 요약: " + reflection + "\n\n"
-                    "위 내용을 읽고 오늘 이 사람에게 딱 맞는 사자성어 또는 속담 하나를 골라줘.\n"
-                    "반드시 아래 형식만 출력해. 다른 말 금지:\n"
-                    "첫째줄: 반드시 한자(漢字)로 먼저 쓰고 괄호 안에 한글 독음. 예: 愚公移山(우공이산)\n"
-                    "둘째줄: 왜 오늘과 어울리는지 한 줄. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게."
-                )}]
-            )
-            return _wr.content[0].text.strip()
-
-        def _fetch_verse(genre, reflection):
-            _vr = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=300,
-                messages=[{"role": "user", "content": (
-                    "오늘 하루 장르: " + genre + "\n"
-                    "오늘 하루 요약: " + reflection + "\n\n"
-                    "위 내용을 읽고 오늘 이 사람에게 어울리는 동서양 시 구절 하나를 골라줘.\n"
-                    "치유, 토닥임, 응원 방향으로.\n"
-                    "반드시 아래 형식만 출력해. 다른 말 금지:\n"
-                    "첫째줄: 시 구절\n"
-                    "둘째줄: - 시인 이름, 작품명\n"
-                    "셋째줄: 오늘 하루에게 한 줄. 담백하게."
-                )}]
-            )
-            return _vr.content[0].text.strip()
-
-        _genre_arg      = data.get('genre', '') or ''
-        _reflection_arg = _reflection_parsed or ''
-
-        print("[TODAY-V2] word 호출 시작")
-        try:
-            _word_raw = _fetch_word(_genre_arg, _reflection_arg)
-            _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
-            _tw_line1 = _word_lines[0] if _word_lines else ""
-            _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
-            _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
-            _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
-            _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
-            print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
-        except Exception as _we:
-            print("[TODAY-V2] word 오류:", _we)
-            import traceback; traceback.print_exc()
-            _today_word_hanja  = ""
-            _today_word_korean = ""
-            _today_word_reason = ""
-
-        try:
-            _verse_raw = _fetch_verse(_genre_arg, _reflection_arg)
-            _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
-            _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
-            _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
-            _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
-            print("[TODAY-V2] verse:", _today_verse)
-        except Exception as _ve:
-            print("[TODAY-V2] verse 오류:", _ve)
-            _today_verse = ""
-            _today_verse_credit = ""
-            _today_verse_note = ""
+        _wm = re.search(r'\[WORD\](.*?)\[/WORD\]', ai_text, re.DOTALL)
+        _vm = re.search(r'\[VERSE\](.*?)\[/VERSE\]', ai_text, re.DOTALL)
+        _cm = re.search(r'\[CREDIT\](.*?)\[/CREDIT\]', ai_text, re.DOTALL)
+        _nm = re.search(r'\[NOTE\](.*?)\[/NOTE\]', ai_text, re.DOTALL)
+        if _wm:
+            _word_parts = [p.strip() for p in _wm.group(1).strip().split('|')]
+            _today_word_hanja  = _word_parts[0] if len(_word_parts) > 0 else ""
+            _today_word_korean = _word_parts[1] if len(_word_parts) > 1 else ""
+            _today_word_reason = _word_parts[2] if len(_word_parts) > 2 else ""
+        else:
+            _today_word_hanja = _today_word_korean = _today_word_reason = ""
+        _today_verse        = _vm.group(1).strip() if _vm else ""
+        _today_verse_credit = _cm.group(1).strip() if _cm else ""
+        _today_verse_note   = _nm.group(1).strip() if _nm else ""
+        print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
+        print("[TODAY-V2] verse:", _today_verse)
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
