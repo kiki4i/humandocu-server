@@ -10626,39 +10626,36 @@ palette: #hex1 #hex2 #hex3
 
         _genre_arg      = data.get('genre', '') or ''
         _reflection_arg = _reflection_parsed or ''
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as _pool:
-            _word_fut  = _pool.submit(_fetch_word,  _genre_arg, _reflection_arg)
-            _verse_fut = _pool.submit(_fetch_verse, _genre_arg, _reflection_arg)
 
-            print("[TODAY-V2] word 호출 시작")
-            try:
-                _word_raw = _word_fut.result(timeout=30)
-                _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
-                _tw_line1 = _word_lines[0] if _word_lines else ""
-                _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
-                _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
-                _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
-                _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
-                print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
-            except Exception as _we:
-                print("[TODAY-V2] word 오류:", _we)
-                import traceback; traceback.print_exc()
-                _today_word_hanja  = ""
-                _today_word_korean = ""
-                _today_word_reason = ""
+        print("[TODAY-V2] word 호출 시작")
+        try:
+            _word_raw = _fetch_word(_genre_arg, _reflection_arg)
+            _word_lines = [l.strip() for l in _word_raw.split('\n') if l.strip()]
+            _tw_line1 = _word_lines[0] if _word_lines else ""
+            _ko_m = re.search(r'\(([^)]+)\)', _tw_line1)
+            _today_word_hanja  = re.sub(r'\s*\([^)]*\)', '', _tw_line1).strip()
+            _today_word_korean = _ko_m.group(1).strip() if _ko_m else ""
+            _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
+            print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
+        except Exception as _we:
+            print("[TODAY-V2] word 오류:", _we)
+            import traceback; traceback.print_exc()
+            _today_word_hanja  = ""
+            _today_word_korean = ""
+            _today_word_reason = ""
 
-            try:
-                _verse_raw = _verse_fut.result(timeout=30)
-                _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
-                _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
-                _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
-                _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
-                print("[TODAY-V2] verse:", _today_verse)
-            except Exception as _ve:
-                print("[TODAY-V2] verse 오류:", _ve)
-                _today_verse = ""
-                _today_verse_credit = ""
-                _today_verse_note = ""
+        try:
+            _verse_raw = _fetch_verse(_genre_arg, _reflection_arg)
+            _verse_lines = [l.strip() for l in _verse_raw.split('\n') if l.strip()]
+            _today_verse = _verse_lines[0] if len(_verse_lines) > 0 else ""
+            _today_verse_credit = _verse_lines[1] if len(_verse_lines) > 1 else ""
+            _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
+            print("[TODAY-V2] verse:", _today_verse)
+        except Exception as _ve:
+            print("[TODAY-V2] verse 오류:", _ve)
+            _today_verse = ""
+            _today_verse_credit = ""
+            _today_verse_note = ""
 
         print("[TODAY-V2] ai_text:", ai_text[:500])
         now = dt.datetime.utcnow().isoformat()
