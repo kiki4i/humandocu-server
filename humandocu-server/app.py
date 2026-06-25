@@ -10641,7 +10641,7 @@ palette: #hex1 #hex2 #hex3
                 _today_word_reason = _word_lines[1] if len(_word_lines) > 1 else ""
                 print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
             except Exception as _we:
-                print("[TODAY-V2] word 오류:", _we)
+                print("[TODAY-V2] word 오류 상세:", str(_we))
                 _today_word_hanja  = ""
                 _today_word_korean = ""
                 _today_word_reason = ""
@@ -10654,7 +10654,7 @@ palette: #hex1 #hex2 #hex3
                 _today_verse_note = _verse_lines[2] if len(_verse_lines) > 2 else ""
                 print("[TODAY-V2] verse:", _today_verse)
             except Exception as _ve:
-                print("[TODAY-V2] verse 오류:", _ve)
+                print("[TODAY-V2] verse 오류 상세:", str(_ve))
                 _today_verse = ""
                 _today_verse_credit = ""
                 _today_verse_note = ""
