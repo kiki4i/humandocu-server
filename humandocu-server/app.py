@@ -10461,6 +10461,7 @@ palette: #hex1 #hex2 #hex3
         _h = _now.hour if _now.hour <= 12 else _now.hour - 12
         if _h == 0: _h = 12
         submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
+        lang_name = {"ko": "한국어", "en": "English", "ja": "日本語", "zh": "中文"}.get(lang, "한국어")
 
         content_parts.append({"type": "text", "text": f"""⚠️ LANGUAGE RULE: {lang_instruction}
 
@@ -10563,8 +10564,8 @@ palette: #hex1 #hex2 #hex3
 
 8. [VERSE]/[CREDIT]/[NOTE] - 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
    치유, 토닥임, 응원의 방향으로. 읽는 사람 마음에 닿는 구절.
-   [VERSE]시 구절 (원문 그대로, 번역 시 자연스러운 한국어로)[/VERSE]
-   [CREDIT]- 시인 이름, 《작품명》[/CREDIT]
+   [VERSE]시 구절 (원문 그대로; 번역이 필요한 경우 자연스러운 {lang_name}로)[/VERSE]
+   [CREDIT]- 시인 이름 ({lang_name} 표기 기준), 《작품명》[/CREDIT]
    [NOTE]오늘 하루에게. 한 줄. 담백하게. "힘내세요" 같은 진부한 말 금지.[/NOTE]
 
 ⚠️ LANGUAGE REMINDER: {lang_instruction}
