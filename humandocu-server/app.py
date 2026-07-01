@@ -10463,7 +10463,56 @@ palette: #hex1 #hex2 #hex3
         submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
         lang_name = {"ko": "한국어", "en": "English", "ja": "日本語", "zh": "中文"}.get(lang, "한국어")
 
-        content_parts.append({"type": "text", "text": f"""⚠️ LANGUAGE RULE: {lang_instruction}
+        if lang == 'ko':
+            _lang_header = f"⚠️ LANGUAGE RULE: {lang_instruction}"
+            _lang_footer = f"⚠️ LANGUAGE REMINDER: {lang_instruction}"
+        else:
+            _lang_header = (
+                "⚠️⚠️⚠️ CRITICAL LANGUAGE OVERRIDE ⚠️⚠️⚠️\n"
+                "Everything below this line is written in Korean as internal authoring instructions ONLY"
+                " — this is the tool's default authoring language and has NOTHING to do with your output language.\n"
+                f"Your actual OUTPUT (every word inside every tag: 오늘의시, SHOT poems, 반영, 내일질문,"
+                f" WORD meaning, VERSE, CREDIT, NOTE) must be written ENTIRELY in {lang_name},"
+                f" with ZERO Korean, unless {lang_name} IS Korean.\n"
+                "This rule overrules any Korean example text you see below, including the ❌/✅ sample lines"
+                " — those examples illustrate STYLE and STRUCTURE only, not the language to use."
+            )
+            _lang_footer = (
+                "⚠️⚠️⚠️ FINAL LANGUAGE REMINDER ⚠️⚠️⚠️\n"
+                f"{lang_instruction}\n"
+                f"Check every tag: 오늘의시, each SHOT poem, 반영, 내일질문, VERSE, CREDIT, NOTE"
+                f" — ALL must be in {lang_name}. Zero Korean allowed.\n"
+                f"The Korean text above was authoring instructions only. Output language: {lang_name}."
+            )
+        _examples = {
+            "ko": dict(bad1="카페에 앉아 / 커피를 마시며 / 오늘을 보냈다",
+                       good1="세 번째 리필이었다 / 그래도 일어나지 않았다",
+                       bad2="가족이라는 두 글자만으로도 요양이 된다",
+                       good2="가족한테는 / 아무 말 안 해도 됐다",
+                       bad3="오늘도 감사한 하루였다",
+                       good3="그래도 내일 또 올 것 같다"),
+            "en": dict(bad1="Sat in a café / drank coffee / spent the day",
+                       good1="It was the third refill / I still didn't get up",
+                       bad2="Just the word 'family' feels like healing",
+                       good2="With family / I didn't have to say anything",
+                       bad3="Today was a grateful day",
+                       good3="And yet — I think I'll come back tomorrow"),
+            "ja": dict(bad1="カフェに座って / コーヒーを飲みながら / 一日を過ごした",
+                       good1="三杯目のおかわりだった / それでも立ち上がれなかった",
+                       bad2="「家族」という二文字だけで癒される",
+                       good2="家族の前では / 何も言わなくてよかった",
+                       bad3="今日も感謝な一日だった",
+                       good3="それでも明日もまた来そうだ"),
+            "zh": dict(bad1="坐在咖啡馆里 / 喝着咖啡 / 度过了今天",
+                       good1="已经是第三杯续杯了 / 我还是没有起身",
+                       bad2="光是"家人"两个字就已是疗愈",
+                       good2="在家人面前 / 什么都不用说",
+                       bad3="今天又是感恩的一天",
+                       good3="即便如此，明天我想我还是会来"),
+        }
+        _ex = _examples.get(lang, _examples["ko"])
+
+        content_parts.append({"type": "text", "text": f"""{_lang_header}
 
 제출 시각: {submit_time_ko}
 
@@ -10479,18 +10528,18 @@ palette: #hex1 #hex2 #hex3
 ━━━ 절대 원칙 ━━━
 
 ① 설명을 시 형식으로 옮기지 마라. 그건 번역이지 시가 아니다.
-   ❌ "카페에 앉아 / 커피를 마시며 / 오늘을 보냈다"
-   ✅ "세 번째 리필이었다 / 그래도 일어나지 않았다"
+   ❌ "{_ex['bad1']}"
+   ✅ "{_ex['good1']}"
 
 ② 사진 뒤에 숨겨진 것을 꺼내라.
    말하지 않은 감정, 인정하기 싫은 진실, 혼자만 아는 속마음.
-   ❌ "가족이라는 두 글자만으로도 요양이 된다"
-   ✅ "가족한테는 / 아무 말 안 해도 됐다"
+   ❌ "{_ex['bad2']}"
+   ✅ "{_ex['good2']}"
 
 ③ 마지막 줄은 반드시 예상 밖으로 틀어라.
    착하게 마무리하지 마라. 경건한 장면도 솔직한 감정으로 끝내라.
-   ❌ "오늘도 감사한 하루였다"
-   ✅ "그래도 내일 또 올 것 같다"
+   ❌ "{_ex['bad3']}"
+   ✅ "{_ex['good3']}"
 
 ④ 구체적인 사물, 색깔, 소리, 온도로 써라.
    "삶이란", "존재란", "오늘도 살아가는" 금지.
@@ -10568,7 +10617,7 @@ palette: #hex1 #hex2 #hex3
    [CREDIT]- 시인 이름 ({lang_name} 표기 기준), 《작품명》[/CREDIT]
    [NOTE]오늘 하루에게. 한 줄. 담백하게. "힘내세요" 같은 진부한 말 금지.[/NOTE]
 
-⚠️ LANGUAGE REMINDER: {lang_instruction}
+{_lang_footer}
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
 [오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트]
@@ -10584,6 +10633,31 @@ palette: #hex1 #hex2 #hex3
             messages=[{"role": "user", "content": content_parts}]
         )
         ai_text = resp.content[0].text if resp.content else ""
+
+        # Language compliance check — retry once if Korean bleeds through
+        if lang != 'ko' and ai_text:
+            _kor_count = len(re.findall(r'[가-힣]', ai_text))
+            _kor_ratio = _kor_count / max(len(ai_text), 1)
+            if _kor_ratio > 0.15:
+                print(f"[TODAY-V2] language mismatch detected, retrying (korean ratio: {_kor_ratio:.2%})")
+                _retry_system = (
+                    f"YOUR PREVIOUS ATTEMPT FAILED — you wrote in Korean instead of {lang_name}. "
+                    f"This time, output ONLY in {lang_name}. Do not write a single Korean word. "
+                ) + system_prompt
+                try:
+                    _retry_resp = client.messages.create(
+                        model="claude-sonnet-4-6",
+                        max_tokens=8000,
+                        system=_retry_system,
+                        messages=[{"role": "user", "content": content_parts}]
+                    )
+                    _retry_text = _retry_resp.content[0].text if _retry_resp.content else ""
+                    _retry_kor = len(re.findall(r'[가-힣]', _retry_text))
+                    if _retry_kor / max(len(_retry_text), 1) > 0.15:
+                        print("[TODAY-V2] language retry exhausted — using retry result anyway")
+                    ai_text = _retry_text
+                except Exception as _retry_e:
+                    print(f"[TODAY-V2] language retry failed: {_retry_e}")
 
         import re as _re_ht
         _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
