@@ -10448,7 +10448,7 @@ palette: #hex1 #hex2 #hex3
             lang_sys.get(lang, lang_sys["ko"]) + " "
             "Output structural tags EXACTLY as shown — [오늘의시], "
             "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트], "
-            "[오늘의단어], [오늘의시한줄]. "
+            "[WORD], [VERSE], [CREDIT], [NOTE]. "
             "Do NOT rename, abbreviate, or omit any tag. "
             "Each tag on its own line, content on the lines that follow."
         )
@@ -10578,7 +10578,7 @@ palette: #hex1 #hex2 #hex3
 
         resp = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=4000,
+            max_tokens=8000,
             system=system_prompt,
             messages=[{"role": "user", "content": content_parts}]
         )
