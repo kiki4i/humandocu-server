@@ -10347,8 +10347,6 @@ def today_submit_v2():
         lang_instruction = {
             "en": "IMPORTANT: You MUST write ALL poems and text outputs in English only. No Korean allowed.",
             "ko": "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.",
-            "ja": "重要: 全ての詩とテキストは必ず日本語のみで書いてください。",
-            "zh": "重要: 所有诗歌和文字必须只用中文写。",
         }.get(lang, "중요: 모든 시와 텍스트는 반드시 한국어로만 작성하세요.")
 
         time_capsule = (data.get("time_capsule") or "").strip()
@@ -10440,8 +10438,6 @@ palette: #hex1 #hex2 #hex3
         # 출력 태그 이름 잠금용 system prompt
         lang_sys = {
             "en": "You are a poet. Write ALL poems and text in ENGLISH ONLY. No Korean whatsoever.",
-            "ja": "あなたは詩人です。すべての詩とテキストを日本語のみで書いてください。",
-            "zh": "你是一位诗人。所有诗歌和文字必须只用中文写。",
             "ko": "당신은 시인입니다. 모든 시와 텍스트는 반드시 한국어로만 작성하세요.",
         }
         system_prompt = (
@@ -10461,7 +10457,7 @@ palette: #hex1 #hex2 #hex3
         _h = _now.hour if _now.hour <= 12 else _now.hour - 12
         if _h == 0: _h = 12
         submit_time_ko = f"{_now.year}년 {_now.month}월 {_now.day}일 {_wd[_now.weekday()]} {_ap} {_h}시 {_now.minute:02d}분"
-        lang_name = {"ko": "한국어", "en": "English", "ja": "日本語", "zh": "中文"}.get(lang, "한국어")
+        lang_name = {"ko": "한국어", "en": "English"}.get(lang, "한국어")
 
         if lang == 'ko':
             _lang_header = f"⚠️ LANGUAGE RULE: {lang_instruction}"
@@ -10497,18 +10493,6 @@ palette: #hex1 #hex2 #hex3
                        good2="With family / I didn't have to say anything",
                        bad3="Today was a grateful day",
                        good3="And yet — I think I'll come back tomorrow"),
-            "ja": dict(bad1="カフェに座って / コーヒーを飲みながら / 一日を過ごした",
-                       good1="三杯目のおかわりだった / それでも立ち上がれなかった",
-                       bad2="「家族」という二文字だけで癒される",
-                       good2="家族の前では / 何も言わなくてよかった",
-                       bad3="今日も感謝な一日だった",
-                       good3="それでも明日もまた来そうだ"),
-            "zh": dict(bad1="坐在咖啡馆里 / 喝着咖啡 / 度过了今天",
-                       good1="已经是第三杯续杯了 / 我还是没有起身",
-                       bad2="光是「家人」两个字就已是疗愈",
-                       good2="在家人面前 / 什么都不用说",
-                       bad3="今天又是感恩的一天",
-                       good3="即便如此，明天我想我还是会来"),
         }
         _ex = _examples.get(lang, _examples["ko"])
 
