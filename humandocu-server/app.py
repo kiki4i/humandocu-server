@@ -10423,7 +10423,7 @@ def today_submit_v2():
             lang_sys.get(lang, lang_sys["ko"]) + " "
             "Output structural tags EXACTLY as shown — [오늘의시], "
             "[SHOT1시], [SHOT1톤], [SHOT2시], [SHOT2톤] … [SHOT6시], [SHOT6톤], [팔레트], "
-            "[WORD], [VERSE], [CREDIT], [NOTE]. "
+            "[반영], [내일질문], [WORD], [VERSE], [CREDIT], [NOTE]. "
             "Do NOT rename, abbreviate, or omit any tag. "
             "Each tag on its own line, content on the lines that follow."
         )
@@ -10591,6 +10591,7 @@ def today_submit_v2():
 
 ⚠️ 출력 태그 규칙 — 아래 태그 이름을 절대 바꾸지 마세요:
 [오늘의시] / [SHOT1시] / [SHOT1톤] / [SHOT2시] / [SHOT2톤] ... [SHOT6시] / [SHOT6톤] / [팔레트]
+[반영] / [내일질문]
 [WORD]...[/WORD] / [VERSE]...[/VERSE] / [CREDIT]...[/CREDIT] / [NOTE]...[/NOTE]
 태그는 정확히 위 이름 그대로 출력하세요.
 이모지, 해시태그는 출력하지 마세요.
