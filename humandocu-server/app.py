@@ -7441,6 +7441,101 @@ Rules: preserve poetic tone, keep line breaks exactly, return ONLY translations 
         r.headers["Access-Control-Allow-Origin"] = "*"
         return r, 500
 
+@app.route("/api/today/translate", methods=["POST", "OPTIONS"])
+def today_translate_cached():
+    """today 문서 필드 번역 — Firestore translations.{lang} 캐시 우선 사용,
+    캐시가 없을 때만 번역 후 결과를 캐시에 저장 (같은 문서 재조회 시 재번역 없음)"""
+    if request.method == "OPTIONS":
+        r = jsonify({})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return r, 200
+    try:
+        body = request.get_json(force=True) or {}
+        doc_id = (body.get("doc_id") or "").strip()
+        target_lang = (body.get("target_lang") or "").strip().lower()
+        if not doc_id or not target_lang:
+            return jsonify({"ok": False, "error": "doc_id and target_lang required"}), 400
+
+        data = firebase_get_today(doc_id)
+        if data is None:
+            return jsonify({"ok": False, "error": "not found"}), 404
+
+        source_lang = (data.get("lang") or "ko").strip().lower()
+        if target_lang == source_lang:
+            r = jsonify({"ok": True, "same_as_source": True, "translations": {}})
+            r.headers["Access-Control-Allow-Origin"] = "*"
+            return r, 200
+
+        cached = (data.get("translations") or {}).get(target_lang)
+        if cached:
+            r = jsonify({"ok": True, "cached": True, "translations": cached})
+            r.headers["Access-Control-Allow-Origin"] = "*"
+            return r, 200
+
+        import re as _re
+        poems_raw = data.get("poems", "")
+        poem_dict = {}
+        for m in _re.finditer(r'\[([^\]]+)\](.*?)(?=\[[^\]]+\]|$)', poems_raw, _re.DOTALL):
+            key = m.group(1).strip()
+            content = m.group(2).strip()
+            if content:
+                poem_dict[key] = content
+
+        texts = {"today_poem": poem_dict.get("오늘의시", "")}
+        for i in range(1, 7):
+            shot_poem = poem_dict.get(f"SHOT{i}시", "")
+            if shot_poem:
+                texts[f"shot_{i}_poem"] = shot_poem
+        texts["reflection"]        = data.get("reflection", "")
+        texts["tomorrow_question"] = data.get("tomorrow_question", "")
+        texts["today_word_reason"] = data.get("today_word_reason", "")
+        texts["today_verse"]       = data.get("today_verse", "")
+        texts["today_verse_note"]  = data.get("today_verse_note", "")
+        texts = {k: v for k, v in texts.items() if v and str(v).strip()}
+
+        if not texts:
+            r = jsonify({"ok": True, "cached": False, "translations": {}})
+            r.headers["Access-Control-Allow-Origin"] = "*"
+            return r, 200
+
+        lang_names = {"ko": "Korean", "en": "English", "jp": "Japanese", "zh": "Simplified Chinese"}
+        source_name = lang_names.get(source_lang, "Korean")
+        target_name = lang_names.get(target_lang, "English")
+
+        text_list = [f"[{k}]\n{v}" for k, v in texts.items()]
+        combined = "\n\n".join(text_list)
+        prompt = f"""Translate the following {source_name} texts to {target_name}.
+These are personal diary entries and AI-generated poems from a photo-poem app.
+Rules: preserve poetic tone, keep line breaks exactly, return ONLY translations in same [key] format.
+
+{combined}"""
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result_text = msg.content[0].text if msg.content else ""
+        translations = {}
+        for m in _re.finditer(r'\[([^\]]+)\]\n(.*?)(?=\n\[|$)', result_text, _re.DOTALL):
+            translations[m.group(1).strip()] = m.group(2).strip()
+
+        if translations:
+            _get_db().collection("today").document(doc_id).update({
+                f"translations.{target_lang}": translations
+            })
+
+        r = jsonify({"ok": True, "cached": False, "translations": translations})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        return r, 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        r = jsonify({"ok": False, "error": str(e)})
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        return r, 500
+
 @app.route("/health", methods=["GET"])
 def health_check():
     return jsonify({"status": "ok"}), 200
