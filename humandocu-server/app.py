@@ -10414,27 +10414,6 @@ def today_submit_v2():
         for idx in submitted_idxs:
             shot_fmt += f"\n[SHOT{idx}시]\n(시 내용 2~3줄)\n\n[SHOT{idx}톤]\n감동명작\n"
 
-        OUTPUT_FORMAT = f"""[오늘의시]
-(시 내용 3~4줄)
-{shot_fmt}
-[팔레트]
-palette: #hex1 #hex2 #hex3
-
-[반영]
-(오늘 하루를 한 문장으로)
-
-[내일질문]
-(내일로 연결되는 질문 한 가지)
-
-[오늘의단어]
-漢字表現 (한글발음)
-(왜 오늘과 어울리는지 한 줄)
-
-[오늘의시한줄]
-(시 구절 한 줄)
-(— 시인 이름, 《작품명》)
-(오늘 하루에게 한 줄. 담백하게.)"""
-
         # 출력 태그 이름 잠금용 system prompt
         lang_sys = {
             "en": "You are a poet. Write ALL poems and text in ENGLISH ONLY. No Korean whatsoever.",
@@ -10540,6 +10519,13 @@ palette: #hex1 #hex2 #hex3
    기독교 약자: 대상=역대상 대하=역대하 마=마태 막=마가 눅=누가 요=요한
 ⑩ 확인 안 된 사실(성경 구절 번호, 장소명 등) 추측 금지.
    틀린 사실은 감동보다 반감을 준다.
+⑪ 사진이 실제 장면이 아니라 명언 카드, SNS 게시물 캡처,
+   손글씨/큰 타이포그래피 위주의 문구 이미지로 보이면,
+   그 안의 문구나 인물을 억지로 캐릭터화해서 서사를 지어내지 마라.
+   대신 "이 사람이 오늘 이 문구를 캡처해서 남긴 이유"에 집중해서,
+   그 문구가 오늘 이 사람에게 왜 와닿았는지에 대한 화자의 감상으로
+   풀어써라. 캡션이 문구에 대한 사용자의 생각을 담고 있다면
+   그것을 최우선 사실 기준으로 삼아라.
 
 {technique_block}
 
@@ -10572,30 +10558,30 @@ palette: #hex1 #hex2 #hex3
 
 ━━━ 작성 순서 ━━━
 
-1. [오늘의시] — 3~4줄. 반드시 3줄 이상.
+1. "오늘의 시" — 3~4줄. 반드시 3줄 이상.
    오늘 하루 전체의 온도. 억지 통합 금지. 마지막 줄: 솔직하게, 예상 밖으로.
 
-2. [SHOT1시] ~ [SHOT{{n}}시] — 각 사진마다 3~4줄.
+2. "각 사진의 시" (SHOT1 ~ SHOT{{n}}) — 각 사진마다 3~4줄.
    사진 설명을 그대로 쓰지 마라. 그 뒤에 있는 것을 써라.
    미제출 SHOT은 건너뜀.
 
-3. [SHOT1톤] ~ [SHOT{{n}}톤] — 장르명 (예: 감동명작)
+3. "각 사진의 톤" (SHOT1 ~ SHOT{{n}}) — 장르명 (예: 감동명작)
 
-4. [팔레트]
+4. "팔레트"
    palette: #hex1 #hex2 #hex3
 
-5. [반영] - 오늘 하루를 한 문장으로 정의. 판단하거나 평가하지 않고, 있는 그대로 담담하게.
+5. "오늘의 반영" — 오늘 하루를 한 문장으로 정의. 판단하거나 평가하지 않고, 있는 그대로 담담하게.
    예: "준비하는 날이었네요." / "버텨낸 하루였어요." / "작은 것에 눈이 간 날이었군요."
    한 줄만. 설명 없이.
 
-6. [내일질문] - 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
+6. "내일의 질문" — 오늘 기록을 바탕으로 내일로 자연스럽게 연결되는 질문 한 가지.
    부담 없이, 짧게. 한 줄만.
 
-7. [WORD]...[/WORD] - 오늘 하루와 딱 맞는 사자성어 또는 속담 하나.
+7. "오늘의 단어" — 오늘 하루와 딱 맞는 사자성어 또는 속담 하나.
    반드시 아래 형식으로 한 줄만 출력:
    [WORD]한자성어(한자)|한국어독음|왜 오늘과 어울리는지 한 줄. 억지스럽지 않게, 살짝 찌르거나 피식 웃기게.[/WORD]
 
-8. [VERSE]/[CREDIT]/[NOTE] - 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
+8. "오늘의 시 한 줄" — 오늘 하루의 장르와 감성에 어울리는 동서양 시 중 한 구절.
    치유, 토닥임, 응원의 방향으로. 읽는 사람 마음에 닿는 구절.
    [VERSE]시 구절 (원문 그대로; 번역이 필요한 경우 자연스러운 {lang_name}로)[/VERSE]
    [CREDIT]- 시인 이름 ({lang_name} 표기 기준), 《작품명》[/CREDIT]
@@ -10644,28 +10630,33 @@ palette: #hex1 #hex2 #hex3
                     print(f"[TODAY-V2] language retry failed: {_retry_e}")
 
         import re as _re_ht
+
+        def _strip_stray_tags(s):
+            # [WORD], [/WORD], [SHOT1시] 같은 대괄호+영문/한글 태그 잔재 제거
+            return re.sub(r'\[/?[A-Za-z가-힣0-9]+\]', '', s).strip()
+
         _ht_m = _re_ht.search(r'hashtags:\s*(#\S+(?:\s+#\S+)*)', ai_text)
         _pl_m = _re_ht.search(r'palette:\s*(#[0-9A-Fa-f]{3,8}(?:\s+#[0-9A-Fa-f]{3,8})*)', ai_text, _re_ht.IGNORECASE)
         _rf_m = re.search(r'\[반영\]\s*\n?\s*(.+)', ai_text)
         _tq_m = re.search(r'\[내일질문\]\s*\n?\s*(.+)', ai_text)
         _hashtags_parsed      = _ht_m.group(1).strip() if _ht_m else ""
         _palette_parsed       = _pl_m.group(1).strip().split() if _pl_m else []
-        _reflection_parsed    = _rf_m.group(1).strip() if _rf_m else ""
-        _tomorrow_q_parsed    = _tq_m.group(1).strip() if _tq_m else ""
+        _reflection_parsed    = _strip_stray_tags(_rf_m.group(1).strip()) if _rf_m else ""
+        _tomorrow_q_parsed    = _strip_stray_tags(_tq_m.group(1).strip()) if _tq_m else ""
         _wm = re.search(r'\[WORD\](.*?)\[/WORD\]', ai_text, re.DOTALL)
         _vm = re.search(r'\[VERSE\](.*?)\[/VERSE\]', ai_text, re.DOTALL)
         _cm = re.search(r'\[CREDIT\](.*?)\[/CREDIT\]', ai_text, re.DOTALL)
         _nm = re.search(r'\[NOTE\](.*?)\[/NOTE\]', ai_text, re.DOTALL)
         if _wm:
-            _word_parts = [p.strip() for p in _wm.group(1).strip().split('|')]
+            _word_parts = [_strip_stray_tags(p.strip()) for p in _wm.group(1).strip().split('|')]
             _today_word_hanja  = _word_parts[0] if len(_word_parts) > 0 else ""
             _today_word_korean = _word_parts[1] if len(_word_parts) > 1 else ""
             _today_word_reason = _word_parts[2] if len(_word_parts) > 2 else ""
         else:
             _today_word_hanja = _today_word_korean = _today_word_reason = ""
-        _today_verse        = _vm.group(1).strip() if _vm else ""
-        _today_verse_credit = _cm.group(1).strip() if _cm else ""
-        _today_verse_note   = _nm.group(1).strip() if _nm else ""
+        _today_verse        = _strip_stray_tags(_vm.group(1).strip()) if _vm else ""
+        _today_verse_credit = _strip_stray_tags(_cm.group(1).strip()) if _cm else ""
+        _today_verse_note   = _strip_stray_tags(_nm.group(1).strip()) if _nm else ""
         print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
         print("[TODAY-V2] verse:", _today_verse)
 
