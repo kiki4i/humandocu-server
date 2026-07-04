@@ -5616,10 +5616,12 @@ def today_page(doc_id):
 def today_v2_page(doc_id, data):
     """투*필 v2 전용 렌더러 — 톤 자동판단, SHOT별 시 1편"""
     # 봇/크롤러가 아니면 mestory.art 결과 페이지로 리다이렉트
-    ua = request.headers.get("User-Agent", "").lower()
-    _bot_keywords = ("kakaotalk", "facebookexternalhit", "twitterbot",
-                     "bot", "crawler", "spider")
-    if not any(kw in ua for kw in _bot_keywords):
+    ua_raw = request.headers.get("User-Agent", "")
+    ua = ua_raw.lower()
+    _bot_keywords = ("facebookexternalhit", "twitterbot", "bot", "crawler", "spider")
+    is_kakao_bot = ("kakaotalk" in ua) and (not ua.startswith("mozilla"))
+    is_other_bot = any(kw in ua for kw in _bot_keywords)
+    if not (is_kakao_bot or is_other_bot):
         from flask import redirect
         return redirect(
             f"https://mestory.art/today-result.html?id={doc_id}", 301
