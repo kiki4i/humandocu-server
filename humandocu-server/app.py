@@ -5599,6 +5599,21 @@ def today_delete_link():
     return redirect("https://mestory.art", 302)
 
 
+@app.route("/debug/today-type/<doc_id>", methods=["GET"])
+def debug_today_type(doc_id):
+    """TEMP DEBUG — type 필드/키 목록만 반환 (값 노출 없음). 진단 끝나면 제거할 것."""
+    if request.args.get("token") != "tmp-diag-20260704-x7q9":
+        return jsonify({"error": "forbidden"}), 403
+    data = firebase_get_today(doc_id)
+    if data is None:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({
+        "doc_id": doc_id,
+        "type": data.get("type"),
+        "keys": sorted(data.keys()),
+    })
+
+
 @app.route("/today/<doc_id>", methods=["GET"])
 def today_page(doc_id):
     """today 컬렉션 조회 — today_v2는 전용 렌더러, today는 sixshot_page 재사용"""
