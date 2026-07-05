@@ -10703,11 +10703,13 @@ def today_submit_v2():
         ai_text = resp.content[0].text if resp.content else ""
 
         # Language compliance check — retry once if Korean bleeds through
+        _retried_once = False
         if lang != 'ko' and ai_text:
             _kor_count = len(re.findall(r'[가-힣]', ai_text))
             _kor_ratio = _kor_count / max(len(ai_text), 1)
             if _kor_ratio > 0.15:
                 print(f"[TODAY-V2] language mismatch detected, retrying (korean ratio: {_kor_ratio:.2%})")
+                _retried_once = True
                 _retry_system = (
                     f"YOUR PREVIOUS ATTEMPT FAILED — you wrote in Korean instead of {lang_name}. "
                     f"This time, output ONLY in {lang_name}. Do not write a single Korean word. "
@@ -10755,6 +10757,34 @@ def today_submit_v2():
         _today_verse        = _strip_stray_tags(_vm.group(1).strip()) if _vm else ""
         _today_verse_credit = _strip_stray_tags(_cm.group(1).strip()) if _cm else ""
         _today_verse_note   = _strip_stray_tags(_nm.group(1).strip()) if _nm else ""
+
+        # VERSE-missing retry — retry once if [VERSE] tag was omitted (skip if language retry already used the one retry)
+        if not _today_verse and not _retried_once:
+            print("[TODAY-V2] VERSE missing, retrying")
+            _retried_once = True
+            _verse_retry_system = (
+                "지난 시도에서 VERSE/CREDIT/NOTE 태그를 빠뜨렸다. 이번엔 반드시 8번 항목"
+                "(오늘 당신을 위한 시)까지 전부 포함해서 응답하라. "
+            ) + system_prompt
+            try:
+                _verse_retry_resp = client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=8000,
+                    system=_verse_retry_system,
+                    messages=[{"role": "user", "content": content_parts}]
+                )
+                _verse_retry_text = _verse_retry_resp.content[0].text if _verse_retry_resp.content else ""
+                _vm2 = re.search(r'\[VERSE\](.*?)\[/VERSE\]', _verse_retry_text, re.DOTALL)
+                _cm2 = re.search(r'\[CREDIT\](.*?)\[/CREDIT\]', _verse_retry_text, re.DOTALL)
+                _nm2 = re.search(r'\[NOTE\](.*?)\[/NOTE\]', _verse_retry_text, re.DOTALL)
+                _today_verse        = _strip_stray_tags(_vm2.group(1).strip()) if _vm2 else _today_verse
+                _today_verse_credit = _strip_stray_tags(_cm2.group(1).strip()) if _cm2 else _today_verse_credit
+                _today_verse_note   = _strip_stray_tags(_nm2.group(1).strip()) if _nm2 else _today_verse_note
+                if not _today_verse:
+                    print("[TODAY-V2] VERSE retry exhausted — proceeding without verse")
+            except Exception as _verse_retry_e:
+                print(f"[TODAY-V2] VERSE retry failed: {_verse_retry_e}")
+
         print("[TODAY-V2] word:", _today_word_hanja, _today_word_korean)
         print("[TODAY-V2] verse:", _today_verse)
 
