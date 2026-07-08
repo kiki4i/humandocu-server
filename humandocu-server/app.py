@@ -10980,7 +10980,7 @@ def today_my_records():
 
 
 def send_email_guseong_inquiry(name, phone, type_, message):
-    """구성47 상담신청 알림을 mongmong4i@gmail.com으로 전송"""
+    """구성47 상담신청 알림을 kiki2i@naver.com, mongmong4i@gmail.com으로 전송"""
     _KST = timezone(timedelta(hours=9))
     received_at = datetime.now(_KST).strftime("%Y-%m-%d %H:%M:%S")
     html_body = (
@@ -11001,7 +11001,7 @@ def send_email_guseong_inquiry(name, phone, type_, message):
     try:
         resp = requests.post("https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
-            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": ["mongmong4i@gmail.com"],
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": ["kiki2i@naver.com", "mongmong4i@gmail.com"],
                   "subject": f"[구성47 상담신청] {name} {phone}", "html": html_body},
             timeout=30)
         resp.raise_for_status()
