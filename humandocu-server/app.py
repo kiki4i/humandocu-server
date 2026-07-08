@@ -30,7 +30,7 @@ def mask_email(email):
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin", "")
-    allowed = ("https://kiki4i.github.io", "https://humandocu.com", "https://www.humandocu.com", "https://mestory.art", "https://www.mestory.art", "http://localhost")
+    allowed = ("https://kiki4i.github.io", "https://humandocu.com", "https://www.humandocu.com", "https://mestory.art", "https://www.mestory.art", "https://guseong47.com", "https://www.guseong47.com", "http://localhost")
     if any(origin.startswith(a) for a in allowed):
         response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
@@ -57,6 +57,10 @@ def today_preflight():
 
 @app.route("/api/today/card/<doc_id>", methods=["OPTIONS"])
 def today_card_preflight(doc_id=None):
+    return "", 204
+
+@app.route("/api/guseong/inquiry", methods=["OPTIONS"])
+def guseong_inquiry_preflight():
     return "", 204
 
 @app.route("/api/today/feed", methods=["OPTIONS"])
@@ -10973,5 +10977,71 @@ def today_my_records():
     except Exception as e:
         logger.error(f"[TODAY-MY-RECORDS] error: {e}")
         return jsonify({"ok": False, "items": []})
+
+
+def send_email_guseong_inquiry(name, phone, type_, message):
+    """구성47 상담신청 알림을 mongmong4i@gmail.com으로 전송"""
+    _KST = timezone(timedelta(hours=9))
+    received_at = datetime.now(_KST).strftime("%Y-%m-%d %H:%M:%S")
+    html_body = (
+        '<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2c2c2c">'
+        '<div style="background:#1a1a2e;color:#e8e0d0;padding:32px;text-align:center">'
+        '<p style="letter-spacing:4px;font-size:11px;opacity:0.5;margin-bottom:8px">GUSEONG47</p>'
+        '<h2 style="font-weight:300;letter-spacing:2px;font-size:18px;margin:0">상담신청 접수</h2>'
+        '</div>'
+        '<div style="padding:28px;background:#fff">'
+        f'<p style="line-height:2;color:#3a3a3a;font-size:14px">'
+        f'<strong>이름</strong>: {name}<br>'
+        f'<strong>연락처</strong>: {phone}<br>'
+        f'<strong>관심타입</strong>: {type_ or "미정"}<br>'
+        f'<strong>문의내용</strong>: {message or "(없음)"}<br>'
+        f'<strong>접수시각</strong>: {received_at} (KST)</p>'
+        '</div></div>'
+    )
+    try:
+        resp = requests.post("https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": "휴먼다큐 <noreply@humandocu.com>", "to": ["mongmong4i@gmail.com"],
+                  "subject": f"[구성47 상담신청] {name} {phone}", "html": html_body},
+            timeout=30)
+        resp.raise_for_status()
+        print(f"[GUSEONG] 상담신청 이메일 발송 완료: {name} {phone}")
+    except Exception as e:
+        print(f"[GUSEONG] 상담신청 이메일 발송 실패: {e}")
+
+
+_guseong_last_request: dict = {}
+
+@app.route("/api/guseong/inquiry", methods=["POST"])
+def guseong_inquiry():
+    """POST /api/guseong/inquiry  body: {name, phone, type, message, website}"""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name", "") or "").strip()
+    phone_raw = (data.get("phone", "") or "").strip()
+    type_ = (data.get("type", "") or "").strip()
+    message = (data.get("message", "") or "").strip()
+    website = (data.get("website", "") or "").strip()
+
+    if website:
+        return jsonify({"status": "ok"}), 200
+
+    if not name:
+        return jsonify({"error": "name 필요"}), 400
+    if not phone_raw:
+        return jsonify({"error": "phone 필요"}), 400
+
+    phone = re.sub(r"[^0-9-]", "", phone_raw)
+    if len(re.sub(r"[^0-9]", "", phone)) < 8:
+        return jsonify({"error": "올바른 연락처를 입력해 주세요"}), 400
+
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    now = time.time()
+    last = _guseong_last_request.get(ip)
+    if last is not None and now - last < 60:
+        return jsonify({"error": "잠시 후 다시 시도해 주세요"}), 429
+    _guseong_last_request[ip] = now
+
+    send_email_guseong_inquiry(name, phone, type_, message)
+    return jsonify({"status": "ok"}), 201
 
 # deploy trigger 2026-06-09 07:28:08
